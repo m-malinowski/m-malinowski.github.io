@@ -2,7 +2,6 @@
 layout: post
 title:  "Test post"
 date:   2022-01-31 10:00:00 +0000
-usemathjax: true
 ---
 Let's try if this works!
 
