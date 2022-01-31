@@ -30,7 +30,7 @@ twitter_username: quantumpod
 github_username:  m-malinowski
 
 show_excerpts: true
-permalink: /:collection/:year-:month-:day-:title:output_ext
+permalink: /:year/:month/:day/:title/
 
 # Build settings
 theme: minima
