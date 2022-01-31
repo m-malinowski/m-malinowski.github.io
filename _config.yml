@@ -21,7 +21,7 @@
 title: Reading the quantum
 email: mm@oxionics.com
 description: >- # this means to ignore newlines until "baseurl:"
-  Tidbits about quantum information 
+  A quantumful of thoughts 
 baseurl: "" # the subpath of your site, e.g. /blog
 url: "https://m-malinowski.github.io" # the base hostname & protocol for your site, e.g. http://example.com
 twitter_username: quantumpod
