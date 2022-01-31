@@ -5,10 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     {% seo %}
     <link rel="stylesheet" href="{{ '/assets/main.css' | relative_url }}" />
-    {% feed_meta %} 
-    {% if jekyll.environment == 'production' and site.google_analytics %} 
-      {% include google-analytics.html %} 
-    {% endif %}
 
     {% if page.usemathjax %}
     <script type="text/javascript" async src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-MML-AM_CHTML">
@@ -33,3 +29,9 @@
       href="{{ '/favicon-16x16.png' | relative_url }}"
     />
   </head>
+
+{% if page.usemathjax %}
+<script type="text/javascript" async
+ src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-MML-AM_CHTML">
+  </script>
+{% end if %}
