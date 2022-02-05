@@ -7,7 +7,7 @@ description: > # this means to ignore newlines until "show_excerpts:"
 
 show_excerpts: true # set to true to show excerpts on the homepage
 
-staticman_url: https://blog-comment-system.herokuapp.com/v3/entry/github/m-malinowski/staticman/m-malinowski.github.io/comments
+staticman_url: https://blog-comment-system.herokuapp.com/v3/entry/github/m-malinowski/m-malinowski.github.io/comments
 
 
 
