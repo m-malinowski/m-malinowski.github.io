@@ -211,5 +211,28 @@ NB: this trap is still work in progress
 
 
 
+# Addeneum: traps suggested by readers
 
+## Ring surface trap
+Suggested on Twitter by [Ion Busters](https://twitter.com/Ion_busters)
 
+![](https://journals.aps.org/prapplied/article/10.1103/PhysRevApplied.4.031001/figures/1/medium){: width="500" } 
+
+[picture origin: Sandia](https://journals.aps.org/prapplied/abstract/10.1103/PhysRevApplied.4.031001)
+
+## Diffractive mirror trap
+AKA: Integrated collection optics trap.
+
+Suggested in the comments by Erik Streed. 
+
+![](https://media.springernature.com/lw685/springer-static/image/art%3A10.1038%2Fs41534-017-0006-6/MediaObjects/41534_2017_6_Fig1_HTML.jpg){: width="500" }
+
+[picture origin: Griffith](https://www.nature.com/articles/s41534-017-0006-6)
+
+## Integrated detector traps
+
+Inspired by Erik Streed's comment. Shameful I forgot to include it in the original post!
+
+![](https://remnote-user-data.s3.amazonaws.com/SXqoQKn7sPIn7dPR2aAkzP0G5pwt-zr7BGGzqW8Uybg1diFIzBtcy1o8xZtTodqRdQo73nIECl9Vbv1TDFwMgQnzfxyQLe7dQDzJDl1Ms1BXdWKY_e5OACyCzEe5ckf0.png){: width="500"}
+
+[picture origin: NIST](https://tsapps.nist.gov/publication/get_pdf.cfm?pub_id=929700)
