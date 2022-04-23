@@ -1,6 +1,5 @@
 ---
-layout: post
-published: True
+layout: page
 permalink: /draft/pros_and_cons
 ---
 
