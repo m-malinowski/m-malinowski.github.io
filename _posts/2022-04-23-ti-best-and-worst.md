@@ -1,6 +1,6 @@
 ---
-layout: page
-permalink: /draft/pros_and_cons
+layout: post
+published: false
 ---
 
 
