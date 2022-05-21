@@ -32,6 +32,6 @@ The textbook view is that this is not an issue, as the figure of merit for quant
 
 [2019 estimates](https://arxiv.org/abs/1905.09749) for Shor factoring of 2048-bit integers with superconducting qubits give an 8-hour run-time with physical error rates of 0.1% and a surface code cycle time of 1 us. Compared to this, trapped ions suffer a 3 OOM penalty right off the bat (for the same qubit count, that' a runtime of 8000 hours - [10% of your career](https://en.wikipedia.org/wiki/80,000_Hours))! This alone tells me surface codes are most likely a no-go for trapped ions.
 
-Instead, the QEC method for future trapped-ion systems must leverage the low errors and flexible connectivity to reduce the number of operations by 2-3 orders of magnitude compared to the surface code.
+Instead, the QEC method for future trapped-ion systems must leverage the low errors and flexible connectivity to reduce the number of operations by 2-3 orders of magnitude compared to the surface code. Unfortunately, it seems this QEC method has not been invented yet!
 
 I'm therefore keeping my eye on the field of quantum error correction, particularly the [recent discoveries of "good" quantum LDPC codes](https://www.youtube.com/watch?v=5GO3BtJuo3I). I'm also keenly attentive to any attempts of improving clock speeds in trapped ion systems, such as [electron trapping](https://journals.aps.org/prx/abstract/10.1103/PhysRevX.11.011019). But for now, it is right to be cautious about the utility of trapped ions for large-scale fault-tolerant quantum computing.
