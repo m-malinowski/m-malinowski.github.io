@@ -71,7 +71,7 @@ I'm not very familiar with the ins and outs of this platform, but I did my best.
 - Cycle times:
   - Based on the numbers above, the cycle speed is ~1.3 us (750 kHz clock speed), completely dominated by the measurement and reset time.
 
-**Trapped ions: 60 kHz** 
+**Trapped ions: 6 kHz** 
 
 Here are the numbers and references I put together 
 - Single-qubit gate time 
@@ -84,7 +84,7 @@ Here are the numbers and references I put together
     - However, the result above requires pointing a big NA = 0.6 lens directly at a single ion - perhaps not the most relevant for scalability. In a more relevant demonstration, [State Readout of a Trapped Ion Qubit Using a Trap-Integrated Superconducting Photon Detector](https://www.arxiv-vanity.com/papers/2008.00065/) built traps with integrated detectors to demonstrate 99.9% fidelity readout in 46 us. So let's take that, and say that the readout timescale is ~ 50 us. 
     - After readout, ancillas need to be reinitialised and, most importantly, recooled. This can easily add another 50 us, so let's allocate ~100 us for readout + reset
 - Cycle time
-    - Adding the numbers above, we get 160 us cycle time, i.e. 60 kHz clock speed. 
+    - Adding the numbers above, we get 160 us cycle time, i.e. 6 kHz clock speed. 
     - It seems feasible to push it by a factor of 2 or so. However, since it's not limited by any single operation, orders-of-magnitude improvements would require simultaneous innovation on many fronts!
 
 **Rydberg tweezer arrays: 170 Hz**
@@ -96,7 +96,7 @@ Rydbergs struggle with readout without losing atoms. A lot of initial experiment
 - [[1809.09197] Stern-Gerlach detection of neutral atom qubits in a state dependent optical lattice](https://arxiv.org/abs/1809.09197) imaged a 3d array of atoms plane-by-plane without atom loss, and with very high fidelity, but took ~150 ms per plane
 - [[2105.11050] Fast Preparation and Detection of a Rydberg Qubit using Atomic Ensembles](https://arxiv.org/abs/2105.11050) improved the readout time by 3 OOMs to 6 us! But their trick was to trap an atom next to 400 spectator atoms, and use the spectators to enhance the fluorescence. This is super cool, and maybe there is a way to incorporate it in a future quantum computer, but for now, I'd say it doesn't count!
 
- So there we are, with measurement times that span 4 orders of magnitude! For now, I'm going to go conservative and estimate ~10 ms for a proper parallel non-destructive ancilla readout, but wouldn't be surprised to see it come down to 1 ms or so quite soon
+ So there we are, with measurement times that span 4 orders of magnitude! For now, I'm going to go conservative and estimate ~6 ms for a proper parallel non-destructive ancilla readout, but wouldn't be surprised to see it come down to 1 ms or so quite soon
 
 In contrast to the readout, gates in Rydberg arrays can be very fast. What's nice about Rydberg atoms is that, once you bring a bunch of them close enough together (typically a few um suffices), the dynamics become inherently collective. Thus, two-qubit gate times are very similar to single-qubit gate times. For example, [[1806.04682] High-fidelity control and entanglement of Rydberg atom qubits](https://arxiv.org/abs/1806.04682) demonstrated single-qubit Rabi frequency of 2 pi x 2 MHz (i.e. a pi-pulse takes 250 ns), and a two-qubit Rabi frequency of 2 Pi x 2.8 MHz (i.e. creating a maximally entangled state takes 170 ns). What's also worth noting is that it might be possible to entangle more than two qubits in a single step on a similar timescale
 
