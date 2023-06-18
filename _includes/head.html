@@ -20,11 +20,14 @@
   <meta name="theme-color" content="#ffffff">
 
     <!-- Twitter cards -->
+  <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:site"    content="@quantumpod">
   <meta name="twitter:creator" content="@quantumpod">
   <meta name="twitter:title"   content="{{ site.title }}">
+  <meta name="twitter:description" content="{{ site.description }}">
+  <meta name="twitter:image" content="/assets/images/apple-touch-icon.png">
 
-  {% if page.summary %}
+  <!-- {% if page.summary %}
   <meta name="twitter:description" content="{{ page.summary }}">
   {% else %}
   <meta name="twitter:description" content="{{ site.description }}">
@@ -36,7 +39,7 @@
   {% else %}
   <meta name="twitter:card"  content="summary">
   <meta name="twitter:image" content="{{ site.title_image }}">
-  {% endif %}
+  {% endif %} -->
   <!-- end of Twitter cards -->
 
   {%- include custom-head.html -%}
