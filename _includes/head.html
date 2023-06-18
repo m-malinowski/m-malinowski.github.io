@@ -19,6 +19,26 @@
   <meta name="msapplication-config" content="/assets/images/browserconfig.xml">
   <meta name="theme-color" content="#ffffff">
 
+    <!-- Twitter cards -->
+  <meta name="twitter:site"    content="@quantumpod">
+  <meta name="twitter:creator" content="@quantumpod">
+  <meta name="twitter:title"   content="Reading the quantum">
+
+  {% if page.summary %}
+  <meta name="twitter:description" content="{{ page.summary }}">
+  {% else %}
+  <meta name="twitter:description" content="Quantum physics for quantum physicists">
+  {% endif %}
+
+  {% if page.image %}
+  <meta name="twitter:card"  content="summary_large_image">
+  <meta name="twitter:image" content="{{ site.url }}{{ page.image }}">
+  {% else %}
+  <meta name="twitter:card"  content="summary">
+  <meta name="twitter:image" content="{{ site.title_image }}">
+  {% endif %}
+  <!-- end of Twitter cards -->
+
   {%- include custom-head.html -%}
 
   <!-- for mathjax support -->
