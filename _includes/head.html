@@ -22,12 +22,12 @@
     <!-- Twitter cards -->
   <meta name="twitter:site"    content="@quantumpod">
   <meta name="twitter:creator" content="@quantumpod">
-  <meta name="twitter:title"   content="Reading the quantum">
+  <meta name="twitter:title"   content="{{ site.title }}">
 
   {% if page.summary %}
   <meta name="twitter:description" content="{{ page.summary }}">
   {% else %}
-  <meta name="twitter:description" content="Quantum physics for quantum physicists">
+  <meta name="twitter:description" content="{{ site.description }}">
   {% endif %}
 
   {% if page.image %}

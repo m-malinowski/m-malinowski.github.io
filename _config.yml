@@ -7,6 +7,8 @@ description: > # this means to ignore newlines until "show_excerpts:"
 
 show_excerpts: true # set to true to show excerpts on the homepage
 
+title_image: "/assets/images/android-chrome-384x384.png"
+
 # staticman_url: https://blog-comment-system.herokuapp.com/v3/entry/github/m-malinowski/m-malinowski.github.io/main/comments
 
 # Disqus Comments
