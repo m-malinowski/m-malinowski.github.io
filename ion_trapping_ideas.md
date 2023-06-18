@@ -1,7 +1,7 @@
 ---
 layout: page
 title: Ion ideas
-permalink: /beliefs/
+permalink: /ideas/
 ---
 
 Collecting good new ideas in trapped-ion quantum computing as I stumble upon them. Do send me anything I missed!
