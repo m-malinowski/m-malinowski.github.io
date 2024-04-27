@@ -5,7 +5,7 @@ title: "The logic of logical qubits"
 ---
 Over the recent years, the focus of QC hardware research has been gradually shifting from building qubits to building logical qubits. It is with some regularity that some press release somewhere announces some first-of-its-kind logical qubit, in a way that can be frankly quite confusing. So in today's post, we will try to start disentangling this mess by answering the question: what actually is a logical qubit?
 
-Before we define the logical qubit, we need to take a step back and define a qubit. Going back to your favourite kindergarten textbook, a qubit is simply a two-level quantum system that encodes quantum information. However, this is **not** **quite** the meaning of the word "qubit" in "logical qubit". 
+Before we define the logical qubit, we need to take a step back and define a qubit. If you are a student of QC, you might expect that a qubit is simply a two-level quantum system that encodes quantum information. However, this is **not** **quite** the meaning of the word "qubit" in "logical qubit". 
 
 The change of language involves a distinction between qubits and operations. Strictly speaking, one should always talk separately about qubit encodings and operation errors, i.e. "this and that quantum gate, when implemented in this and that fashion on this and that qubit, has an error rate of 0.1%". However - especially when talking about logical qubits - it is common practice to lump the encoding and the operation methods into one bucket, and say things like "this logical qubit fidelity is 99.9%".
 
