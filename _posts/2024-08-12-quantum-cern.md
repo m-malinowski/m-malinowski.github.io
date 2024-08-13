@@ -1,7 +1,7 @@
 ---
 layout: post
 published: true
-title: "Did Shor ruing quantum computing?"
+title: "Did Shor ruin quantum computing?"
 ---
 
 Quantum computing (QC) is *really hard*. And, as many people will agree, QC is also no longer fully suited to academia. While most academic QC work focuses on small-scale demonstrations of novel physics, what QC needs is scale and performance engineering, which individual university labs cannot deliver. Thus, over the recent years, an ever larger fraction of important QC advances came from the industry, and this trend shows no sign of stopping.
@@ -12,7 +12,7 @@ When I posed this conundrum to Charles Tahan, he immediately replied: “Shor’
 
 Still, it is notable that no major QC consortia were formed in the decades between the discovery of Shor’s algorithm and the creation of the first commercial QC companies - why exactly would that be? Another counterexample is the space of nuclear fusion, where the profit goal has always coexisted with the national and international initiatives.
 
-Perhaps there is another aspect to this story altogether, which is that *while QC experiments are hard, they’re still just about easy enough for a single lab to pull off*. These other projects - fusion reactors, space telescopes, gravitational wave detectors etc - are obviously too massive for any single lab - even if only due to their literal size! On the other hand, quantum computers are really quite compact by comparison and, despite decades of research, there are still exciting experiments to be done even with one or two qubits. This is particularly true as the main figure of merit that describes a quantum computer is not its size, but it’s noise - and keeping the noise low may be easier in small systems built by a handful of people than in large systems build by hundreds.
+Perhaps there is another aspect to this story altogether, which is that *while QC experiments are hard, they’re still just about easy enough for a single lab to pull off*. These other projects - fusion reactors, space telescopes, gravitational wave detectors etc - are obviously too massive for any single lab, even if only due to their literal size! On the other hand, quantum computers are really quite compact by comparison and, despite decades of research, there are still exciting experiments to be done even with one or two qubits. This is particularly true as the main figure of merit that describes a quantum computer is not its size, but it’s noise - and keeping the noise low may be easier in small systems built by a handful of people than in large systems build by hundreds.
 
 It’s also difficult to say if this research fragmentation is good or bad. Perhaps the space has missed out on some investments in well-paced scale engineering, but on the other hand, it created opportunities for research into novel platforms that would have not seen the light of day otherwise. It’s notable how rapidly the nuclear fusion space shifted over the recent years from massive collaborations like ITER into spawning small startups across the globe - perhaps the influx of venture capital into the QC space just have it a boost it would have needed in any case?
 
