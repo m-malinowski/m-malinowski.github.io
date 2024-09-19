@@ -61,6 +61,9 @@ minima:
 #header_pages:
 # - about.md
 
+# Google analytics
+google_analytics: G-9SYNDC8JQS
+
 # Build settings
 theme: minima
 markdown: kramdown
