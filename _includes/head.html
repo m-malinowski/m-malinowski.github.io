@@ -19,12 +19,34 @@
   <meta name="msapplication-config" content="/assets/images/browserconfig.xml">
   <meta name="theme-color" content="#ffffff">
 
-    <!-- Twitter cards -->
+  <!-- Twitter cards -->
+<meta name="twitter:site"    content="@quantumpod">
+<meta name="twitter:creator" content="@quantumpod">
+<meta name="twitter:title"   content="{{ page.title }}">
+
+{% if page.summary %}
+<meta name="twitter:description" content="{{ page.summary }}">
+{% else %}
+<meta name="twitter:description" content="{{ site.description }}">
+{% endif %}
+
+{% if page.image %}
+<meta name="twitter:card"  content="summary_large_image">
+<!-- <meta name="twitter:image" content="{{ site.url }}{{ page.image }}"> -->
+<meta name="twitter:image" content="{{ page.image }}"
+{% else %}
+<meta name="twitter:card"  content="summary">
+<meta name="twitter:image" content="{{ site.title_image }}">
+{% endif %}
+<!-- end of Twitter cards -->
+
+
+    <!-- Twitter cards
   <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:site"    content="@quantumpod">
   <meta name="twitter:creator" content="@quantumpod">
   <meta name="twitter:title" content="{{ page.title | default: site.title }}">
-  <meta name="twitter:image" content="https://raw.githubusercontent.com/m-malinowski/m-malinowski.github.io/main/assets/images/android-chrome-384x384.png">
+  <meta name="twitter:image" content="https://raw.githubusercontent.com/m-malinowski/m-malinowski.github.io/main/assets/images/android-chrome-384x384.png"> -->
 
 
   <!-- {% if page.summary %}
