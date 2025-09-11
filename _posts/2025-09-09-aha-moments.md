@@ -21,7 +21,7 @@ For a while now, I've been racking my brain to find a better theme to build a bl
 
 ## Introducing "Aha moments"
 
-Last week, I launched a Substack called [Aha moments](https://inventiontime.substack.com/). My goal is simple: to distil the key insights behind the pivotals events in the histoy of science & technology.
+Last week, I launched a Substack called [Aha moments](https://inventiontime.substack.com/). My goal is simple: to distil the key insights behind the pivotal events in the history of science & technology.
 
 My first topic is electromagnetism. What I love about this topic is that our ability to build electrical & magnetic circuits - and, in turn, basically power all of the modern economy - really comes down to a few dozen people making a few dozen really simple but really non-trivial insights over a few hundred years. In the upcoming blog posts, I want to tell the story of electromagnetism as a story of those atomic "lightbulb moments" - with technical details, but without outdated jargon or academic debates about who came first. For example, in the latest post, I dissect how exactly humans first understood that there are such things as electrical conductors and electrical insulators:
 
