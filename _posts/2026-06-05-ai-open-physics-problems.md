@@ -2,6 +2,7 @@
 layout: post
 published: true
 title: "Can AI answer open questions in physics?"
+image: "/assets/images/posts/image-1.png"
 ---
 The joke is that every time that a new AI model comes out, someone [throws it at the Collatz conjecture](https://arxiv.org/abs/2511.10811) just in case. It's actually probably not the worst idea, but "nails high-school physics but cannot yet create the theory of everything" is not the most useful description of the level of physics proficiency of AI models. What I need to know is: as of mid-2026, *how good* is frontier AI at frontier physics exactly?
 
