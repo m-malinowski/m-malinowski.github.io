@@ -1,0 +1,446 @@
+<!DOCTYPE html><html><head><meta charset='utf-8'><title>Reproduction report — arXiv:2606.07736</title><style>
+body { font-family: -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif; line-height: 1.55;
+       max-width: 980px; margin: 2em auto; padding: 0 1.5em; color: #1d2329; background: #fcfcfd; }
+h1 { border-bottom: 3px solid #4a72b8; padding-bottom: .3em; }
+h2 { border-bottom: 1px solid #d8dee4; padding-bottom: .2em; margin-top: 2em; color: #2c4870; }
+h3 { color: #3a5a8c; }
+table { border-collapse: collapse; margin: 1em 0; width: 100%; }
+th, td { border: 1px solid #d0d7de; padding: 6px 12px; text-align: left; vertical-align: top; }
+th { background: #eef2f7; }
+tr:nth-child(even) { background: #f6f8fa; }
+img { max-width: 100%; border: 1px solid #e0e4e8; border-radius: 6px; background: white; }
+code { background: #eef1f4; padding: 1px 5px; border-radius: 4px; font-size: .92em; }
+blockquote { border-left: 4px solid #4a72b8; margin-left: 0; padding-left: 1em; color: #444; }
+em { color: #333; }
+hr { border: none; border-top: 1px solid #d8dee4; margin: 2em 0; }
+</style></head><body><h1 id="reproduction-report-arxiv260607736">Reproduction report — arXiv:2606.07736</h1>
+<p><strong>"Exact metastability in a class of driven-dissipative quantum many-body systems"</strong>
+David D. Noachtar &amp; Aashish A. Clerk (University of Chicago), arXiv:2606.07736 (June 2026)</p>
+<p><em>Independent reproduction: mathematics verified symbolically/numerically from scratch; all data figures regenerated with independently written code (NumPy/SciPy/SymPy/QuTiP-PIQS). Date: 2026-06-10.</em></p>
+<hr />
+<h2 id="1-verdict">1. Verdict</h2>
+<p><strong>The paper's science reproduces in full.</strong> Its central conjecture — that for Lindbladians with hidden time-reversal symmetry (hTRS) the dissipative gap near a first-order dissipative phase transition is given by <code>Γ_diss ~ exp(−N ΔV)</code>, with the barrier ΔV computed <em>purely from the steady state</em> via a special purification — is quantitatively confirmed by my independent numerics for both models studied (driven-dissipative Kerr cavity; dissipative transverse-field Ising model with collective <em>and</em> local decay). Every key derived structure (ladder mapping, matrix elements, recursion relations, closed-form steady states, mean-field limits, critical values, instanton equivalences) checks out.</p>
+<p><strong>However, the appendices contain a substantial number of typographical/transcription errors in printed formulas</strong> (sign errors in two closed-form potentials, a wrong instanton-action transcription, a min/max inversion, a missing square in a Lambert-W expression, and one conversion formula that is simply wrong as printed). None of these propagate into the paper's figures or conclusions — in every case I could verify that the <em>correct</em> expression is what the authors actually used. A full erratum list is in §4.</p>
+<p>One derivation (Appendix D, quadratic scaling of the barrier) reaches the right conclusion through an internally inconsistent argument; see §4.10.</p>
+<hr />
+<h2 id="2-what-was-verified-and-how">2. What was verified, and how</h2>
+<h3 id="21-structural-operator-level-checks-machine-precision">2.1 Structural / operator-level checks (machine precision)</h3>
+<p>All built independently in full Hilbert spaces (truncated Fock space for the cavity; the complete 4^N doubled qubit space for the DTFIM at N = 4, 5):</p>
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>Check</th>
+<th>Result</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td>Kerr doubled-system ladder matrix elements <code>h_{k,k}, h_{k+1,k}</code> (Eq. 44) vs explicit <code>⟨b_k|Ĥ_AB|d_k⟩</code></td>
+<td>✅ ≤ 2e-15</td>
+</tr>
+<tr>
+<td>2</td>
+<td>No couplings beyond R = 1 (ladder locality) — both models</td>
+<td>✅ ≤ 4e-16</td>
+</tr>
+<tr>
+<td>3</td>
+<td>Purification from recursion (Eq. 45) annihilated by <code>ĉ₋</code> and <code>Ĥ_AB</code> (Eqs. 16–17)</td>
+<td>✅</td>
+</tr>
+<tr>
+<td>4</td>
+<td><code>Tr_B |Ψ⟩⟨Ψ| = ρ_ss</code> vs brute-force null space of the Lindbladian — Kerr, two-photon Kerr, DTFIM</td>
+<td>✅ ≤ 4e-14</td>
+</tr>
+<tr>
+<td>5</td>
+<td>hTRS detailed-balance conditions (Eq. 12) via <code>X Φ = Φ Xᵀ</code> with Φ the (complex-symmetric) purification matrix</td>
+<td>✅</td>
+</tr>
+<tr>
+<td>6</td>
+<td>Purification even under A↔B exchange (footnote 5)</td>
+<td>✅</td>
+</tr>
+<tr>
+<td>7</td>
+<td>DTFIM Dicke dark states (Eqs. 51–52) annihilated by all N+1 correlated jump operators</td>
+<td>✅</td>
+</tr>
+<tr>
+<td>8</td>
+<td><code>Ĥ_AB</code> maps dark Dicke states <em>only</em> into the special bright states (App. C2 claim, incl. interaction terms creating exactly one "defect")</td>
+<td>✅</td>
+</tr>
+<tr>
+<td>9</td>
+<td>DTFIM matrix elements (Eq. 55/C20) and closed-form <code>ψ_k</code> (Eq. C23)</td>
+<td>✅</td>
+</tr>
+<tr>
+<td>10</td>
+<td><code>⟨S_z⟩_ss = (⟨Q_tot⟩ − N)/2</code> from the purification</td>
+<td>✅</td>
+</tr>
+</tbody>
+</table>
+<p>A subtlety worth recording: in Eq. (12) the antiunitary part of <code>Ψ̂ = √ρ_ss T̂</code> is <strong>not</strong> trivial in the Fock basis (ρ_ss is complex there). The natural object satisfying the linear-algebra version of detailed balance is the purification matrix Φ itself (<code>ρ_ss = ΦΦ†</code>, Φ symmetric), exactly as constructed in Appendix A.</p>
+<h3 id="22-analytic-results-sympy-high-precision-numerics">2.2 Analytic results (SymPy + high-precision numerics)</h3>
+<table>
+<thead>
+<tr>
+<th>Result</th>
+<th>Status</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Classical potential from detailed balance (Eq. 9)</td>
+<td>✅ standard result, re-derived</td>
+</tr>
+<tr>
+<td>Classical Kramers gap scaling (Eq. 11)</td>
+<td>✅ tested on an explicit bistable birth–death chain: incremental slope of −log(gap) vs N gives 0.00945 vs ΔV = 0.00949 at N = 800→1600</td>
+</tr>
+<tr>
+<td>V_Kerr integral (Eq. 46) ≡ continuum limit of recursion (Eq. 45)</td>
+<td>✅ (recursion at N = 4000 matches quadrature to 1.6e-3, →0 with N)</td>
+</tr>
+<tr>
+<td>Kerr potential extrema ↔ mean-field equation, with charge density = 2 × photon density</td>
+<td>✅</td>
+</tr>
+<tr>
+<td>Kerr mean-field relation (Eq. B4) from the EOM</td>
+<td>✅</td>
+</tr>
+<tr>
+<td>Two-photon recursion (Eq. B6) and V_Kerr2; extrema ↔ mean-field n± (Eq. B19)</td>
+<td>✅</td>
+</tr>
+<tr>
+<td>ΔV ≡ instanton action, single-photon case (Cardé et al.)</td>
+<td>✅ equal to 1.2e-12 across F̄₁/Ū ∈ [0.9, 2.0]</td>
+</tr>
+<tr>
+<td>ΔV ≡ instanton action, two-photon case (Mylnikov et al.)</td>
+<td>✅ closed forms identical; also cross-checked against Eq. (32) of arXiv:2512.10921 in the U→0 limit</td>
+</tr>
+<tr>
+<td>V_DTFIM integral (Eq. 58) ≡ continuum limit of recursion (Eq. C21)</td>
+<td>✅</td>
+</tr>
+<tr>
+<td>DTFIM mean-field steady-state relation (Eq. C3) from the EOMs (Eqs. C1–C2)</td>
+<td>✅ (EOM numerator = (−4γs_z) × claimed relation)</td>
+</tr>
+<tr>
+<td>Large-J̄ limit: extrema m± (C39), potential (C40), values V(m±) (C42), barrier branches (C43)</td>
+<td>✅</td>
+</tr>
+<tr>
+<td>Ω_c = 0.2845·√(4J̄²+Γ̄²) = 0.569 J̄ and ΔV_c = log[(2+W)/2] − W ≈ 0.179</td>
+<td>✅ values correct (formula C45 as printed has a typo, see §4.7)</td>
+</tr>
+<tr>
+<td>Critical drive <strong>F̄_c = 1.4594 κ ≈ 1.46 κ</strong> (Fig. 6, Ū=κ, Δ=3κ)</td>
+<td>✅</td>
+</tr>
+<tr>
+<td>Critical drive <strong>Ω_c = 3.1883 Γ̄ ≈ 3.19 Γ̄</strong> (Fig. 8, J̄=5Γ̄, γ=0.5Γ̄)</td>
+<td>✅</td>
+</tr>
+<tr>
+<td>Critical endpoint <strong>Ω_c′ = 1.27798 Γ̄ ≈ 1.28 Γ̄</strong> at J̄_c = 1.4529 Γ̄ (spinodal cusp)</td>
+<td>✅</td>
+</tr>
+<tr>
+<td>ΔV ∝ (Ω−Ω_c′)² along the first-order line</td>
+<td>✅ local log–log exponents 1.86, 1.95, 1.985, 1.995 → 2</td>
+</tr>
+</tbody>
+</table>
+<h3 id="23-the-central-conjecture-tested-head-on">2.3 The central conjecture, tested head-on</h3>
+<p>I recomputed the dissipative gap by methods independent of the paper's claimed pipeline:</p>
+<ul>
+<li><strong>Kerr cavity</strong> (Fig. 6b): sparse Lindbladian in Fock space (cutoff 213, convergence verified to ≲1e-9), shift-invert Arnoldi, N = 1…8, five drives spanning the bistable region.</li>
+<li><strong>DTFIM</strong> (Fig. 8b): permutationally-invariant Liouvillian (QuTiP-PIQS), projected onto the physical j-diagonal sector (projection validated against the brute-force 4096-dimensional Lindbladian at N = 6), N = 40…100 in steps of 10, six drives.</li>
+</ul>
+<p>Fitted slopes of <code>log Γ_diss</code> vs N against the analytic barrier ΔV (no fitting in ΔV itself; only the prefactor is fitted, as in the paper):</p>
+<p><strong>Kerr</strong> (slope fitted over N ≥ 4):</p>
+<table>
+<thead>
+<tr>
+<th>F̄/κ</th>
+<th>ΔV (analytic)</th>
+<th>fitted slope</th>
+<th>ratio</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1.00</td>
+<td>0.2282</td>
+<td>0.2650</td>
+<td>1.16</td>
+</tr>
+<tr>
+<td>1.25</td>
+<td>0.9865</td>
+<td>0.9778</td>
+<td>0.99</td>
+</tr>
+<tr>
+<td>1.50</td>
+<td>1.5716</td>
+<td>1.7674</td>
+<td>1.12</td>
+</tr>
+<tr>
+<td>1.75</td>
+<td>0.5964</td>
+<td>0.5909</td>
+<td>0.99</td>
+</tr>
+<tr>
+<td>2.00</td>
+<td>0.0497</td>
+<td>0.0676</td>
+<td>1.36</td>
+</tr>
+</tbody>
+</table>
+<p><strong>DTFIM</strong> (slope fitted over N = 40…100; slopes shift by &lt; 1.6% when the largest decade of N is dropped, i.e. they are converged):</p>
+<table>
+<thead>
+<tr>
+<th>Ω/Γ̄</th>
+<th>ΔV (analytic)</th>
+<th>fitted slope</th>
+<th>ratio</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>2.70</td>
+<td>0.02370</td>
+<td>0.02535</td>
+<td>1.07</td>
+</tr>
+<tr>
+<td>2.86</td>
+<td>0.03933</td>
+<td>0.03974</td>
+<td>1.01</td>
+</tr>
+<tr>
+<td>3.02</td>
+<td>0.05792</td>
+<td>0.06171</td>
+<td>1.07</td>
+</tr>
+<tr>
+<td>3.18</td>
+<td>0.07959</td>
+<td>0.08090</td>
+<td>1.02</td>
+</tr>
+<tr>
+<td>3.34</td>
+<td>0.04021</td>
+<td>0.04064</td>
+<td>1.01</td>
+</tr>
+<tr>
+<td>3.50</td>
+<td>0.00992</td>
+<td>0.01670</td>
+<td>1.68</td>
+</tr>
+</tbody>
+</table>
+<p>The agreement is excellent where the barrier is sizeable (1–7%), with the expected finite-size deviations where ΔV is small (consistent with the paper's own caveats). <strong>The conjecture survives an independent attack.</strong></p>
+<hr />
+<h2 id="3-figure-by-figure-comparison">3. Figure-by-figure comparison</h2>
+<p>Figures 2–5 and 10 are schematics/illustrations with no data content and were not reproduced. All data figures below were regenerated from scratch.</p>
+<h3 id="fig-1-headline-potential-comparison">Fig. 1 — headline potential comparison</h3>
+<table>
+<thead>
+<tr>
+<th>Original</th>
+<th>Reproduction</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><img alt="" src="assets/fig1.png" /></td>
+<td><img alt="" src="assets/fig1_repro.png" /></td>
+</tr>
+</tbody>
+</table>
+<p>Both potentials at Ω = 3.09 Γ̄ (the Fig. 12 parameters): V_hTRS with its hard wall at o = 1/2, V_naive (magnetization potential, N = 1024) with its characteristic kink. Peak heights (0.112 vs 0.085) and positions match the original.</p>
+<h3 id="fig-6-kerr-cavity-dpt-and-gap-scaling">Fig. 6 — Kerr cavity: DPT and gap scaling</h3>
+<table>
+<thead>
+<tr>
+<th>Original</th>
+<th>Reproduction</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><img alt="" src="assets/fig6.png" /></td>
+<td><img alt="" src="assets/fig6_repro.png" /></td>
+</tr>
+</tbody>
+</table>
+<p>Panel (a): S-shaped mean-field curve + exact steady state sharpening into a first-order jump at F̄_c = 1.46 κ — quantitative match. Panel (b): gap data over 8 decades collapse onto <code>exp(−NΔV)</code> lines with <em>analytically computed</em> slopes.</p>
+<h3 id="fig-7-dtfim-phase-diagram">Fig. 7 — DTFIM phase diagram</h3>
+<table>
+<thead>
+<tr>
+<th>Original</th>
+<th>Reproduction</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><img alt="" src="assets/fig7.png" /></td>
+<td><img alt="" src="assets/fig7_repro.png" /></td>
+</tr>
+</tbody>
+</table>
+<p>Same phase structure, bistable wedge, first-order line running near the upper spinodal, critical endpoint at (J̄, Ω) ≈ (1.45, 1.28) Γ̄.</p>
+<h3 id="fig-8-dtfim-transition-and-gap-scaling">Fig. 8 — DTFIM transition and gap scaling</h3>
+<table>
+<thead>
+<tr>
+<th>Original</th>
+<th>Reproduction</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><img alt="" src="assets/fig8.png" /></td>
+<td><img alt="" src="assets/fig8_repro.png" /></td>
+</tr>
+</tbody>
+</table>
+<p>Panel (a) uses the exact <code>ψ_k</code> solution up to N = 1024 (Ω_c = 3.19 Γ̄ confirmed). Panel (b) is the expensive many-body test: permutation-invariant Liouvillian spectra up to N = 100 (the paper extends to 120; my fitted slopes are already converged at the percent level, see §2.3). Slopes agree with the analytic barrier to 1–7% for all drives except the shallowest barrier (Ω−Ω_c = +0.31 Γ̄, ΔV ≈ 0.01), where finite-size curvature dominates — visible as the same curvature in the paper's own data.</p>
+<h3 id="fig-9-barrier-behaviour">Fig. 9 — barrier behaviour</h3>
+<table>
+<thead>
+<tr>
+<th>Original</th>
+<th>Reproduction</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><img alt="" src="assets/fig9.png" /></td>
+<td><img alt="" src="assets/fig9_repro.png" /></td>
+</tr>
+</tbody>
+</table>
+<p>Panel (a): quadratic vanishing toward the critical endpoint over 8 decades, saturation at ΔV_c = 0.179. Panel (b): analytic branches crossing at Ω_c = 0.569 J̄; my added black dots are a finite-J̄ (= 200 Γ̄) numerical check of the asymptotic formulas.</p>
+<h3 id="fig-11-equivalence-with-instanton-calculations">Fig. 11 — equivalence with instanton calculations</h3>
+<table>
+<thead>
+<tr>
+<th>Original</th>
+<th>Reproduction</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><img alt="" src="assets/fig11.png" /></td>
+<td><img alt="" src="assets/fig11_repro.png" /></td>
+</tr>
+</tbody>
+</table>
+<p>Agreement to 1e-12 (panel a, vs the Cardé et al. action, Eqs. B14–B15) and 5e-14 (panel b, vs Mylnikov et al.) — <em>after</em> fixing transcription typos in the printed comparison formulas (§4.4–4.5). Panel (b) parameters identified as κ̄₂ = 0.5 Ū, Δ = 3 Ū (not stated in the caption).</p>
+<h3 id="fig-12-htrs-potential-vs-naive-magnetization-potential">Fig. 12 — hTRS potential vs naive magnetization potential</h3>
+<table>
+<thead>
+<tr>
+<th>Original</th>
+<th>Reproduction</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><img alt="" src="assets/fig12.png" /></td>
+<td><img alt="" src="assets/fig12_repro.png" /></td>
+</tr>
+</tbody>
+</table>
+<p>Reproduced with the <em>corrected</em> conversion kernel Q[s_z|k] (§4.8): W's kink, the systematic underestimate ΔW &lt; ΔV, and the N → ∞ convergence all match the original — strong evidence the published figure was made with a correct kernel despite the erroneous printed formula.</p>
+<hr />
+<h2 id="4-errata-found">4. Errata found</h2>
+<p>These are the substantive findings of the verification beyond "it reproduces". All were established by symbolic differentiation and/or high-precision numerics against the (independently re-derived and verified) recursion relations; items 4–5 additionally against the original cited papers.</p>
+<ol>
+<li>
+<p><strong>Eq. (B9)</strong> (closed form of V_Kerr): the two logarithmic terms have flipped signs. Correct form:
+   <code>V = −3n + (2κ₁/Ū)·arctan[(Ūn−2Δ)/κ₁] − n·log[(8/n)·F̄₁²/((Ūn−2Δ)²+κ₁²)] − (2Δ/Ū)·log[((Ūn−2Δ)²+κ₁²)/F̄₁²] + const.</code>
+   As printed, its derivative does not equal the integrand of Eq. (46); with both signs flipped it matches to machine precision.</p>
+</li>
+<li>
+<p><strong>Eq. (B25), first (unnumbered) line</strong> (the V_Kerr2 integral, App. B4): integrand printed as <code>log[F₂/(...)]</code>; should be <code>F₂²</code> (the closed form in the second line of (B25), and the recursion (B23), both correspond to F₂²).</p>
+</li>
+<li>
+<p><strong>Eq. (B18)</strong> (two-photon mean-field steady-state condition) (<code>F₂²|α|² = [(U|α|²−Δ)² + κ₂²|α|²]|α²|</code>): the <code>κ₂²|α|²</code> term should be <code>κ₂²|α|⁴</code>; the quoted solutions n± (Eq. B19) are correct and correspond to the corrected condition.</p>
+</li>
+<li>
+<p><strong>Eq. (B22)</strong> (transcription of Mylnikov et al.'s instanton barrier ΔΦ): the arctan term is printed with coefficient <code>−2·(2κ̄₂Δ)/(Ū²+κ̄₂²)</code> acting on <code>{arctan[s/(κ̄₂Δ)] − arctan(Ū/κ̄₂)}</code>. The correct expression (verified against Eq. (32) of arXiv:2512.10921 in the Ū → 0 limit, and equal to V_Kerr2(0) − V_Kerr2(n₊) to machine precision) is
+   <code>ΔΦ = 2n₊ − (2κ̄₂Δ/(Ū²+κ̄₂²))·{arctan[s/(κ̄₂Δ)] + arctan(Ū/κ̄₂)} + (2ŪΔ/(Ū²+κ̄₂²))·log|F₂/Δ|</code>
+   i.e. the coefficient is halved and the relative sign inside the brace is flipped. The paper's <em>claim</em> of exact agreement is right; the printed formula is not the formula that agrees.</p>
+</li>
+<li>
+<p><strong>Eq. (B15)</strong> (Cardé comparison): <code>ΔV′ = Φ(α_u) − max_i Φ(α_i)</code> is the <em>negative</em> of the barrier (Φ differences obey <code>Φ(α_u) − Φ(α_i) = −[V(n_u) − V(n_i)]</code>). Should read <code>ΔV′ = min_i Φ(α_i) − Φ(α_u)</code>. With this fix the equality with the hTRS barrier holds to 1e-12.</p>
+</li>
+<li>
+<p><strong>Eq. (C36)</strong> (closed form of V_DTFIM): the arctan term enters with the wrong sign (equivalently, its argument should be negated). Verified by differentiation and against quadrature; with the sign flipped, machine-precision agreement.</p>
+</li>
+<li>
+<p><strong>Eq. (C45)</strong>: <code>Ω_c = √((1−[1+W(−2/e²)])/8)·√(4J̄²+Γ̄²)</code> is missing a square: should be <code>1−[1+W(−2/e²)]²</code>. As printed it evaluates to 0.2254; with the square, 0.28446 — matching the quoted (correct) value 0.2845 and the main text's 0.569 J̄.</p>
+</li>
+<li>
+<p><strong>Eq. (C32)</strong> (kernel Q[s_z|k] converting the charge distribution p_k to the magnetization distribution): wrong as printed (it is normalized but does not equal the true conditional distribution; brute-force checks at N = 4, 5 disagree, max deviation ~0.9). The correct kernel is remarkably simple:
+   <strong><code>Q[s_z|k] = C(k, s_z + N/2) / 2^k</code></strong> — each of the k Bell-pair charges of the dark state |d̃_k⟩ contributes an A-excitation independently with probability 1/2. Reproducing Fig. 12 with this kernel matches the published figure, so the error appears to be confined to the manuscript.</p>
+</li>
+<li>
+<p><strong>Fig. 9 caption / main text inconsistency</strong>: the caption of Fig. 9a calls the endpoint "Ω_c = 1.28 Γ̄" while the main text defines it as Ω_c′ (Ω_c is used elsewhere for 3.19 Γ̄ and 0.569 J̄). Cosmetic, but confusing.</p>
+</li>
+<li>
+<p><strong>Appendix D</strong> (quadratic scaling of ΔV near the critical endpoint): the argument derives <code>ε*² ∝ δα</code> from the extremum condition, then asserts "the generic ansatz ε<em> ~ δα" — which contradicts the preceding equation and would actually give ΔV ∝ δα^{3/2} (the saddle-node/spinodal exponent). The </em>conclusion<em> ΔV ∝ (Ω−Ω_c′)² is nonetheless correct for the quantity plotted in Fig. 9a, because along the </em>first-order line* the two minima stay degenerate and all three extrema merge at the endpoint (a symmetric/quartic merge, not a saddle-node). My high-precision continuation of the transition line gives local scaling exponents 1.864, 1.954, 1.985, 1.995 as δΩ → 0 — cleanly quadratic. The appendix's claim is right; its stated justification is not.</p>
+</li>
+</ol>
+<p><strong>No errors were found in the main-text equations (1)–(59)</strong> — every main-text formula I tested (potentials, recursions, matrix elements, mean-field relations, quoted critical values) is correct.</p>
+<hr />
+<h2 id="5-methods-and-artifacts">5. Methods and artifacts</h2>
+<ul>
+<li><code>repro/check_symbolic.py</code>, <code>repro/check_symbolic2.py</code> — symbolic &amp; quadrature verification of all closed forms, limits, critical values.</li>
+<li><code>repro/check_kerr.py</code> — Kerr structural checks (9/9 pass).</li>
+<li><code>repro/check_dtfim.py</code> — DTFIM structural checks in the full 4^N doubled space (8/9 pass; the failing item is the paper's Eq. C32, see §4.8).</li>
+<li><code>repro/check_endpoint.py</code>, <code>check_endpoint2.py</code>, <code>check_endpoint2_lib.py</code> — spinodal-cusp location and high-precision barrier scaling (mpmath, 40 digits).</li>
+<li><code>repro/dtfim_gap.py</code> — permutation-invariant Liouvillian (PIQS) with physical-sector projection, validated against brute force at N = 6.</li>
+<li><code>repro/run_fig6b.py</code>, <code>repro/run_fig8b.py</code>, <code>repro/run_fig8b_hi.py</code> — gap production runs (CSV in <code>data/</code>).</li>
+<li><code>repro/check_classical.py</code> — classical Kramers scaling on a toy birth–death chain.</li>
+<li><code>repro/potentials.py</code> — verified potential/barrier library used by all figure scripts.</li>
+<li><code>repro/fig6.py</code> … <code>fig12.py</code> — figure regeneration.</li>
+</ul>
+<p>Environment: Python 3.9, NumPy 2.0, SciPy 1.13, SymPy 1.14, mpmath 1.3, QuTiP 5.0.4 (PIQS), macOS.</p>
+<h3 id="not-reproduced-out-of-scope">Not reproduced / out of scope</h3>
+<ul>
+<li>Figs. 2–5, 10: schematics (no data).</li>
+<li>The forthcoming-work MPS encoding of the inhomogeneous-drive steady state (App. C2 end) — statement only, no data in this paper.</li>
+<li>The DTFIM gap at N = 110, 120 (the paper's panel extends to 120; my N ≤ 100 slope fits are converged to &lt;2%, so the comparison is unaffected).</li>
+</ul>
+<hr />
+<h2 id="6-bottom-line">6. Bottom line</h2>
+<p>A careful, honest paper whose central — and genuinely surprising — claim holds up under fully independent recomputation: <em>for hTRS Lindbladians, the steady state alone predicts the exponentially small dissipative gap at first-order transitions</em>. The appendices would benefit from an erratum fixing the ten items in §4; in every instance the authors' actual computations appear correct, and the published figures are reproducible to the pixel level.</p>
+<hr />
+<p><em>Reproduced and verified by </em><em>Claude Sonnet 4.6</em><em> (<code>claude-sonnet-4-6</code>), Anthropic. 2026-06-10.</em></p></body></html>
