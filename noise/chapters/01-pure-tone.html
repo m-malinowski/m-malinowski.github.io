@@ -1,0 +1,563 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>1 · The pure tone — Making Sense of Noise</title>
+<link rel="stylesheet" href="../css/style.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"
+  onload="renderMathInElement(document.body, {delimiters:[
+    {left:'$$', right:'$$', display:true},
+    {left:'$', right:'$', display:false}]});"></script>
+</head>
+<body>
+
+<nav class="site-nav">
+  <div class="nav-inner">
+    <a class="home" href="../index.html">Making Sense of Noise</a>
+    <div class="chapters">
+      <a href="01-pure-tone.html" class="current" title="The pure tone">1</a>
+      <a href="02-modulation.html" title="Modulation">2</a>
+      <a href="03-random-processes.html" title="Random processes">3</a>
+      <a href="04-psd.html" title="Power spectral density">4</a>
+      <a href="05-noise-colors.html" title="Colors of noise">5</a>
+      <a href="06-oscillator-noise.html" title="Amplitude, phase & frequency noise">6</a>
+      <a href="07-allan.html" title="Allan deviation">7</a>
+      <a href="08-sensitivity.html" title="Sensitivity">8</a>
+      <a href="09-ligo.html" title="LIGO case study">9</a>
+      <a href="10-pll.html" title="Phase-locked loops">10</a>
+    </div>
+  </div>
+</nav>
+
+<main>
+  <p class="chapter-kicker">Chapter 1</p>
+  <h1>The pure tone</h1>
+  <p class="lede">
+    Everything in this course — phase noise, power spectral densities, Allan
+    deviations, LIGO's sensitivity curve — is a story about one equation with
+    three knobs. This chapter is about the equation itself, so that when we
+    start adding noise to the knobs, nothing else will be new.
+  </p>
+
+  <h2>A signal with three knobs</h2>
+  <p>
+    Take the most boring signal in physics: a voltage (or a laser field, a
+    trapped ion's drive, the output of a quartz crystal, anything that
+    oscillates) doing exactly the same thing forever,
+  </p>
+  <p>
+    $$ V(t) = A \cos\!\big(2\pi \nu_0 t + \varphi\big). $$
+  </p>
+  <p>
+    There are only three things you can adjust:
+  </p>
+  <ul>
+    <li>the <strong>amplitude</strong> $A$ — how big the swing is (volts,
+      tesla, watts<sup>1/2</sup>… whatever your signal is measured in);</li>
+    <li>the <strong>frequency</strong> $\nu_0$ — how many full cycles happen
+      per second, in hertz;</li>
+    <li>the <strong>phase</strong> $\varphi$ — <em>where in its cycle</em> the
+      oscillation is at $t=0$, in radians.</li>
+  </ul>
+  <p>
+    Drag each slider below and watch which aspect of the curve it controls.
+    The faint curve is a frozen reference ($A=1$, $\nu_0=2\,$Hz,
+    $\varphi=0$) so you can see what changed.
+  </p>
+
+  <figure class="demo">
+    <figcaption>The three knobs of a pure tone</figcaption>
+    <p class="demo-note">Amplitude scales the curve vertically, frequency
+      squeezes it horizontally, phase slides it sideways without changing its
+      shape. Hover to read off values.</p>
+    <div class="controls" id="ctl-knobs"></div>
+    <div class="plots"><div id="plot-knobs"></div></div>
+  </figure>
+
+  <div class="callout warn">
+    <div class="callout-title">The eternal 2&#960; trap</div>
+    Physicists use two frequencies: the <em>ordinary</em> frequency
+    $\nu$ (cycles per second, Hz) and the <em>angular</em> frequency
+    $\omega = 2\pi\nu$ (radians per second). Spectrum analyzers, data sheets
+    and this course all use $\nu$ (and later $f$ for "offset" frequencies).
+    Theory papers often use $\omega$. Roughly half of all wrong noise
+    calculations in the wild are a factor of $2\pi$ (or $\sqrt{2\pi}$)
+    inserted or dropped at this step. When in doubt, write the cosine out and
+    check that its argument is dimensionless.
+  </div>
+
+  <h2>The phasor: one picture instead of trigonometry</h2>
+  <p>
+    Cosines are awkward to manipulate. The clean way to think about an
+    oscillation — and the picture that will carry us through modulation and
+    noise — is a <strong>rotating arrow</strong>. Euler's formula says
+  </p>
+  <p>
+    $$ V(t) = A\cos(2\pi\nu_0 t + \varphi)
+       = \mathrm{Re}\Big[\, A\, e^{\,i(2\pi\nu_0 t + \varphi)} \Big], $$
+  </p>
+  <p>
+    so a pure tone is the <em>shadow</em> (real part) of an arrow of fixed
+    length $A$ rotating counter-clockwise in the complex plane at
+    $\nu_0$ turns per second, having started at angle $\varphi$. Press play:
+  </p>
+
+  <figure class="demo">
+    <figcaption>The rotating-arrow (phasor) picture</figcaption>
+    <p class="demo-note">Left: the arrow $A e^{i\Phi(t)}$ in the complex
+      plane. Right: its horizontal shadow traced over time — that is your
+      oscilloscope trace. Amplitude sets the arrow's length; frequency its
+      rotation rate; phase its starting angle.</p>
+    <div class="controls" id="ctl-phasor"></div>
+    <div class="plots two-col">
+      <canvas id="phasor-canvas" height="280"></canvas>
+      <div id="plot-phasor"></div>
+    </div>
+  </figure>
+
+  <p>
+    The angle of the arrow at time $t$,
+  </p>
+  <p>
+    $$ \Phi(t) = 2\pi\nu_0 t + \varphi, $$
+  </p>
+  <p>
+    is called the <strong>instantaneous phase</strong> (also "total phase").
+    It is the single most important quantity in this course. Notice what the
+    two other knobs are in terms of it: the phase $\varphi$ is just
+    $\Phi(0)$, and the frequency is <em>how fast the phase advances</em>:
+  </p>
+  <p>
+    $$ \nu(t) \;=\; \frac{1}{2\pi}\,\frac{d\Phi}{dt}. $$
+  </p>
+  <p>
+    For a pure tone this derivative is the constant $\nu_0$. But keep the
+    formula: <strong>frequency is the slope of phase</strong>. When the phase
+    starts wandering randomly in chapter 6, this one line is what will connect
+    "phase noise" and "frequency noise" — they are the same wandering, looked
+    at either as position or as velocity.
+  </p>
+
+  <div class="callout">
+    <div class="callout-title">The master equation of this course</div>
+    A real oscillator is never pure. Its amplitude and phase both wander,
+    so the honest description is
+    $$ V(t) = \big[A_0 + \delta\!A(t)\big]\,
+       \cos\!\big(2\pi\nu_0 t + \varphi(t)\big). $$
+    Every kind of "noise" we will meet lives in one of the two wiggle terms:
+    $\delta\!A(t)$ is <strong>amplitude noise</strong>, $\varphi(t)$ is
+    <strong>phase noise</strong>, and the derivative
+    $\delta\nu(t)=\dot\varphi/2\pi$ is <strong>frequency noise</strong>.
+    The whole course is the study of this equation.
+  </div>
+
+  <h2>What a pure tone looks like on a spectrum analyzer</h2>
+  <p>
+    The second home of every signal is the frequency domain. For a truly
+    eternal cosine, all the power sits at exactly one frequency: the spectrum
+    is an infinitely narrow spike at $\nu_0$. But you never observe a signal
+    forever — you record for some time $T$ and ask your FFT (or your spectrum
+    analyzer) what it saw. The result is a peak of <em>finite width</em>
+  </p>
+  <p>
+    $$ \Delta\nu \sim \frac{1}{T}, $$
+  </p>
+  <p>
+    the Fourier uncertainty relation: to know a frequency to 1&nbsp;Hz you must
+    watch for about a second; to know it to 1&nbsp;mHz, about
+    $10^3\,$s. This width has nothing to do with noise — it is the resolution
+    limit of a finite observation. Try it:
+  </p>
+
+  <figure class="demo">
+    <figcaption>A finite observation smears the spike</figcaption>
+    <p class="demo-note">The spectrum of a perfect 8&nbsp;Hz tone observed for
+      a time $T$. The dashed line marks 8&nbsp;Hz. Doubling $T$ halves the
+      width of the peak (and the plot's frequency gridding gets finer, because
+      $1/T$ is also the FFT's frequency resolution).</p>
+    <div class="controls" id="ctl-window"></div>
+    <div class="plots"><div id="plot-window"></div></div>
+  </figure>
+
+  <div class="callout lab">
+    <div class="callout-title">Lab note</div>
+    On a swept spectrum analyzer the same physics appears as the
+    <strong>resolution bandwidth</strong> (RBW): an RBW of 1&nbsp;kHz means the
+    instrument effectively averages for $\sim$1&nbsp;ms per point, and no
+    feature narrower than 1&nbsp;kHz can be resolved. A "carrier" on the screen
+    always has the shape of the RBW filter, not the shape of the signal —
+    until the signal's own noise is wider than the RBW. That crossover is
+    exactly where chapter 6 begins.
+  </div>
+
+  <h2>Two tones: the simplest interesting signal</h2>
+  <p>
+    Before we modulate anything, add just one more cosine. Two equal tones at
+    nearby frequencies $\nu_1$ and $\nu_2$ give, by a trigonometric identity,
+  </p>
+  <p>
+    $$ \cos(2\pi\nu_1 t) + \cos(2\pi\nu_2 t)
+      = 2\, \underbrace{\cos\!\big(2\pi \tfrac{\nu_1-\nu_2}{2}\, t\big)}_{\text{slow envelope}}
+        \;\underbrace{\cos\!\big(2\pi \tfrac{\nu_1+\nu_2}{2}\, t\big)}_{\text{fast carrier}} . $$
+  </p>
+  <p>
+    In the time domain you see <strong>beats</strong>: a fast oscillation at
+    the average frequency whose amplitude swells and shrinks at the
+    difference frequency. In the frequency domain you see the truth with no
+    trigonometry at all: just two spikes.
+  </p>
+
+  <figure class="demo">
+    <figcaption>Beats: two spikes, one envelope</figcaption>
+    <p class="demo-note">Left: time trace with its slow envelope. Right: the
+      spectrum — two clean peaks at $\nu_1$ and $\nu_2$. The beat you
+      <em>see</em> in time is the spacing you <em>read</em> in frequency.</p>
+    <div class="controls" id="ctl-beats"></div>
+    <div class="plots two-col">
+      <div id="plot-beats-t"></div>
+      <div id="plot-beats-f"></div>
+    </div>
+  </figure>
+
+  <p>
+    This is worth internalizing now, because it is the pattern of everything
+    to come: <em>a signal that looks complicated in one domain is often
+    trivially simple in the other</em>. A wobbling envelope in time = two
+    spectral lines. And when we modulate a carrier in the next chapter, the
+    modulation will show up as <strong>sidebands</strong> — extra spikes
+    placed symmetrically around the carrier, exactly like these two.
+  </p>
+
+  <h2>The same thing in code</h2>
+  <p>
+    Every plot on this page is generated live by a few lines of JavaScript.
+    Here is the essential part (the full source is in this page — view
+    source), in case reading code is how the mathematics clicks for you:
+  </p>
+<pre><code>// a pure tone, sampled at fs for T seconds
+const fs = 200, T = 4, N = Math.round(fs * T);
+const t = [], V = [];
+for (let i = 0; i &lt; N; i++) {
+  t.push(i / fs);
+  V.push(A * Math.cos(2 * Math.PI * nu0 * t[i] + phi));
+}
+
+// its spectrum: |FFT|^2, scaled to a power spectral density
+const { f, psd } = FFT.periodogram(V, fs);   // chapter 4 explains the scaling
+</code></pre>
+
+  <h2>Exercises</h2>
+
+  <div class="exercise">
+    <div class="ex-label">Exercise 1.1 — phase as a time shift</div>
+    <p>A phase offset $\varphi$ slides the cosine in time:
+    $\cos(2\pi\nu_0 t + \varphi) = \cos\!\big(2\pi\nu_0 (t + \varphi/2\pi\nu_0)\big)$.
+    How many <em>milliseconds</em> does $\varphi = 90^\circ$ shift a
+    2&nbsp;Hz tone? Check your answer with the first demo.</p>
+    <details><summary>Solution</summary>
+      <p>$90^\circ = \pi/2$ rad shifts by
+      $\Delta t = \varphi/(2\pi\nu_0) = (\pi/2)/(2\pi\cdot 2\,\text{Hz}) =
+      1/8\,\text{s} = 125$ ms — a quarter of the 500&nbsp;ms period, earlier in
+      time. On the phasor picture, the arrow simply starts a quarter-turn
+      ahead.</p>
+    </details>
+  </div>
+
+  <div class="exercise">
+    <div class="ex-label">Exercise 1.2 — Fourier resolution</div>
+    <p>You beat two lasers on a photodiode and record the beat note for
+    0.1&nbsp;s. Roughly how well can you determine the beat frequency? What
+    recording length do you need to resolve two lines 1&nbsp;Hz apart? Verify
+    with the third demo.</p>
+    <details><summary>Solution</summary>
+      <p>The linewidth of the measured peak is $\sim 1/T = 10$ Hz, so the
+      frequency is uncertain at roughly that level (you can split the line
+      somewhat better if the signal-to-noise is high). To resolve two lines
+      1&nbsp;Hz apart you need the peaks narrower than their spacing:
+      $T \gtrsim 1$ s.</p>
+    </details>
+  </div>
+
+  <div class="exercise">
+    <div class="ex-label">Exercise 1.3 — reading a beat</div>
+    <p>In the beats demo, set $\nu_1 = 40$ Hz and $\nu_2 = 43$ Hz. What do
+    you expect the envelope period to be? Why does the intensity envelope
+    repeat at $\nu_1-\nu_2 = 3$ Hz and not at the
+    $(\nu_1-\nu_2)/2 = 1.5$ Hz that appears in the identity?</p>
+    <details><summary>Solution</summary>
+      <p>The <em>field</em> envelope $2\cos(2\pi\cdot 1.5\,t)$ goes through
+      zero twice per cycle, and the eye (or a power detector) sees the
+      envelope's <em>magnitude</em> — which peaks every $1/3$ s. Detected
+      power goes as the square, $|2\cos(\pi \Delta\nu\, t)|^2 = 2 + 2\cos(2\pi
+      \Delta\nu\, t)$: a DC term plus a clean beat at the difference frequency
+      $\Delta\nu = 3$ Hz. This is why heterodyne detection gives you the
+      difference frequency directly.</p>
+    </details>
+  </div>
+
+  <div class="exercise">
+    <div class="ex-label">Exercise 1.4 — a phasor warm-up for chapter 2</div>
+    <p>Two phasors of equal length rotate at slightly different rates
+    $\nu_1$ and $\nu_2$. Describe geometrically what their <em>sum</em> does.
+    What is the length of the sum arrow as a function of time?</p>
+    <details><summary>Solution</summary>
+      <p>In a frame rotating at the average frequency, the two arrows rotate
+      slowly in opposite directions at $\pm(\nu_1-\nu_2)/2$. Their sum always
+      lies along the bisector, with length
+      $2A|\cos(\pi(\nu_1-\nu_2)t)|$ — it breathes between $2A$ and $0$. The
+      sum arrow <em>is</em> the beat envelope; the beating you saw in the last
+      demo is two phasors alternately aligning and cancelling.</p>
+    </details>
+  </div>
+
+  <nav class="pager">
+    <a class="prev" href="../index.html"><span class="dir">Home</span>
+      Course overview</a>
+    <a class="next" href="02-modulation.html"><span class="dir">Next · Chapter 2</span>
+      Wiggling the knobs: modulation</a>
+  </nav>
+</main>
+
+<script src="../js/lib/fft.js"></script>
+<script src="../js/lib/noise.js"></script>
+<script src="../js/lib/plot.js"></script>
+<script src="../js/lib/ui.js"></script>
+<script>
+'use strict';
+
+/* ---------- demo 1: the three knobs ---------- */
+(function () {
+  const plot = new Plot('#plot-knobs', {
+    xlabel: 'time (s)', ylabel: 'V(t)', height: 260,
+    xunit: 's', yunit: '', ylim: [-2.2, 2.2]
+  });
+  const ctl = '#ctl-knobs';
+  const A   = UI.slider(ctl, { label: 'amplitude A', min: 0, max: 2, step: 0.01,
+    value: 1, onInput: draw });
+  const nu  = UI.slider(ctl, { label: 'frequency ν₀', min: 0.5, max: 8,
+    step: 0.05, value: 2, unit: 'Hz', onInput: draw });
+  const phi = UI.slider(ctl, { label: 'phase φ', min: -180, max: 180, step: 1,
+    value: 0, unit: '°', fmt: v => v.toFixed(0), onInput: draw });
+  const period = UI.readout(ctl, { label: 'period T = 1/ν₀' });
+
+  const N = 600, T = 2;
+  const t = Noise.linspace(0, T, N);
+  function trace(a, f0, p) {
+    const y = new Float64Array(N);
+    for (let i = 0; i < N; i++) y[i] = a * Math.cos(2 * Math.PI * f0 * t[i] + p);
+    return y;
+  }
+  function draw() {
+    plot.clear();
+    plot.line(t, trace(1, 2, 0), { label: 'reference', color: '#898781', width: 1 });
+    plot.line(t, trace(A.value, nu.value, phi.value * Math.PI / 180),
+      { label: 'your tone' });
+    plot.draw();
+    period.set((1000 / nu.value).toFixed(0) + ' ms');
+  }
+  draw();
+})();
+
+/* ---------- demo 2: the phasor ---------- */
+(function () {
+  const canvas = document.getElementById('phasor-canvas');
+  const plot = new Plot('#plot-phasor', {
+    xlabel: 'time (s)', ylabel: 'Re part = V(t)', height: 280,
+    xlim: [-4, 0], ylim: [-2.2, 2.2], hover: false
+  });
+  const ctl = '#ctl-phasor';
+  const A   = UI.slider(ctl, { label: 'amplitude A', min: 0.2, max: 2,
+    step: 0.01, value: 1.4, onInput: () => render(lastT) });
+  const nu  = UI.slider(ctl, { label: 'frequency ν₀', min: 0.1, max: 2,
+    step: 0.05, value: 0.5, unit: 'Hz', onInput: () => render(lastT) });
+  const phi = UI.slider(ctl, { label: 'phase φ', min: -180, max: 180, step: 1,
+    value: 0, unit: '°', fmt: v => v.toFixed(0), onInput: () => render(lastT) });
+
+  const histN = 500, histT = 4;
+  let hist = [];        // {t, v}
+  let lastT = 0;
+
+  canvas.style.height = '280px';   // CSS-pin so backing-store size never feeds back
+  function drawPhasor(theta, a) {
+    const dpr = window.devicePixelRatio || 1;
+    const W = canvas.clientWidth || 300, H = 280;
+    const bw = Math.round(W * dpr), bh = Math.round(H * dpr);
+    if (canvas.width !== bw || canvas.height !== bh) {
+      canvas.width = bw; canvas.height = bh;
+    }
+    const ctx = canvas.getContext('2d');
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    const dark = matchMedia('(prefers-color-scheme: dark)').matches;
+    const surface = dark ? '#1a1a19' : '#fcfcfb';
+    const grid = dark ? '#2c2c2a' : '#e1e0d9';
+    const muted = '#898781';
+    const accent = dark ? '#3987e5' : '#2a78d6';
+    ctx.fillStyle = surface;
+    ctx.fillRect(0, 0, W, H);
+    const cx = W / 2, cy = H / 2, R = Math.min(W, H) / 2 - 24;
+    const scale = R / 2.2;
+    // axes + unit circles
+    ctx.strokeStyle = grid;
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(cx - R, cy); ctx.lineTo(cx + R, cy);
+    ctx.moveTo(cx, cy - R); ctx.lineTo(cx, cy + R);
+    ctx.stroke();
+    for (const r of [1, 2]) {
+      ctx.beginPath();
+      ctx.arc(cx, cy, r * scale, 0, 2 * Math.PI);
+      ctx.stroke();
+    }
+    ctx.fillStyle = muted;
+    ctx.font = '11px system-ui, sans-serif';
+    ctx.textAlign = 'left'; ctx.textBaseline = 'top';
+    ctx.fillText('Re', cx + R - 16, cy + 5);
+    ctx.fillText('Im', cx + 5, cy - R + 2);
+    // the arrow
+    const px = cx + a * scale * Math.cos(theta);
+    const py = cy - a * scale * Math.sin(theta);
+    // projection (the "shadow")
+    ctx.strokeStyle = muted;
+    ctx.setLineDash([4, 4]);
+    ctx.beginPath();
+    ctx.moveTo(px, py); ctx.lineTo(px, cy);
+    ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.strokeStyle = accent;
+    ctx.lineWidth = 2.5;
+    ctx.beginPath();
+    ctx.moveTo(cx, cy); ctx.lineTo(px, py);
+    ctx.stroke();
+    // arrowhead
+    const ang = Math.atan2(py - cy, px - cx);
+    ctx.fillStyle = accent;
+    ctx.beginPath();
+    ctx.moveTo(px, py);
+    ctx.lineTo(px - 10 * Math.cos(ang - 0.4), py - 10 * Math.sin(ang - 0.4));
+    ctx.lineTo(px - 10 * Math.cos(ang + 0.4), py - 10 * Math.sin(ang + 0.4));
+    ctx.closePath();
+    ctx.fill();
+    // shadow dot on the Re axis
+    ctx.beginPath();
+    ctx.arc(px, cy, 5, 0, 2 * Math.PI);
+    ctx.fill();
+    ctx.strokeStyle = surface;
+    ctx.lineWidth = 2;
+    ctx.stroke();
+  }
+
+  function render(t) {
+    lastT = t;
+    const theta = 2 * Math.PI * nu.value * t + phi.value * Math.PI / 180;
+    const v = A.value * Math.cos(theta);
+    hist.push({ t: t, v: v });
+    while (hist.length > 2 && hist[0].t < t - histT) hist.shift();
+    if (hist.length > histN) hist = hist.filter((_, i) => i % 2 === 0);
+    drawPhasor(theta, A.value);
+    plot.clear();
+    plot.line(hist.map(h => h.t - t), hist.map(h => h.v), {});
+    plot.draw();
+  }
+
+  // pre-fill the trace with the recent past so the page doesn't start empty
+  function seed() {
+    hist = [];
+    for (let i = 0; i <= histN; i++) {
+      const tt = lastT - histT + (i / histN) * histT;
+      const th = 2 * Math.PI * nu.value * tt + phi.value * Math.PI / 180;
+      hist.push({ t: tt, v: A.value * Math.cos(th) });
+    }
+  }
+  UI.playButton(ctl, { onFrame: (t) => render(t) });
+  seed();
+  render(0);
+})();
+
+/* ---------- demo 3: finite observation time ---------- */
+(function () {
+  const plot = new Plot('#plot-window', {
+    xlabel: 'frequency (Hz)', ylabel: 'power (arb.)', height: 280,
+    // pinned: the peak is normalized to ~1 but wobbles a few percent with
+    // the truncation, which would jitter an autoscaled axis while dragging
+    xlim: [4, 12], ylim: [-0.05, 1.08], xunit: 'Hz'
+  });
+  const ctl = '#ctl-window';
+  const nu0 = 8, fs = 64;
+  const Tobs = UI.slider(ctl, { label: 'observation time T', min: 0.25, max: 16,
+    log: true, value: 1, unit: 's', fmt: v => v.toPrecision(2), onInput: draw });
+  const width = UI.readout(ctl, { label: 'peak width ≈ 1/T' });
+
+  function draw() {
+    const T = Tobs.value;
+    // use a power-of-two record; zero-pad 4x for a smooth-looking curve
+    const N = Math.round(fs * T);
+    const M = FFT.nextPow2(N) * 4;
+    const re = new Float64Array(M), im = new Float64Array(M);
+    for (let i = 0; i < N; i++) re[i] = Math.cos(2 * Math.PI * nu0 * i / fs);
+    FFT.fft(re, im);
+    const half = M / 2;
+    const f = new Float64Array(half), p = new Float64Array(half);
+    for (let k = 0; k < half; k++) {
+      f[k] = k * fs / M;
+      p[k] = (re[k] * re[k] + im[k] * im[k]) / (N * N / 4); // peak normalized to 1
+    }
+    plot.clear();
+    plot.guideX(nu0, { label: 'ν₀ = 8 Hz' });
+    plot.line(f, p, { fill: true });
+    plot.draw();
+    width.set((1 / T).toPrecision(2) + ' Hz');
+  }
+  draw();
+})();
+
+/* ---------- demo 4: beats ---------- */
+(function () {
+  const pT = new Plot('#plot-beats-t', {
+    xlabel: 'time (s)', ylabel: 'V(t)', height: 260,
+    xlim: [0, 1], ylim: [-2.4, 2.4], hover: false
+  });
+  const pF = new Plot('#plot-beats-f', {
+    xlabel: 'frequency (Hz)', ylabel: 'PSD (arb.)', height: 260,
+    xlim: [30, 52], xunit: 'Hz'
+  });
+  const ctl = '#ctl-beats';
+  const nu1 = UI.slider(ctl, { label: 'ν₁', min: 35, max: 45, step: 0.1,
+    value: 40, unit: 'Hz', fmt: v => v.toFixed(1), onInput: draw });
+  const nu2 = UI.slider(ctl, { label: 'ν₂', min: 35, max: 48, step: 0.1,
+    value: 43, unit: 'Hz', fmt: v => v.toFixed(1), onInput: draw });
+
+  const fs = 1024, T = 4, N = fs * T;
+  function draw() {
+    const f1 = nu1.value, f2 = nu2.value;
+    const x = new Float64Array(N);
+    for (let i = 0; i < N; i++) {
+      x[i] = Math.cos(2 * Math.PI * f1 * i / fs) +
+             Math.cos(2 * Math.PI * f2 * i / fs);
+    }
+    // time plot: first second only, plus envelope
+    const nShow = fs;
+    const t = new Float64Array(nShow), env = new Float64Array(nShow);
+    for (let i = 0; i < nShow; i++) {
+      t[i] = i / fs;
+      env[i] = 2 * Math.cos(Math.PI * (f1 - f2) * t[i]);
+    }
+    pT.clear();
+    pT.line(t, x.slice(0, nShow), { label: 'sum of two tones' });
+    pT.line(t, env, { label: 'envelope', width: 1.5, dash: [6, 4] });
+    pT.line(t, env.map(v => -v), { width: 1.5, dash: [6, 4],
+      color: '#1baf7a', hover: false });
+    pT.draw();
+
+    const { f, psd } = FFT.welch(x, fs, { nseg: 4096 });
+    pF.clear();
+    pF.line(f, psd, { fill: true });
+    pF.draw();
+  }
+  draw();
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,473 @@
+/* Shared styles for "The Mathematics of Noise" interactive course. */
+
+:root {
+  --page: #f9f9f7;
+  --surface: #fcfcfb;
+  --ink: #0b0b0b;
+  --ink-2: #52514e;
+  --muted: #898781;
+  --grid: #e1e0d9;
+  --axis: #c3c2b7;
+  --border: rgba(11, 11, 11, 0.10);
+  --accent: #2a78d6;
+  --accent-2: #1baf7a;
+  --warn-bg: #fdf6e7;
+  --sans: system-ui, -apple-system, "Segoe UI", sans-serif;
+  --serif: "Charter", "Iowan Old Style", Georgia, "Times New Roman", serif;
+  --mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --page: #0d0d0d;
+    --surface: #1a1a19;
+    --ink: #f2f1ec;
+    --ink-2: #c3c2b7;
+    --muted: #898781;
+    --grid: #2c2c2a;
+    --axis: #383835;
+    --border: rgba(255, 255, 255, 0.10);
+    --accent: #3987e5;
+    --accent-2: #199e70;
+    --warn-bg: #26200f;
+  }
+}
+
+* { box-sizing: border-box; }
+
+html { scroll-behavior: smooth; }
+
+body {
+  margin: 0;
+  background: var(--page);
+  color: var(--ink);
+  font-family: var(--serif);
+  font-size: 1.06rem;
+  line-height: 1.65;
+  text-rendering: optimizeLegibility;
+}
+
+/* ---------- header / nav ---------- */
+.site-nav {
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  background: color-mix(in srgb, var(--page) 88%, transparent);
+  backdrop-filter: blur(8px);
+  border-bottom: 1px solid var(--border);
+  font-family: var(--sans);
+  font-size: 0.85rem;
+}
+.site-nav .nav-inner {
+  max-width: 72rem;
+  margin: 0 auto;
+  padding: 0.55rem 1.2rem;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+.site-nav .home {
+  font-weight: 650;
+  color: var(--ink);
+  text-decoration: none;
+  white-space: nowrap;
+}
+.site-nav .chapters {
+  display: flex;
+  gap: 0.15rem;
+  margin-left: auto;
+  overflow-x: auto;
+}
+.site-nav .chapters a {
+  color: var(--muted);
+  text-decoration: none;
+  padding: 0.2rem 0.5rem;
+  border-radius: 6px;
+  font-variant-numeric: tabular-nums;
+}
+.site-nav .chapters a:hover { color: var(--ink); background: var(--grid); }
+.site-nav .chapters a.current {
+  color: var(--accent);
+  font-weight: 650;
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+}
+
+/* ---------- article layout ---------- */
+main {
+  max-width: 44rem;
+  margin: 0 auto;
+  padding: 2.5rem 1.2rem 5rem;
+}
+.chapter-kicker {
+  font-family: var(--sans);
+  font-size: 0.8rem;
+  font-weight: 650;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin: 0 0 0.4rem;
+}
+h1 {
+  font-family: var(--sans);
+  font-size: 2.1rem;
+  line-height: 1.15;
+  letter-spacing: -0.015em;
+  margin: 0 0 0.6rem;
+}
+.lede {
+  font-size: 1.15rem;
+  color: var(--ink-2);
+  margin: 0 0 2.2rem;
+}
+h2 {
+  font-family: var(--sans);
+  font-size: 1.45rem;
+  letter-spacing: -0.01em;
+  margin: 2.8rem 0 0.8rem;
+}
+h3 {
+  font-family: var(--sans);
+  font-size: 1.12rem;
+  margin: 2rem 0 0.6rem;
+}
+p { margin: 0 0 1.1rem; }
+a { color: var(--accent); }
+strong { font-weight: 650; }
+hr { border: none; border-top: 1px solid var(--border); margin: 2.5rem 0; }
+ul, ol { padding-left: 1.4rem; }
+li { margin-bottom: 0.35rem; }
+
+/* display math breathing room */
+.katex-display { margin: 1.4rem 0; overflow-x: auto; overflow-y: hidden; padding: 2px 0; }
+
+/* ---------- interactive demo blocks ---------- */
+.demo {
+  width: min(60rem, calc(100vw - 2.4rem));
+  margin: 2rem 0 2rem calc((100% - min(60rem, 100vw - 2.4rem)) / 2);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 1rem 1.2rem 1.2rem;
+  font-family: var(--sans);
+}
+.demo figcaption,
+.demo .demo-title {
+  font-family: var(--sans);
+  font-size: 0.95rem;
+  font-weight: 650;
+  color: var(--ink);
+  margin: 0 0 0.2rem;
+}
+.demo .demo-note {
+  font-size: 0.85rem;
+  color: var(--ink-2);
+  margin: 0 0 0.7rem;
+  font-weight: 400;
+}
+.controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 1.4rem;
+  align-items: center;
+  padding: 0.6rem 0 0.9rem;
+}
+.ctl {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.82rem;
+  color: var(--ink-2);
+}
+.ctl-label { white-space: nowrap; }
+.ctl-value {
+  font-variant-numeric: tabular-nums;
+  color: var(--ink);
+  min-width: 4.5em;
+  white-space: nowrap;
+}
+.ctl input[type="range"] {
+  width: 140px;
+  accent-color: var(--accent);
+}
+/* prominent headline result (UI.bigReadout): big number + moving gauge */
+.ctl-bigread {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  min-width: 180px;
+}
+.bigread-value {
+  font-size: 1.3rem;
+  font-weight: 650;
+  line-height: 1.15;
+  font-variant-numeric: tabular-nums;
+  color: var(--ink);
+  white-space: nowrap;
+}
+.bigread-bar {
+  display: block;
+  width: 100%;
+  height: 6px;
+  border-radius: 3px;
+  background: var(--grid);
+  overflow: hidden;
+}
+.bigread-fill {
+  display: block;
+  height: 100%;
+  border-radius: 3px;
+  background: var(--accent);
+  transition: width 90ms linear;
+}
+/* two-thumb range slider (UI.range): two native inputs overlaid on a
+   custom track; only the thumbs take pointer events */
+.ctl-range {
+  position: relative;
+  width: 170px;
+  height: 18px;
+  display: inline-block;
+}
+.ctl-range-track, .ctl-range-fill {
+  position: absolute;
+  top: 7px;
+  height: 4px;
+  border-radius: 2px;
+}
+.ctl-range-track { left: 0; right: 0; background: var(--grid); }
+.ctl-range-fill { background: var(--accent); }
+.ctl-range input[type="range"] {
+  position: absolute;
+  left: 0; top: 0;
+  width: 100%; height: 18px;
+  margin: 0;
+  -webkit-appearance: none;
+  appearance: none;
+  background: transparent;
+  pointer-events: none;
+}
+.ctl-range input[type="range"]::-webkit-slider-runnable-track {
+  background: transparent;
+  height: 18px;
+}
+.ctl-range input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  pointer-events: auto;
+  width: 14px; height: 14px;
+  margin-top: 2px;
+  border-radius: 50%;
+  background: var(--accent);
+  border: 2px solid var(--surface);
+  box-shadow: 0 0 0 1px var(--axis);
+  cursor: pointer;
+}
+.ctl-range input[type="range"]::-moz-range-track { background: transparent; }
+.ctl-range input[type="range"]::-moz-range-thumb {
+  pointer-events: auto;
+  width: 10px; height: 10px;
+  border-radius: 50%;
+  background: var(--accent);
+  border: 2px solid var(--surface);
+  box-shadow: 0 0 0 1px var(--axis);
+  cursor: pointer;
+}
+.ctl select {
+  font: inherit;
+  color: var(--ink);
+  background: var(--surface);
+  border: 1px solid var(--axis);
+  border-radius: 6px;
+  padding: 0.15rem 0.35rem;
+}
+.ctl-btn {
+  font: inherit;
+  font-size: 0.82rem;
+  color: var(--ink);
+  background: var(--surface);
+  border: 1px solid var(--axis);
+  border-radius: 7px;
+  padding: 0.3rem 0.75rem;
+  cursor: pointer;
+}
+.ctl-btn:hover { border-color: var(--accent); color: var(--accent); }
+.plots { display: grid; gap: 0.6rem; }
+.plots.two-col { grid-template-columns: 1fr 1fr; }
+@media (max-width: 720px) { .plots.two-col { grid-template-columns: 1fr; } }
+.plot-canvas { border-radius: 8px; }
+/* Pin every canvas to its grid track. Without this, a raw canvas's rendered
+   width follows its backing-store width, and any draw code that sizes the
+   backing store from clientWidth * devicePixelRatio runs away exponentially
+   on dpr > 1 displays until the canvas fails to allocate. */
+.plots > * { min-width: 0; }
+.plots canvas { display: block; width: 100%; }
+
+/* ---------- callouts ---------- */
+.callout {
+  font-family: var(--sans);
+  font-size: 0.95rem;
+  line-height: 1.55;
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--accent);
+  border-radius: 8px;
+  background: var(--surface);
+  padding: 0.9rem 1.1rem;
+  margin: 1.6rem 0;
+}
+.callout .callout-title {
+  font-weight: 700;
+  font-size: 0.8rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin-bottom: 0.35rem;
+}
+.callout.lab { border-left-color: var(--accent-2); }
+.callout.lab .callout-title { color: var(--accent-2); }
+.callout.warn { border-left-color: #eda100; }
+.callout.warn .callout-title { color: #b07800; }
+
+/* ---------- exercises ---------- */
+.exercise {
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface);
+  margin: 1.4rem 0;
+  padding: 0.9rem 1.1rem;
+}
+.exercise .ex-label {
+  font-family: var(--sans);
+  font-weight: 700;
+  font-size: 0.8rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: 0.3rem;
+}
+.exercise details { margin-top: 0.6rem; font-size: 0.98rem; }
+.exercise summary {
+  font-family: var(--sans);
+  font-size: 0.85rem;
+  color: var(--accent);
+  cursor: pointer;
+  user-select: none;
+}
+.exercise details[open] summary { margin-bottom: 0.4rem; }
+
+/* ---------- code ---------- */
+pre {
+  font-family: var(--mono);
+  font-size: 0.82rem;
+  line-height: 1.55;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 0.9rem 1.1rem;
+  overflow-x: auto;
+  margin: 1.4rem 0;
+}
+code {
+  font-family: var(--mono);
+  font-size: 0.88em;
+  background: var(--grid);
+  border-radius: 4px;
+  padding: 0.08em 0.3em;
+}
+pre code { background: none; padding: 0; font-size: inherit; }
+
+/* ---------- tables ---------- */
+table {
+  font-family: var(--sans);
+  font-size: 0.88rem;
+  border-collapse: collapse;
+  margin: 1.4rem 0;
+  width: 100%;
+}
+th, td {
+  text-align: left;
+  padding: 0.45rem 0.7rem;
+  border-bottom: 1px solid var(--grid);
+  vertical-align: top;
+}
+th {
+  font-size: 0.78rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--muted);
+  border-bottom: 1px solid var(--axis);
+}
+/* KaTeX (and opt-out spans) inside uppercased chrome must keep their case */
+th .katex, th .nocase,
+.callout-title .katex, .callout-title .nocase { text-transform: none; letter-spacing: normal; }
+td { font-variant-numeric: tabular-nums; }
+
+/* ---------- prev / next footer ---------- */
+.pager {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-top: 4rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid var(--border);
+  font-family: var(--sans);
+  font-size: 0.9rem;
+}
+.pager a {
+  text-decoration: none;
+  color: var(--ink);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 0.7rem 1rem;
+  max-width: 48%;
+  background: var(--surface);
+}
+.pager a:hover { border-color: var(--accent); }
+.pager .dir { font-size: 0.75rem; color: var(--muted); display: block; }
+.pager .next { margin-left: auto; text-align: right; }
+
+/* ---------- index page ---------- */
+.hero { text-align: left; padding: 1.5rem 0 0.5rem; }
+.hero h1 { font-size: 2.6rem; }
+.toc {
+  list-style: none;
+  padding: 0;
+  display: grid;
+  gap: 0.7rem;
+  margin: 2rem 0;
+}
+.toc a {
+  display: block;
+  text-decoration: none;
+  color: var(--ink);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 0.9rem 1.1rem;
+}
+.toc a:hover { border-color: var(--accent); }
+.toc .toc-num {
+  font-family: var(--sans);
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--accent);
+  letter-spacing: 0.06em;
+}
+.toc .toc-title {
+  font-family: var(--sans);
+  font-weight: 650;
+  font-size: 1.05rem;
+  display: block;
+}
+.toc .toc-desc {
+  font-size: 0.9rem;
+  color: var(--ink-2);
+  display: block;
+  margin-top: 0.15rem;
+}
+
+footer.colophon {
+  font-family: var(--sans);
+  font-size: 0.8rem;
+  color: var(--muted);
+  text-align: center;
+  padding: 2rem 1rem 3rem;
+}

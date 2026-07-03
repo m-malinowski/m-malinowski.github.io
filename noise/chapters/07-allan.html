@@ -1,0 +1,1122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>7 · Allan deviation and clock stability — Making Sense of Noise</title>
+<link rel="stylesheet" href="../css/style.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"
+  onload="renderMathInElement(document.body, {delimiters:[
+    {left:'$$', right:'$$', display:true},
+    {left:'$', right:'$', display:false}]});"></script>
+</head>
+<body>
+
+<nav class="site-nav">
+  <div class="nav-inner">
+    <a class="home" href="../index.html">Making Sense of Noise</a>
+    <div class="chapters">
+      <a href="01-pure-tone.html" title="The pure tone">1</a>
+      <a href="02-modulation.html" title="Modulation">2</a>
+      <a href="03-random-processes.html" title="Random processes">3</a>
+      <a href="04-psd.html" title="Power spectral density">4</a>
+      <a href="05-noise-colors.html" title="Colors of noise">5</a>
+      <a href="06-oscillator-noise.html" title="Amplitude, phase & frequency noise">6</a>
+      <a href="07-allan.html" class="current" title="Allan deviation">7</a>
+      <a href="08-sensitivity.html" title="Sensitivity">8</a>
+      <a href="09-ligo.html" title="LIGO case study">9</a>
+      <a href="10-pll.html" title="Phase-locked loops">10</a>
+    </div>
+  </div>
+</nav>
+
+<main>
+  <p class="chapter-kicker">Chapter 7</p>
+  <h1>Allan deviation and clock stability</h1>
+  <p class="lede">
+    You built a clock. You logged its fractional frequency $y(t)$ for a week.
+    Now your collaborator asks the only question that matters: <em>how stable
+    is it?</em> The obvious answer — "compute the standard deviation" — is
+    wrong, and not by a little: for the noises real clocks have, the standard
+    deviation is not even a number. This chapter is about the minimal surgical
+    fix, the <strong>Allan deviation</strong> $\sigma_y(\tau)$, and about the
+    remarkable fact that its shape versus averaging time is a fingerprint of
+    the noise type.
+  </p>
+
+  <p>
+    Throughout, $y(t) = \delta\nu(t)/\nu_0$ is the <strong>fractional
+    frequency</strong> of chapter 6 — dimensionless, e.g.
+    $y = 10^{-15}$ means the clock currently ticks a part in $10^{15}$ fast.
+    Its one-sided PSD $S_y(f)$ (ordinary frequency $f$ in Hz) is the language
+    we already speak; the Allan deviation will turn out to be a second view of
+    the same $S_y(f)$.
+  </p>
+
+  <h2>Accuracy is not stability</h2>
+  <p>
+    Before doing any statistics, be sure which question you are answering.
+    "How good is this clock?" hides two independent questions. Split the
+    frequency of a real oscillator as
+  </p>
+  <p>
+    $$ \nu(t) \;=\; \nu_0\,\big[\,1 + \epsilon + y(t)\,\big], $$
+  </p>
+  <p>
+    where $\nu_0$ is the true (nominal) frequency the clock is supposed to
+    produce, $\epsilon$ is a constant systematic offset, and $y(t)$ is the
+    fluctuating part, defined so that it averages to zero.
+    <strong>Accuracy</strong> is a statement about $\epsilon$: how far the
+    clock's average frequency sits from the truth. <strong>Stability</strong>
+    is a statement about $y(t)$: how much the frequency wanders about its own
+    average, wherever that average happens to be. These are independent
+    virtues — a clock can be any combination of stable/unstable and
+    accurate/inaccurate — and conflating them is the classic beginner's error
+    in time and frequency.
+  </p>
+  <p>
+    A dartboard makes the distinction impossible to forget. Every frequency
+    measurement is a dart; the bull's-eye is the true frequency. Bias
+    $\epsilon$ moves the whole cluster off-center; instability spreads the
+    cluster out. Four throwers, four reputations: a tight cluster away from
+    the bull's-eye (stable but not accurate — a good quartz oscillator years
+    after its last calibration), a loose cluster away from it (neither), a
+    loose cluster centered on it (accurate on average but not stable), and a
+    tight cluster dead center (stable <em>and</em> accurate — the clock
+    everyone wants).
+  </p>
+
+  <figure class="demo">
+    <figcaption>The dartboard: bias moves the cluster, instability spreads
+      it</figcaption>
+    <p class="demo-note">Each dart is one measurement of the clock's
+      frequency (for the wandering noise types, one gate average of the
+      record on the right); the bull's-eye is the true frequency, and bias
+      acts along the horizontal axis. Drag $\epsilon$ and $\sigma$, or jump
+      straight to the four classic quadrants. Then switch the character of
+      $y(t)$ to random walk or drift and watch the cluster smear and creep —
+      the board and the trace tell the same story.</p>
+    <div class="controls" id="ctl-dart"></div>
+    <div class="plots two-col">
+      <canvas id="dart-canvas" height="280"></canvas>
+      <div id="plot-dart"></div>
+    </div>
+  </figure>
+
+  <p>
+    Now look at what the statistic this chapter builds actually sees. The
+    Allan deviation (two sections down) is made of <em>differences of
+    adjacent averages</em>, so a constant $\epsilon$ cancels exactly:
+    $\sigma_y(\tau)$ measures stability and is completely blind to accuracy.
+    That blindness is a feature — you can measure a clock's stability by
+    beating it against itself or an equal, without owning anything more
+    accurate — and a trap: a beautifully flat ADEV at $10^{-16}$ says nothing
+    whatsoever about whether the frequency is <em>right</em>. The dartboard's
+    stable-but-not-accurate thrower has a superb Allan deviation.
+  </p>
+  <p>
+    The asymmetry between the two virtues sets the design rule of metrology.
+    Accuracy is fixable after the fact: measure $\epsilon$ once against a
+    better reference and correct for it — that is calibration. Instability is
+    not fixable: you cannot subtract a random wander you cannot predict.
+    Hence "stability first", and hence primary standards: the atomic-clock
+    loop of chapter 10 ties $\nu_0$ to an atomic transition, so that
+    $\epsilon$ is bounded by physics rather than by the date of the last
+    calibration.
+  </p>
+
+  <h2>Why the ordinary variance fails</h2>
+  <p>
+    Chapter 5 ended on a warning: for noise steeper than white, the variance
+    is not a property of the process but of <em>how long you watched it</em>.
+    Clocks are where that warning bites hardest, because every real oscillator
+    eventually shows flicker ($S_y \propto 1/f$) and random-walk
+    ($S_y \propto 1/f^2$) frequency noise. The variance is the integral of
+    $S_y(f)$ over all $f$, and for these spectra the integral diverges at the
+    <em>low-frequency</em> end. A longer record admits lower Fourier
+    frequencies, so the sample variance just keeps growing.
+  </p>
+  <p>
+    Watch it happen. Below, three synthetic clocks tick once per second: one
+    with white FM noise, one with flicker FM, one with random-walk FM (each
+    generated once and then analyzed cumulatively). For each we plot the
+    sample standard deviation of the first $N$ points, as a function of $N$.
+  </p>
+
+  <figure class="demo">
+    <figcaption>The sample standard deviation vs how long you measured</figcaption>
+    <p class="demo-note">Left: the three frequency records themselves,
+      offset for clarity and each normalized to unit RMS over the full
+      record — white FM stays a band of fixed width, flicker FM wanders on
+      every timescale, random-walk FM walks away. Right: the sample standard
+      deviation of the first $N$ points of those same records. White FM
+      converges by a few hundred samples. Flicker FM never settles — it
+      creeps upward logarithmically forever. Random-walk FM grows as
+      $\sqrt{N}$ without bound (the normalization is why all three meet
+      near 1 at the far right). Press "new sample ↻" to convince yourself
+      the shapes are generic, not a fluke of one realization.</p>
+    <div class="controls" id="ctl-var"></div>
+    <div class="plots two-col">
+      <div id="plot-var-t"></div>
+      <div id="plot-var"></div>
+    </div>
+  </figure>
+
+  <p>
+    So "the variance of my clock" is simply <em>not a number</em> for flicker
+    or random-walk noise — it depends on how long you cared to measure. Quote
+    it and the only thing you have characterized is your patience. Any honest
+    stability measure must (a) converge for the noises clocks actually have,
+    and (b) admit that stability depends on time scale: a clock can be superb
+    over one second and terrible over a day. Both requirements point the same
+    way: measure fluctuations <em>at a chosen time scale</em> $\tau$, and
+    make the statistic blind to the slow divergent stuff below $1/\tau$.
+  </p>
+
+  <h2>The two-sample fix</h2>
+  <p>
+    Here is what a frequency counter actually gives you: the <em>average</em>
+    fractional frequency over consecutive gate intervals of length $\tau$,
+  </p>
+  <p>
+    $$ \bar y_k \;=\; \frac{1}{\tau}\int_{k\tau}^{(k+1)\tau} y(t)\,dt . $$
+  </p>
+  <p>
+    David Allan's 1966 move: instead of the variance of the $\bar y_k$ about
+    their mean, take the mean square of the <strong>differences of adjacent
+    pairs</strong>,
+  </p>
+  <p>
+    $$ \sigma_y^2(\tau) \;=\; \tfrac12\,
+       \big\langle (\bar y_{k+1} - \bar y_k)^2 \big\rangle . $$
+  </p>
+  <p>
+    That is the whole definition. Differencing adjacent averages is the entire
+    trick: a constant offset in $y$ cancels exactly, and slow wandering —
+    the divergent low-frequency content — cancels <em>almost</em> exactly,
+    because two neighboring gates see nearly the same value of it. The
+    two-sample difference is a high-pass filter in disguise (we will make
+    that literal in the last section), and it is precisely the divergent DC
+    end that it removes. The factor $\tfrac12$ is a normalization: for white
+    FM the $\bar y_k$ are independent, so
+    $\langle(\bar y_{k+1}-\bar y_k)^2\rangle = 2\,\mathrm{var}(\bar y)$, and
+    the $\tfrac12$ makes the Allan variance agree with the classical variance
+    of the gate averages in the one case where the classical variance is
+    honest. The square root $\sigma_y(\tau)$ is the <strong>Allan
+    deviation</strong> — "ADEV" on every clock plot you will ever see.
+  </p>
+  <p>
+    The picture below is the definition drawn on the data: the time axis is
+    chopped into gates of length $\tau$, each gate is collapsed to its
+    average $\bar y_k$ (the staircase), and $\sigma_y(\tau)$ is the RMS
+    step height between adjacent stairs, divided by $\sqrt2$.
+  </p>
+
+  <figure class="demo">
+    <figcaption>Chop into τ-gates, average each, compare neighbors</figcaption>
+    <p class="demo-note">White FM samples (faint) at $\tau_0 = 1$ s, and their
+      gate averages (staircase). Drag $\tau$: longer gates average the white
+      noise down, and the stair steps shrink as $1/\sqrt\tau$ — compare the
+      measured $\sigma_y(\tau)$ readout with the white-FM prediction.</p>
+    <div class="controls" id="ctl-gates"></div>
+    <div class="plots"><div id="plot-gates"></div></div>
+  </figure>
+
+  <p>
+    One practical refinement, free of new ideas: with $N$ samples you can
+    slide the pair of gates along one sample at a time instead of jumping
+    gate-by-gate, reusing the data in every position — the
+    <strong>overlapping</strong> Allan deviation, which is what
+    <code>allan.js</code> (and every clock-metrology package) computes,
+    because it squeezes far more statistical confidence out of the same
+    record without changing the expected value.
+  </p>
+
+  <h2>The $\sigma_y(\tau)$ fingerprint</h2>
+  <p>
+    Now the payoff. Compute $\sigma_y(\tau)$ for <em>every</em> $\tau$ from
+    one gate up to a quarter of your record, and plot it log–log. Write each
+    power-law patch of the frequency-noise spectrum as
+    $S_y(f) = h_\alpha f^{\alpha}$ — chapter&nbsp;5's $h/f^\alpha$ levels,
+    with the subscript naming the slope — and each noise type produces a
+    straight line with its own characteristic slope. Every PSD in the table
+    is the <em>fractional-frequency</em> one, $S_y(f)$ — the "PM" rows are
+    phase noises seen through chapter&nbsp;6's identity
+    $S_y = (f/\nu_0)^2 S_\varphi$, which is how a flat phase spectrum
+    becomes $h_2 f^2$ here:
+  </p>
+
+  <table>
+    <thead>
+      <tr><th>noise type</th><th>$S_y(f)$</th><th>ADEV slope</th><th>typical physical origin</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>white PM</td><td>$h_2 f^{2}$</td><td>$\tau^{-1}$</td><td>readout/detection noise on the phase</td></tr>
+      <tr><td>flicker PM</td><td>$h_1 f^{1}$</td><td>$\tau^{-1}$ (with a log factor)</td><td>electronics, amplifiers</td></tr>
+      <tr><td>white FM</td><td>$h_0$</td><td>$\tau^{-1/2}$</td><td>shot noise, quantum projection noise</td></tr>
+      <tr><td>flicker FM</td><td>$h_{-1} f^{-1}$</td><td>$\tau^{0}$ (flat floor)</td><td>the oscillator's intrinsic $1/f$</td></tr>
+      <tr><td>random-walk FM</td><td>$h_{-2} f^{-2}$</td><td>$\tau^{+1/2}$</td><td>temperature, drifting environment</td></tr>
+      <tr><td>linear drift $\dot y = D$</td><td>(deterministic)</td><td>$\tau^{+1}$, $\;\sigma_y = D\tau/\sqrt2$</td><td>aging, creep</td></tr>
+    </tbody>
+  </table>
+
+  <p>
+    Read a measured ADEV curve from left to right and you are reading the
+    clock's biography: which noise dominates at each time scale. The demo
+    below mixes all five ingredients into one $2^{16}$-sample record
+    ($\tau_0 = 1$ s) and computes the overlapping ADEV live. The dashed lines
+    are the theoretical contribution of each ingredient at its current slider
+    setting; the solid curve is the ADEV actually measured from the synthetic
+    record. Raise each slider and watch its regime lift the measured curve —
+    the curve always hugs whichever dashed line is on top.
+  </p>
+
+  <figure class="demo">
+    <figcaption>The headline plot: σ<sub>y</sub>(τ) as a noise fingerprint</figcaption>
+    <p class="demo-note">Left: the fractional-frequency record (shown averaged
+      into 64 s bins so the slow noises are visible). Right: its overlapping
+      Allan deviation, with dashed theory lines for each contribution:
+      PM = white PM ($\propto 1/\tau$), WFM = white FM ($\propto
+      1/\sqrt\tau$), FFM = flicker FM (flat), RW = random-walk FM
+      ($\propto \sqrt\tau$), drift ($\propto \tau$). Try
+      turning one slider far up and the others down to isolate each slope;
+      then push the drift slider and watch the $\tau^{+1}$ ramp swallow the
+      long-$\tau$ end.</p>
+    <div class="controls" id="ctl-finger"></div>
+    <div class="plots two-col">
+      <div id="plot-finger-y"></div>
+      <div id="plot-finger-adev"></div>
+    </div>
+  </figure>
+
+  <div class="callout warn">
+    <div class="callout-title">Two footnotes the fingerprint needs</div>
+    First: white PM and flicker PM both give $\sigma_y \propto \tau^{-1}$, so
+    plain ADEV cannot tell them apart; the <em>modified</em> Allan deviation
+    (MDEV), which averages the phase inside each gate before differencing,
+    separates them ($\tau^{-3/2}$ vs $\tau^{-1}$). Second: the $\tau^{+1}$
+    drift line is not noise at all — it is a deterministic ramp, and the
+    right response is to fit and subtract it, not to admire it in the ADEV.
+  </div>
+
+  <h2>Reading a real clock plot</h2>
+  <p>
+    Here is the shape you will see in essentially every optical-clock paper.
+    At short $\tau$ the curve falls as
+    $\sigma_y(\tau) = a/\sqrt{\tau}$ — white FM, typically quantum
+    projection noise from interrogating a finite number of atoms; a good
+    lattice clock might have $a = 3\times10^{-16}$ at 1 s. Averaging longer
+    keeps helping… until it doesn't: around $\tau \sim 10^4\,$s the curve
+    flattens onto a <strong>flicker floor</strong>, say $1\times10^{-18}$,
+    set by whatever $1/f$ process the clock owns (blackbody shifts, lattice
+    light shifts, the cavity). Past the floor, curves often turn <em>up</em>
+    again as random walk from slow thermal or environmental drifts takes
+    over. The floor is the clock's headline number, and the white-FM
+    prefactor decides how long you must average to reach it.
+  </p>
+
+  <figure class="demo">
+    <figcaption>A model optical clock: white FM into a flicker floor</figcaption>
+    <p class="demo-note">The model is
+      $\sigma_y(\tau) = \sqrt{a^2/\tau + \sigma_{\mathrm{floor}}^2}$. Drag the
+      1-second stability $a$ and the floor; the readouts answer the two
+      questions everyone asks. Note what the floor means: below it, averaging
+      longer stops helping — no integration time gets you under a flicker
+      floor.</p>
+    <div class="controls" id="ctl-clock"></div>
+    <div class="plots"><div id="plot-clock"></div></div>
+  </figure>
+
+  <p>
+    The white-FM prefactor is not a new quantity — it <em>is</em> the
+    sensitivity of chapter 8 wearing fractional-frequency clothing. White FM
+    with one-sided level $h_0$ gives (next section)
+  </p>
+  <p>
+    $$ \sigma_y(\tau) = \sqrt{\frac{h_0}{2\tau}}
+       \qquad\Longrightarrow\qquad a = \sqrt{h_0/2}, $$
+  </p>
+  <p>
+    so quoting "$3\times10^{-16}$ at one second" and quoting a white noise
+    floor of $h_0 = 2a^2 = 1.8\times10^{-31}\,\mathrm{Hz}^{-1}$ in $S_y$ are
+    the same statement. Chapter 8 will read the same number as a
+    per-$\sqrt{\mathrm{Hz}}$ sensitivity.
+  </p>
+
+  <h2>Allan meets the PSD</h2>
+  <p>
+    ADEV and $S_y(f)$ are not rival descriptions; the Allan variance is a
+    weighted integral of the PSD. Averaging over a gate and differencing
+    adjacent gates is a linear, time-invariant operation on $y(t)$, so it has
+    a transfer function, and
+  </p>
+  <p>
+    $$ \sigma_y^2(\tau) \;=\; \int_0^{\infty} S_y(f)\,
+       \big|H_\tau(f)\big|^2\, df,
+       \qquad
+       \big|H_\tau(f)\big|^2 \;=\; \frac{2\sin^4(\pi\tau f)}{(\pi\tau f)^2}. $$
+  </p>
+  <p>
+    Plot that weight and the "high-pass in disguise" claim becomes a picture
+    — in fact it is better than a high-pass, it is a <strong>bandpass</strong>:
+    $|H_\tau|^2$ rises as $f^2$ at low frequency (drift rejection), falls off
+    above $1/\tau$ (the averaging), and peaks near
+  </p>
+  <p>
+    $$ f_{\mathrm{peak}} \approx \frac{0.37}{\tau} \approx \frac{1}{2\tau}. $$
+  </p>
+
+  <figure class="demo">
+    <figcaption>The Allan variance is a bandpass view of S<sub>y</sub>(f)</figcaption>
+    <p class="demo-note">The whole identity in one picture. Left: the chosen
+      noise's $S_y(f)$ (blue), the bandpass weight $|H_\tau(f)|^2$ (gray,
+      dimensionless, peaking near $0.37/\tau$), and their product — the
+      integrand — in orange, filled: <em>the shaded area is
+      $\sigma_y^2(\tau)$</em>. Right: the resulting Allan deviation over all
+      gate times, with your $\tau$ marked. Slide $\tau$: the passband scans
+      down the spectrum and the marker rides along the fingerprint. Switch
+      the noise to see each power law produce its slope.</p>
+    <div class="controls" id="ctl-xfer"></div>
+    <div class="plots two-col">
+      <div id="plot-xfer"></div>
+      <div id="plot-xfer-adev"></div>
+    </div>
+  </figure>
+
+  <p>
+    This is the reason the fingerprint works: $\sigma_y(\tau)$ at gate time
+    $\tau$ mostly reports $S_y$ near Fourier frequency $1/2\tau$, so as
+    $\tau$ grows the ADEV scans down the spectrum, and each power law in
+    $S_y(f)$ maps onto a power law in $\tau$. Doing the integral exactly for
+    each one-sided power law $S_y = h_\alpha f^\alpha$ gives the standard
+    conversion table:
+  </p>
+
+  <table>
+    <thead>
+      <tr><th>noise</th><th>$S_y(f)$</th><th>Allan variance</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>white FM</td><td>$h_0$</td><td>$\dfrac{h_0}{2\tau}$</td></tr>
+      <tr><td>flicker FM</td><td>$h_{-1}f^{-1}$</td><td>$2\ln 2\; h_{-1}$</td></tr>
+      <tr><td>random-walk FM</td><td>$h_{-2}f^{-2}$</td><td>$\dfrac{2\pi^2}{3}\, h_{-2}\,\tau$</td></tr>
+      <tr><td>white PM</td><td>$h_2 f^{2}$</td><td>$\approx \dfrac{3 f_H\, h_2}{4\pi^2\,\tau^2}$ &nbsp;($f_H$: measurement bandwidth)</td></tr>
+    </tbody>
+  </table>
+
+  <p>
+    Note the white-PM row needs the high-frequency cutoff $f_H$ of your
+    measurement system: $S_y \propto f^2$ keeps growing, and the bandpass
+    only tames it up to the bandwidth you actually recorded. This foreshadows
+    chapter 9, where the same "sensor = filter function acting on the PSD"
+    logic — with fancier $|H(f)|^2$ — is the master formula for qubit
+    dephasing and LIGO alike.
+  </p>
+
+  <div class="callout">
+    <div class="callout-title">Is the Allan deviation only for frequency?</div>
+    Nothing in the recipe is about frequency — bin, difference neighbours,
+    RMS is a statistic you can compute on <em>any</em> time series, and the
+    bandpass picture above explains what it does to any spectrum. The
+    pairing with clocks is convention meeting need: frequency noise is where
+    divergent variance is unavoidable (every oscillator has flicker and
+    random-walk FM), and averaging time is the operationally meaningful
+    variable for a clock. Amplitude noise usually has a milder, near-stationary
+    spectrum and gets asked frequency-domain questions (servo bandwidth,
+    in-band floor), so an RMS over a stated band does the job. But whenever
+    an amplitude-like signal drifts divergently, ADEV is used verbatim: the
+    <strong>bias instability</strong> of gyroscopes and accelerometers is
+    read off an Allan-deviation plot of the rate output, and laser power
+    ($\delta P/P$), voltage references and magnetometers get the same
+    treatment. Rule of thumb: reach for ADEV whenever the variance refuses
+    to converge and "how long should I average?" is the question — and
+    apply it to a fractional quantity, like $y = \delta\nu/\nu_0$ or
+    $\delta P/P$, if you want dimensionless numbers to compare.
+  </div>
+
+  <h2>The estimator in code</h2>
+  <p>
+    The overlapping estimator that powers every plot on this page is ten
+    lines. The only cleverness is a cumulative sum, so each gate average is a
+    subtraction instead of an inner loop (this is <code>Allan.adev</code>
+    from <code>allan.js</code>):
+  </p>
+<pre><code>// y[0..N-1]: fractional frequency samples every tau0 seconds.
+// c[k] = y[0] + ... + y[k-1]  (cumulative sum with a leading zero)
+const c = new Float64Array(N + 1);
+for (let i = 0; i &lt; N; i++) c[i + 1] = c[i] + y[i];
+
+// overlapping Allan variance at averaging factor m  (tau = m * tau0)
+let sum = 0, count = 0;
+for (let j = 0; j + 2 * m &lt;= N; j++) {          // slide one sample at a time
+  const a = (c[j + m] - c[j]) / m;              // average of gate starting at j
+  const b = (c[j + 2 * m] - c[j + m]) / m;      // average of the next gate
+  sum += (b - a) * (b - a);
+  count++;
+}
+const adev = Math.sqrt(sum / (2 * count));      // sigma_y(m * tau0)
+</code></pre>
+
+  <div class="callout lab">
+    <div class="callout-title">Lab note</div>
+    At the largest $\tau$ your record allows, only a handful of independent
+    gate pairs exist, so the last few ADEV points scatter wildly — you can
+    see it at the right-hand edge of the headline demo. Never read a floor
+    off the final point of an ADEV curve; the rule of thumb is to distrust
+    everything beyond $\tau \sim T_{\mathrm{record}}/10$, and real papers
+    put error bars ($\chi^2$-based) on every point.
+  </div>
+
+  <h2>Exercises</h2>
+
+  <div class="exercise">
+    <div class="ex-label">Exercise 7.1 — how long to average</div>
+    <p>A clock has pure white FM with $\sigma_y(1\,\mathrm{s}) =
+    1\times10^{-15}$. How long must you average to reach
+    $1\times10^{-17}$?</p>
+    <details><summary>Solution</summary>
+      <p>White FM: $\sigma_y(\tau) = a/\sqrt\tau$ with $a = 10^{-15}$.
+      Solve $a/\sqrt\tau = 10^{-17}$:
+      $\tau = (a/10^{-17})^2 = (100)^2 = 10^4\,$s $\approx 2.8$ hours.
+      The $1/\sqrt\tau$ law is brutal: every factor of 10 in stability costs
+      a factor of 100 in time.</p>
+    </details>
+  </div>
+
+  <div class="exercise">
+    <div class="ex-label">Exercise 7.2 — from ADEV to PSD and back to hertz</div>
+    <p>Convert $\sigma_y(1\,\mathrm{s}) = 1\times10^{-15}$ (white FM,
+    $\tau_0 = 1$ s) into the PSD level $h_0$, and then into the absolute
+    frequency-noise PSD $S_{\delta\nu}$ for a strontium clock at
+    $\nu_0 = 429$ THz.</p>
+    <details><summary>Solution</summary>
+      <p>From $\sigma_y^2(\tau) = h_0/2\tau$:
+      $h_0 = 2\sigma_y^2\tau = 2\times(10^{-15})^2\times 1\,\mathrm{s} =
+      2\times10^{-30}\,\mathrm{Hz}^{-1}$. Then
+      $S_{\delta\nu} = h_0\,\nu_0^2 = 2\times10^{-30}\times
+      (4.29\times10^{14})^2 \approx 0.37\,\mathrm{Hz^2/Hz}$. Noteworthy: a
+      state-of-the-art clock's frequency noise is sub-hertz-level in absolute
+      terms — it is the enormous $\nu_0$ in the denominator of $y$ that makes
+      the fractional numbers so spectacular.</p>
+    </details>
+  </div>
+
+  <div class="exercise">
+    <div class="ex-label">Exercise 7.3 — read the fingerprint</div>
+    <p>An ADEV plot falls with slope $-1$ from $\tau = 1$ s to 100 s, then
+    with slope $-1/2$ beyond. Which noise types are dominating in each
+    region? Is the ADEV alone enough to pin down the first one?</p>
+    <details><summary>Solution</summary>
+      <p>Slope $-1$: phase noise — white PM or flicker PM (they share the
+      $\tau^{-1}$ signature, so plain ADEV cannot distinguish them; MDEV
+      can). Slope $-1/2$: white FM. Physically: a noisy readout dominates the
+      short gates, and the oscillator's own white frequency noise takes over
+      beyond 100 s.</p>
+    </details>
+  </div>
+
+  <div class="exercise">
+    <div class="ex-label">Exercise 7.4 — a day of drift</div>
+    <p>A clock drifts linearly by $1\times10^{-16}$ per day. What is the
+    drift's contribution to $\sigma_y$ at $\tau = 10^5$ s?</p>
+    <details><summary>Solution</summary>
+      <p>$D = 10^{-16}/86400\,\mathrm{s} = 1.16\times10^{-21}\,
+      \mathrm{s^{-1}}$. The drift contribution is $\sigma_y = D\tau/\sqrt2 =
+      1.16\times10^{-21}\times10^{5}/1.414 \approx 8.2\times10^{-17}$ —
+      already comparable to the best floors, which is why serious clock
+      comparisons fit and remove drift before quoting stability.</p>
+    </details>
+  </div>
+
+  <div class="exercise">
+    <div class="ex-label">Exercise 7.5 — the inevitability of τ<sup>+1</sup></div>
+    <p>Explain why the Allan deviation of <em>any</em> clock with a nonzero
+    linear drift must eventually rise as $\tau^{+1}$, no matter how good the
+    clock is.</p>
+    <details><summary>Solution</summary>
+      <p>For $y(t) = Dt$, adjacent gate averages differ by <em>exactly</em>
+      $\bar y_{k+1} - \bar y_k = D\tau$, deterministically — averaging longer
+      makes the difference bigger, not smaller. So the drift contributes
+      $\sigma_y = D\tau/\sqrt2$, growing linearly in $\tau$, while every
+      random noise contribution grows no faster than $\tau^{1/2}$. Whatever
+      the noise floor, the $D\tau/\sqrt2$ line crosses it at some finite
+      $\tau$ and dominates from then on. The only cure is to remove the
+      drift, which is legitimate precisely because it is deterministic —
+      it carries no surprise, hence no noise.</p>
+    </details>
+  </div>
+
+  <div class="exercise">
+    <div class="ex-label">Exercise 7.6 — the GPS-disciplined oscillator</div>
+    <p>A quartz OCXO has a flicker floor $\sigma_y \approx 1\times10^{-12}$
+    and ages by $1\times10^{-10}$ per day. A GPS timing receiver's
+    one-pulse-per-second output is steered to UTC — accurate on average — but
+    each pulse jitters by $\sim 10$ ns, giving white-PM-like
+    $\sigma_y(\tau) \approx \sqrt3\,(10\,\mathrm{ns})/\tau \approx
+    1.7\times10^{-8}\,(\tau/1\,\mathrm{s})^{-1}$. (a) After a year of free
+    running, which dartboard quadrant is the bare quartz in? (b) A
+    GPS-disciplined oscillator locks the quartz to the GPS pulses with a very
+    long loop time constant. Which quadrant does that move it to, and at
+    roughly what $\tau$ should the handover happen — i.e., where do the two
+    stability curves cross?</p>
+    <details><summary>Solution</summary>
+      <p>(a) Stable but not accurate. Aging accumulates
+      $\epsilon \approx 1\times10^{-10} \times 365 \approx 4\times10^{-8}$ —
+      a tight cluster of width $\sim 10^{-12}$ sitting four-plus orders of
+      magnitude off-center. Its ADEV is superb and says nothing about the
+      offset.</p>
+      <p>(b) To stable <em>and</em> accurate. Setting
+      $1.7\times10^{-8}/\tau = 1\times10^{-12}$ gives
+      $\tau \approx 1.7\times10^4$ s $\approx 5$ h: below this the quartz is
+      quieter than the GPS jitter, so the loop must leave it alone (time
+      constant of hours or slower); beyond it, averaged GPS is better, so the
+      loop should steer. (If the aging is left in, the quartz curve rises as
+      $D\tau/\sqrt2$ past $\tau \approx \sqrt2\,\sigma_{\rm floor}/D \approx
+      20$ min, with $D = 1.2\times10^{-15}\,\mathrm{s^{-1}}$, and meets the
+      GPS line earlier, at $\tau = \sqrt{\sqrt2 \times 1.7\times10^{-8}/D}
+      \approx 4.6\times10^3$ s $\approx$ 1.3 h — either way, "hours".) The
+      disciplined output is quartz-stable at short $\tau$ and GPS-accurate at
+      long $\tau$: the same best-of-both-references logic as the locked loops
+      of chapter 10.</p>
+    </details>
+  </div>
+
+  <nav class="pager">
+    <a class="prev" href="06-oscillator-noise.html"><span class="dir">Prev · Chapter 6</span>
+      Noisy oscillators: amplitude, phase &amp; frequency noise</a>
+    <a class="next" href="08-sensitivity.html"><span class="dir">Next · Chapter 8</span>
+      Sensitivity: what Hz/&radic;Hz means</a>
+  </nav>
+</main>
+
+<script src="../js/lib/fft.js"></script>
+<script src="../js/lib/noise.js"></script>
+<script src="../js/lib/allan.js"></script>
+<script src="../js/lib/plot.js"></script>
+<script src="../js/lib/ui.js"></script>
+<script>
+'use strict';
+
+/* ---------- demo 0: the dartboard — accuracy vs stability ---------- */
+(function () {
+  const canvas = document.getElementById('dart-canvas');
+  const plot = new Plot('#plot-dart', {
+    xlabel: 'time (s)', ylabel: 'measured frequency offset', height: 280,
+    xlim: [0, 400], ylim: [-11, 11], xunit: 's'
+  });
+  const ctl = '#ctl-dart';
+  const N = 400, ND = 50, B = N / ND;   // record length, darts, gate size
+
+  const epsS = UI.slider(ctl, { label: 'bias ε (accuracy)', min: -3, max: 3,
+    step: 0.05, value: 1.5, fmt: v => v.toFixed(2), onInput: draw });
+  const sigS = UI.slider(ctl, { label: 'instability σ (stability)',
+    min: 0.05, max: 2, log: true, value: 0.4, fmt: v => v.toFixed(2),
+    onInput: draw });
+  const kindS = UI.select(ctl, { label: 'character of y(t)', options: [
+    { value: 'white', label: 'white' },
+    { value: 'rw', label: 'random walk' },
+    { value: 'drift', label: 'drift' }
+  ], value: 'white', onChange: draw });
+  let seed = 21;
+  UI.button(ctl, { label: 'new sample ↻', onClick: () => { seed += 3; regen(); } });
+  function preset(e, s) { epsS.value = e; sigS.value = s; draw(); }
+  UI.button(ctl, { label: 'stable, not accurate', onClick: () => preset(2, 0.12) });
+  UI.button(ctl, { label: 'neither', onClick: () => preset(2, 1.2) });
+  UI.button(ctl, { label: 'accurate on average, not stable', onClick: () => preset(0, 1.2) });
+  UI.button(ctl, { label: 'stable and accurate', onClick: () => preset(0, 0.12) });
+
+  const t = Noise.linspace(0, N - 1, N);
+
+  // unit-scale building blocks, regenerated only on reseed
+  let wRec, walkA, walkB, dwx, dwy;
+  function normWalk(rand) {              // random walk, mean 0, unit std
+    const w = Noise.randomWalk(N, rand);
+    const m = Noise.mean(w), sd = Noise.std(w) || 1;
+    return w.map(v => (v - m) / sd);
+  }
+  function regen() {
+    const rand = Noise.rng(seed);
+    wRec = Noise.white(N, rand);
+    walkA = normWalk(rand);
+    walkB = normWalk(rand);              // independent walk for the dart y's
+    dwx = Noise.white(ND, rand);
+    dwy = Noise.white(ND, rand);
+    draw();
+  }
+
+  canvas.style.height = '280px';   // CSS-pin so backing-store size never feeds back
+  function drawBoard(dx, dy) {
+    const dpr = window.devicePixelRatio || 1;
+    const W = canvas.clientWidth || 300, H = 280;
+    const bw = Math.round(W * dpr), bh = Math.round(H * dpr);
+    if (canvas.width !== bw || canvas.height !== bh) {
+      canvas.width = bw; canvas.height = bh;
+    }
+    const ctx = canvas.getContext('2d');
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    const dark = matchMedia('(prefers-color-scheme: dark)').matches;
+    const surface = dark ? '#1a1a19' : '#fcfcfb';
+    const grid = dark ? '#2c2c2a' : '#e1e0d9';
+    const muted = '#898781';
+    const accent = dark ? '#3987e5' : '#2a78d6';
+    ctx.fillStyle = surface;
+    ctx.fillRect(0, 0, W, H);
+    const cx = W / 2, cy = H / 2, R = Math.min(W, H) / 2 - 24;
+    const scale = R / 3.2;               // rings at 1, 2, 3 "units" of offset
+    // cross hairs + rings
+    ctx.strokeStyle = grid;
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(cx - R, cy); ctx.lineTo(cx + R, cy);
+    ctx.moveTo(cx, cy - R); ctx.lineTo(cx, cy + R);
+    ctx.stroke();
+    for (const r of [1, 2, 3]) {
+      ctx.beginPath();
+      ctx.arc(cx, cy, r * scale, 0, 2 * Math.PI);
+      ctx.stroke();
+    }
+    // bull's-eye = the true frequency
+    ctx.fillStyle = muted;
+    ctx.beginPath();
+    ctx.arc(cx, cy, 2.5, 0, 2 * Math.PI);
+    ctx.fill();
+    ctx.font = '11px system-ui, sans-serif';
+    ctx.textAlign = 'left'; ctx.textBaseline = 'bottom';
+    ctx.fillText('bull’s-eye = true ν₀', 8, H - 8);
+    ctx.textAlign = 'right';
+    ctx.fillText('bias ε →', W - 8, H - 8);
+    // darts
+    ctx.fillStyle = accent;
+    ctx.strokeStyle = surface;
+    ctx.lineWidth = 2;
+    for (let j = 0; j < dx.length; j++) {
+      ctx.beginPath();
+      ctx.arc(cx + dx[j] * scale, cy - dy[j] * scale, 4, 0, 2 * Math.PI);
+      ctx.fill();
+      ctx.stroke();
+    }
+  }
+
+  function draw() {
+    const eps = epsS.value, sig = sigS.value, kind = kindS.value;
+    // fluctuation record at unit scale (mean 0, RMS 1), then eps + sig*y
+    const y = new Float64Array(N);
+    for (let i = 0; i < N; i++) {
+      y[i] = kind === 'white' ? wRec[i]
+           : kind === 'rw' ? walkA[i]
+           : Math.sqrt(3) * (2 * i / (N - 1) - 1);   // centered ramp, unit RMS
+    }
+    const yM = y.map(v => eps + sig * v);
+
+    // darts: fresh sigma-sized throws for white; gate averages of the record
+    // for the wandering types, so the cluster smears/creeps with the trace
+    const dx = new Float64Array(ND), dy = new Float64Array(ND);
+    if (kind === 'white') {
+      for (let j = 0; j < ND; j++) {
+        dx[j] = eps + sig * dwx[j];
+        dy[j] = sig * dwy[j];
+      }
+    } else {
+      for (let j = 0; j < ND; j++) {
+        let sx = 0, sy = 0;
+        for (let i = 0; i < B; i++) {
+          sx += yM[j * B + i];
+          if (kind === 'rw') sy += walkB[j * B + i];
+        }
+        dx[j] = sx / B;                  // includes eps already
+        dy[j] = sig * sy / B;            // 0 for drift: a deterministic trail
+      }
+    }
+    drawBoard(dx, dy);
+
+    plot.clear();
+    plot.line([0, N - 1], [0, 0], { label: 'true frequency',
+      color: '#898781', width: 1, dash: [6, 5] });
+    plot.line([0, N - 1], [eps, eps], { label: "this clock's average",
+      color: '#898781', width: 1, dash: [2, 3] });
+    plot.line(t, yM, { label: 'measured record', width: 1.2 });
+    plot.draw();
+  }
+  regen();
+})();
+
+/* ---------- demo 1: the sample variance never converges ---------- */
+(function () {
+  const pT = new Plot('#plot-var-t', {
+    xlabel: 'sample index', ylabel: 'y(t), offset for clarity', height: 300,
+    xlim: [0, 16384], ylim: [-10.5, 10.5]
+  });
+  const plot = new Plot('#plot-var', {
+    xlabel: 'number of samples N', ylabel: 'sample std dev of first N points',
+    height: 300, xlog: true, ylog: true, xlim: [8, 16384]
+  });
+  const ctl = '#ctl-var';
+  let seed = 11;
+  UI.button(ctl, { label: 'new sample ↻', onClick: () => { seed += 3; draw(); } });
+
+  const N = 16384;
+  // log-spaced checkpoints where we evaluate the running std
+  const checkpoints = [];
+  for (let s = 0; s <= 120; s++) {
+    const n = Math.round(Math.pow(10, Math.log10(8) +
+      (s / 120) * (Math.log10(N) - Math.log10(8))));
+    if (checkpoints.length === 0 || n > checkpoints[checkpoints.length - 1]) {
+      checkpoints.push(n);
+    }
+  }
+
+  function runningStd(y) {
+    const ns = [], sd = [];
+    let s1 = 0, s2 = 0, ci = 0;
+    for (let i = 0; i < N; i++) {
+      s1 += y[i]; s2 += y[i] * y[i];
+      if (ci < checkpoints.length && i + 1 === checkpoints[ci]) {
+        const n = i + 1;
+        const v = s2 / n - (s1 / n) * (s1 / n);
+        ns.push(n); sd.push(Math.sqrt(Math.max(v, 0)));
+        ci++;
+      }
+    }
+    return { ns, sd };
+  }
+
+  function draw() {
+    const rand = Noise.rng(seed);
+    // each record normalized to unit RMS over the full record, so all
+    // three share one trace axis and the std curves meet near 1
+    const norm = (x) => {
+      const s = Noise.std(x) || 1;
+      for (let i = 0; i < x.length; i++) x[i] /= s;
+      return x;
+    };
+    const white = norm(Noise.white(N, rand));
+    const flick = norm(Noise.powerLaw(N, 1, rand));
+    const rw = norm(Noise.randomWalk(N, rand));
+    const a = runningStd(white), b = runningStd(flick), c = runningStd(rw);
+
+    // the records themselves, decimated 16x, offset vertically
+    const step = 16, nPl = N / step, tt = new Float64Array(nPl);
+    for (let i = 0; i < nPl; i++) tt[i] = i * step;
+    const dec = (x, off) => {
+      const y = new Float64Array(nPl);
+      for (let i = 0; i < nPl; i++) y[i] = x[i * step] + off;
+      return y;
+    };
+    pT.clear();
+    pT.line(tt, dec(white, 6.5), { label: 'white FM' });
+    pT.line(tt, dec(flick, 0), { label: 'flicker FM' });
+    pT.line(tt, dec(rw, -6.5), { label: 'random-walk FM' });
+    pT.draw();
+
+    // sqrt(N) guide anchored to the random-walk end point
+    const g = c.ns.map(n => c.sd[c.sd.length - 1] * Math.sqrt(n / N));
+
+    plot.clear();
+    plot.line(c.ns, g, { label: '∝ √N', color: '#898781', width: 1, dash: [5, 4] });
+    plot.line(a.ns, a.sd, { label: 'white FM' });
+    plot.line(b.ns, b.sd, { label: 'flicker FM' });
+    plot.line(c.ns, c.sd, { label: 'random-walk FM' });
+    plot.draw();
+  }
+  draw();
+})();
+
+/* ---------- demo 2: gates and adjacent differences ---------- */
+(function () {
+  const plot = new Plot('#plot-gates', {
+    xlabel: 'time (s)', ylabel: 'fractional frequency y', height: 300,
+    xlim: [0, 600], ylim: [-4, 4], xunit: 's'
+  });
+  const ctl = '#ctl-gates';
+  const N = 600, tau0 = 1;
+  const mS = UI.slider(ctl, { label: 'gate length τ', min: 5, max: 100, step: 5,
+    value: 20, unit: 's', fmt: v => v.toFixed(0), onInput: draw });
+  let seed = 4;
+  UI.button(ctl, { label: 'new sample ↻', onClick: () => { seed += 3; regen(); } });
+  const measured = UI.readout(ctl, { label: 'measured σ_y(τ)' });
+  const expected = UI.readout(ctl, { label: 'white FM predicts σ/√(τ/τ₀)' });
+
+  let y, t;
+  function regen() {
+    const rand = Noise.rng(seed);
+    y = Noise.white(N, rand);          // white FM, sigma = 1, tau0 = 1 s
+    t = Noise.linspace(0, N - 1, N);
+    draw();
+  }
+
+  function draw() {
+    const m = Math.round(mS.value);
+    const K = Math.floor(N / m);       // number of gates
+    // gate averages
+    const ybar = new Float64Array(K);
+    for (let k = 0; k < K; k++) {
+      let s = 0;
+      for (let i = 0; i < m; i++) s += y[k * m + i];
+      ybar[k] = s / m;
+    }
+    // staircase for plotting
+    const sx = [], sy = [];
+    for (let k = 0; k < K; k++) {
+      sx.push(k * m, (k + 1) * m);
+      sy.push(ybar[k], ybar[k]);
+    }
+    // two-sample deviation from adjacent gate differences
+    let sum = 0;
+    for (let k = 0; k + 1 < K; k++) {
+      const d = ybar[k + 1] - ybar[k];
+      sum += d * d;
+    }
+    const sig = Math.sqrt(sum / (2 * (K - 1)));
+
+    plot.clear();
+    plot.line(t, y, { label: 'y(t), τ₀ = 1 s', color: '#898781', width: 1 });
+    plot.line(sx, sy, { label: 'gate averages ȳₖ', width: 2.5 });
+    plot.draw();
+    measured.set(sig.toFixed(3));
+    expected.set((1 / Math.sqrt(m)).toFixed(3));
+  }
+  regen();
+})();
+
+/* ---------- demo 3: the headline sigma_y(tau) fingerprint ---------- */
+(function () {
+  const pY = new Plot('#plot-finger-y', {
+    xlabel: 'time (s)', ylabel: 'y(t), 64 s averages', height: 340,
+    xunit: 's', hover: false
+  });
+  const pA = new Plot('#plot-finger-adev', {
+    xlabel: 'averaging time τ (s)', ylabel: 'Allan deviation σ_y(τ)',
+    height: 340, xlog: true, ylog: true,
+    xlim: [1, 16384], ylim: [1e-9, 3e-4], xunit: 's'
+  });
+  const ctl = '#ctl-finger';
+  const N = 65536, tau0 = 1;
+
+  const sxPM = UI.slider(ctl, { label: 'white PM level σₓ', min: 1e-8,
+    max: 1e-4, log: true, value: 1.2e-5, unit: 's', onInput: draw });
+  const h0S = UI.slider(ctl, { label: 'white FM level h₀', min: 1e-12,
+    max: 1e-8, log: true, value: 2e-10, unit: 'Hz⁻¹', onInput: draw });
+  const flS = UI.slider(ctl, { label: 'flicker FM level (≈ floor)', min: 1e-8,
+    max: 1e-4, log: true, value: 5e-7, onInput: draw });
+  const rwS = UI.slider(ctl, { label: 'random-walk FM level (per step)',
+    min: 1e-10, max: 1e-6, log: true, value: 1e-8, onInput: draw });
+  const dS = UI.slider(ctl, { label: 'linear drift D', min: 1e-8, max: 1e-3,
+    log: true, value: 1e-8, unit: '/day', onInput: draw });
+  let seed = 7;
+  UI.button(ctl, { label: 'new sample ↻', onClick: () => { seed += 3; regen(); } });
+
+  // unit-level building blocks, regenerated only on reseed
+  let wPM, wFM, flick, rw;
+  // scale factor so that the flicker slider value is (approximately) the
+  // ADEV floor: unit-RMS flicker over N samples has h-1 ≈ 1/ln(N/2), and
+  // floor = sqrt(2 ln2 h-1)  =>  multiply by sqrt(ln(N/2) / (2 ln 2)).
+  const kFlick = Math.sqrt(Math.log(N / 2) / (2 * Math.LN2));
+
+  function regen() {
+    const rand = Noise.rng(seed);
+    wPM = Noise.white(N + 1, rand);      // phase-time white noise (needs N+1)
+    wFM = Noise.white(N, rand);
+    flick = Noise.powerLaw(N, 1, rand);  // unit RMS
+    rw = Noise.randomWalk(N, rand);      // cumsum of unit white
+    draw();
+  }
+
+  function draw() {
+    const sx = sxPM.value;                       // white PM: x std in s
+    const sWFM = Math.sqrt(h0S.value / (2 * tau0));
+    const sFl = kFlick * flS.value;
+    const sRW = rwS.value;
+    const Ds = dS.value / 86400;                 // drift per second
+
+    const y = new Float64Array(N);
+    for (let i = 0; i < N; i++) {
+      y[i] = sx * (wPM[i + 1] - wPM[i]) / tau0   // white PM (differenced x)
+           + sWFM * wFM[i]                       // white FM
+           + sFl * flick[i]                      // flicker FM
+           + sRW * rw[i]                         // random-walk FM
+           + Ds * (i - N / 2) * tau0;            // linear drift (centered)
+    }
+
+    // left panel: 64-sample block averages
+    const B = 64, M = N / B;
+    const tb = new Float64Array(M), yb = new Float64Array(M);
+    for (let k = 0; k < M; k++) {
+      let s = 0;
+      for (let i = 0; i < B; i++) s += y[k * B + i];
+      tb[k] = (k + 0.5) * B * tau0;
+      yb[k] = s / B;
+    }
+    pY.clear();
+    pY.line(tb, yb, { width: 1.2 });
+    pY.draw();
+
+    // right panel: measured overlapping ADEV + per-component theory
+    const r = Allan.adev(y, tau0, { pointsPerDecade: 6 });
+    const ng = 40;
+    const tg = new Float64Array(ng);
+    for (let i = 0; i < ng; i++) {
+      tg[i] = Math.pow(10, (i / (ng - 1)) * Math.log10(16384));
+    }
+    const gPM = tg.map(t => Math.sqrt(3) * sx / t);
+    const gFM = tg.map(t => Math.sqrt(h0S.value / (2 * t)));
+    const gFl = tg.map(() => flS.value);
+    const gRW = tg.map(t => sRW * Math.sqrt(t / (3 * tau0)));
+    const gD  = tg.map(t => Ds * t / Math.SQRT2);
+
+    pA.clear();
+    pA.line(tg, gPM, { label: 'PM', width: 1, dash: [5, 4] });
+    pA.line(tg, gFM, { label: 'WFM', width: 1, dash: [5, 4] });
+    pA.line(tg, gFl, { label: 'FFM', width: 1, dash: [5, 4] });
+    pA.line(tg, gRW, { label: 'RW', width: 1, dash: [5, 4] });
+    pA.line(tg, gD,  { label: 'drift', width: 1, dash: [5, 4] });
+    pA.line(r.tau, r.adev, { label: 'ADEV', color: '#2a78d6', width: 2.5 });
+    pA.draw();
+  }
+  regen();
+})();
+
+/* ---------- demo 4: the optical-clock model curve ---------- */
+(function () {
+  const plot = new Plot('#plot-clock', {
+    xlabel: 'averaging time τ (s)', ylabel: 'σ_y(τ)', height: 320,
+    xlog: true, ylog: true, xlim: [1, 1e7], ylim: [3e-19, 1e-14], xunit: 's'
+  });
+  const ctl = '#ctl-clock';
+  const aS = UI.slider(ctl, { label: 'σ_y(1 s) white FM prefactor a',
+    min: 3e-17, max: 3e-15, log: true, value: 3e-16, onInput: draw });
+  const fS = UI.slider(ctl, { label: 'flicker floor', min: 1e-19, max: 1e-17,
+    log: true, value: 8e-19, onInput: draw });
+  const knee = UI.readout(ctl, { label: 'floor takes over at τ ≈ (a/floor)²' });
+  const reach = UI.readout(ctl, { label: 'τ to reach 1×10⁻¹⁸' });
+
+  function fmtTime(s) {
+    if (!isFinite(s)) return 'never';
+    if (s < 120) return s.toPrecision(2) + ' s';
+    if (s < 7200) return (s / 60).toPrecision(2) + ' min';
+    if (s < 2 * 86400) return (s / 3600).toPrecision(2) + ' h';
+    if (s < 700 * 86400) return (s / 86400).toPrecision(2) + ' days';
+    return (s / 86400 / 365).toPrecision(2) + ' years';
+  }
+
+  const nf = 300;
+  const tau = new Float64Array(nf);
+  for (let i = 0; i < nf; i++) tau[i] = Math.pow(10, (i / (nf - 1)) * 7);
+
+  function draw() {
+    const a = aS.value, fl = fS.value;
+    const model = tau.map(t => Math.sqrt(a * a / t + fl * fl));
+    plot.clear();
+    plot.line(tau, tau.map(t => a / Math.sqrt(t)),
+      { label: 'a/√τ (white FM alone)', color: '#898781', width: 1, dash: [5, 4] });
+    plot.line(tau, tau.map(() => fl),
+      { label: 'flicker floor', color: '#898781', width: 1, dash: [2, 3] });
+    plot.line(tau, model, { label: 'model σ_y(τ)', width: 2.5 });
+    plot.draw();
+
+    const tKnee = (a / fl) * (a / fl);
+    knee.set(Plot.fmtNum(tKnee, 2) + ' s ≈ ' + fmtTime(tKnee));
+    const target = 1e-18;
+    if (fl >= target) {
+      reach.set('never — the floor is above 1×10⁻¹⁸');
+    } else {
+      const tR = a * a / (target * target - fl * fl);
+      reach.set(Plot.fmtNum(tR, 2) + ' s ≈ ' + fmtTime(tR));
+    }
+  }
+  draw();
+})();
+
+/* ---------- demo 5: S_y, the bandpass weight, and the ADEV together ----- */
+(function () {
+  const pF = new Plot('#plot-xfer', {
+    xlabel: 'Fourier frequency f (Hz)',
+    ylabel: 'S_y, integrand (1/Hz); |H|² (unitless)', height: 300,
+    xlog: true, ylog: true, xlim: [1e-3, 0.6], ylim: [1e-5, 1e3], xunit: 'Hz'
+  });
+  const pA = new Plot('#plot-xfer-adev', {
+    xlabel: 'gate time τ (s)', ylabel: 'σ_y(τ)', height: 300,
+    xlog: true, ylog: true, xlim: [1, 100], ylim: [0.02, 2], xunit: 's'
+  });
+  const ctl = '#ctl-xfer';
+  const sel = UI.select(ctl, { label: 'noise', options: [
+    { value: 'wfm', label: 'white FM' },
+    { value: 'ffm', label: 'flicker FM' },
+    { value: 'rwfm', label: 'random-walk FM' },
+    { value: 'mix', label: 'all three mixed' }], value: 'mix',
+    onChange: () => { adev = adevCurve(); draw(); } });
+  const tS = UI.slider(ctl, { label: 'gate time τ', min: 1, max: 100,
+    log: true, value: 10, unit: 's', fmt: v => v.toPrecision(3), onInput: draw });
+
+  // S_y levels chosen so all three ADEVs land in one decade of the plot
+  const H0 = 1, HM1 = 0.05, HM2 = 2.5e-4;
+  function Sy(fi) {
+    const t = sel.value;
+    let s = 0;
+    if (t === 'wfm' || t === 'mix') s += H0;
+    if (t === 'ffm' || t === 'mix') s += HM1 / fi;
+    if (t === 'rwfm' || t === 'mix') s += HM2 / (fi * fi);
+    return s;
+  }
+  function H2(tau, fi) {
+    const u = Math.PI * tau * fi;
+    const s = Math.sin(u);
+    return 2 * s * s * s * s / (u * u);
+  }
+
+  // display grid (the plotted band) and a wider grid for honest integrals
+  const nf = 1600, f = new Float64Array(nf);
+  for (let i = 0; i < nf; i++) {
+    f[i] = Math.pow(10, -3 + (i / (nf - 1)) * (Math.log10(0.6) + 3));
+  }
+  const ni = 4096, fi = new Float64Array(ni);
+  for (let i = 0; i < ni; i++) {
+    fi[i] = Math.pow(10, -5 + (i / (ni - 1)) * (Math.log10(50) + 5));
+  }
+  function sigma(tau) {                 // sqrt of ∫ S_y |H_τ|² df
+    let acc = 0;
+    let g0 = Sy(fi[0]) * H2(tau, fi[0]);
+    for (let i = 1; i < ni; i++) {
+      const g1 = Sy(fi[i]) * H2(tau, fi[i]);
+      acc += 0.5 * (g0 + g1) * (fi[i] - fi[i - 1]);
+      g0 = g1;
+    }
+    return Math.sqrt(acc);
+  }
+  function adevCurve() {
+    const ts = [], sd = [];
+    for (let k = 0; k <= 48; k++) {
+      const t = Math.pow(10, (k / 48) * 2);   // τ from 1 to 100 s
+      ts.push(t); sd.push(sigma(t));
+    }
+    return { ts, sd };
+  }
+  let adev = adevCurve();
+
+  function draw() {
+    const tau = tS.value;
+    const sy = f.map(Sy);
+    const h2 = f.map(v => H2(tau, v));
+    const integrand = sy.map((s, i) => s * h2[i]);
+
+    pF.clear();
+    pF.line(f, sy, { label: 'S_y(f)' });
+    pF.line(f, h2, { label: '|H_τ(f)|² (peak ≈ 1)', color: '#898781',
+      width: 1.2 });
+    pF.line(f, integrand, { label: 'S_y·|H_τ|² — area = σ_y²(τ)',
+      color: '#eda100', fill: true });
+    pF.guideX(0.37 / tau, { label: 'f ≈ 0.37/τ', dash: [4, 4] });
+    pF.draw();
+
+    pA.clear();
+    pA.line(adev.ts, adev.sd, { label: 'σ_y(τ) = √∫ S_y|H_τ|² df' });
+    pA.points([tau], [sigma(tau)], { label: 'your τ (the shaded area)',
+      color: '#eda100', r: 5 });
+    pA.draw();
+  }
+  draw();
+})();
+</script>
+</body>
+</html>

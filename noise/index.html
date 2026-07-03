@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Making Sense of Noise — a crash course for physicists</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<nav class="site-nav">
+  <div class="nav-inner">
+    <a class="home" href="index.html">Making Sense of Noise</a>
+    <div class="chapters">
+      <a href="chapters/01-pure-tone.html" title="The pure tone">1</a>
+      <a href="chapters/02-modulation.html" title="Modulation">2</a>
+      <a href="chapters/03-random-processes.html" title="Random processes">3</a>
+      <a href="chapters/04-psd.html" title="Power spectral density">4</a>
+      <a href="chapters/05-noise-colors.html" title="Colors of noise">5</a>
+      <a href="chapters/06-oscillator-noise.html" title="Amplitude, phase & frequency noise">6</a>
+      <a href="chapters/07-allan.html" title="Allan deviation">7</a>
+      <a href="chapters/08-sensitivity.html" title="Sensitivity">8</a>
+      <a href="chapters/09-ligo.html" title="LIGO case study">9</a>
+      <a href="chapters/10-pll.html" title="Phase-locked loops">10</a>
+    </div>
+  </div>
+</nav>
+
+<main>
+  <div class="hero">
+    <p class="chapter-kicker">An interactive crash course for physicists</p>
+    <h1>Making Sense of Noise</h1>
+    <p class="lede">
+      Power spectral densities, phase noise, Allan deviations, sensitivity in
+      Hz/&#8730;Hz — the working language of every precision-measurement lab,
+      and one of the most weirdly hard-to-learn corners of experimental physics.
+      This course builds it from first principles: sines and cosines first,
+      then modulation, then randomness, with live plots you can twiddle at
+      every step.
+    </p>
+  </div>
+
+  <p>
+    Written for the smart experimental physicist who has stared at a spectrum
+    analyzer, quoted a sensitivity, or read an Allan-deviation plot — and
+    quietly felt that the underlying mathematics was a bit mysterious. No
+    measure theory, no formal stochastic calculus. Every idea is introduced
+    with a picture you can manipulate, every formula is checked against a
+    simulation you can read the code of, and every chapter ends with
+    exercises (with hidden solutions).
+  </p>
+
+  <div class="callout">
+    <div class="callout-title">How to read this</div>
+    Each chapter is self-contained but they build on each other; if you are new
+    to the subject, go in order. The demos are the point — <strong>drag every
+    slider</strong> and watch what moves. Hover over any plot to read off
+    values. All simulations run live in your browser; the code snippets shown
+    are essentially the code that generates the plots.
+  </div>
+
+  <ol class="toc">
+    <li><a href="chapters/01-pure-tone.html">
+      <span class="toc-num">CHAPTER 1</span>
+      <span class="toc-title">The pure tone</span>
+      <span class="toc-desc">Amplitude, frequency, phase. Phasors, the
+      rotating-arrow picture, and what an ideal oscillator looks like in the
+      time and frequency domains.</span>
+    </a></li>
+    <li><a href="chapters/02-modulation.html">
+      <span class="toc-num">CHAPTER 2</span>
+      <span class="toc-title">Wiggling the knobs: modulation</span>
+      <span class="toc-desc">Amplitude, phase and frequency modulation.
+      Sidebands, the small-modulation limit, and why AM and PM look different
+      on a spectrum analyzer.</span>
+    </a></li>
+    <li><a href="chapters/03-random-processes.html">
+      <span class="toc-num">CHAPTER 3</span>
+      <span class="toc-title">From signals to noise: random processes</span>
+      <span class="toc-desc">Ensembles, averages, correlation functions.
+      Stationarity and drift — and why "the variance" is sometimes not even
+      defined.</span>
+    </a></li>
+    <li><a href="chapters/04-psd.html">
+      <span class="toc-num">CHAPTER 4</span>
+      <span class="toc-title">The power spectral density</span>
+      <span class="toc-desc">The single most important tool in the book.
+      Where PSDs come from, their units, one-sided vs two-sided, and how the
+      area under the curve is the RMS noise you measure.</span>
+    </a></li>
+    <li><a href="chapters/05-noise-colors.html">
+      <span class="toc-num">CHAPTER 5</span>
+      <span class="toc-title">The colors of noise</span>
+      <span class="toc-desc">White, flicker (1/f), random walk (1/f²).
+      A live noise machine: turn the spectral-slope knob and watch the time
+      trace change character.</span>
+    </a></li>
+    <li><a href="chapters/06-oscillator-noise.html">
+      <span class="toc-num">CHAPTER 6</span>
+      <span class="toc-title">Noisy oscillators: amplitude, phase & frequency noise</span>
+      <span class="toc-desc">S<sub>a</sub>(f), S<sub>&#966;</sub>(f),
+      S<sub>&#957;</sub>(f), ℒ(f) in dBc/Hz — how they relate, how to convert,
+      and what each looks like on a spectrum analyzer.</span>
+    </a></li>
+    <li><a href="chapters/07-allan.html">
+      <span class="toc-num">CHAPTER 7</span>
+      <span class="toc-title">Allan deviation and clock stability</span>
+      <span class="toc-desc">Why the ordinary variance fails for clocks, the
+      two-sample fix, and reading the &#963;<sub>y</sub>(&#964;) slopes:
+      &#964;<sup>&#8722;1/2</sup>, flicker floor, random-walk rise, drift.</span>
+    </a></li>
+    <li><a href="chapters/08-sensitivity.html">
+      <span class="toc-num">CHAPTER 8</span>
+      <span class="toc-title">Sensitivity: what Hz/&#8730;Hz means</span>
+      <span class="toc-desc">Noise floors, integration time, and
+      signal-to-noise. Why sensor sensitivities carry that strange
+      per-root-hertz unit, with a magnetometer worked end to end.</span>
+    </a></li>
+    <li><a href="chapters/09-ligo.html">
+      <span class="toc-num">CHAPTER 9</span>
+      <span class="toc-title">Case study: LIGO and noise budgets</span>
+      <span class="toc-desc">Strain sensitivity curves, transfer functions,
+      control loops, and how a real experiment stacks its noise sources into
+      one plot.</span>
+    </a></li>
+    <li><a href="chapters/10-pll.html">
+      <span class="toc-num">CHAPTER 10</span>
+      <span class="toc-title">Case study: phase-locked loops</span>
+      <span class="toc-desc">How a loop steals the best of two oscillators:
+      block diagrams you can click, noise shaping by loop bandwidth,
+      synthesizers and the 20&nbsp;log&nbsp;N tax — and why an atomic clock
+      is a lock loop with atoms as the reference.</span>
+    </a></li>
+  </ol>
+
+  <h2>What you will be able to do afterwards</h2>
+  <ul>
+    <li>Read a power spectral density plot and know, at a glance, where the
+      RMS noise actually lives.</li>
+    <li>Convert between S<sub>&#966;</sub>(f), S<sub>&#957;</sub>(f),
+      ℒ(f) in dBc/Hz, and fractional-frequency PSDs without looking anything
+      up.</li>
+    <li>Read a lock-loop block diagram — a synthesizer, a laser lock, an
+      atomic clock — component by component, and predict how the loop
+      reshapes each noise source.</li>
+    <li>Look at an Allan-deviation plot of a clock and identify white
+      frequency noise, the flicker floor, random walk and drift from the
+      slopes alone.</li>
+    <li>Say precisely what a sensitivity of, e.g., 5&nbsp;pT/&#8730;Hz or
+      1&nbsp;Hz/&#8730;Hz means, and predict how measurement uncertainty
+      improves (or stops improving) with integration time.</li>
+    <li>Understand a LIGO-style sensitivity curve and a noise budget.</li>
+  </ul>
+
+  <div class="callout lab">
+    <div class="callout-title">Lab note</div>
+    Everything here runs offline from local files, except the equation
+    rendering (KaTeX) which loads from a CDN the first time.
+  </div>
+
+  <h2>References &amp; further reading</h2>
+  <p>
+    The course follows the spirit (and often the examples) of a handful of
+    sources, roughly one per layer of the subject:
+  </p>
+  <ul>
+    <li>W. P. Robins, <em>Phase Noise in Signal Sources: Theory and
+      Applications</em>, Peter Peregrinus / IET (1982) — the most
+      first-principles treatment in print: sines, modulation and thermal
+      noise first, then oscillators, multiplier chains, phase-locked loops
+      and spurs. Chapters 2, 5–8 shaped chapters 2, 6 and 10 here.</li>
+    <li>K. Jacobs, <em>Stochastic Processes for Physicists: Understanding
+      Noisy Systems</em>, Cambridge University Press (2010) — the gentlest
+      route into the trajectory-level view (Wiener increments, SDEs,
+      Ornstein–Uhlenbeck, jump/telegraph processes) behind chapters 3
+      and 5, and how to simulate noisy systems correctly.</li>
+    <li>E. Rubiola, <em>Phase Noise and Frequency Stability in
+      Oscillators</em>, Cambridge University Press (2009) — the modern
+      standard on ℒ(f), S<sub>&#966;</sub> and oscillator noise
+      mechanisms.</li>
+    <li>W. J. Riley, <em>Handbook of Frequency Stability Analysis</em>,
+      NIST Special Publication 1065 (2008) — everything Allan-family, free
+      from <a href="https://tf.nist.gov/general/pdf/2220.pdf">tf.nist.gov</a>.</li>
+    <li>D. W. Allan, "Statistics of atomic frequency standards",
+      <em>Proc. IEEE</em> <strong>54</strong>, 221 (1966), and J. Rutman,
+      "Characterization of phase and frequency instabilities in precision
+      frequency sources", <em>Proc. IEEE</em> <strong>66</strong>, 1048
+      (1978) — the original and the classic review.</li>
+    <li>LIGO–Virgo Collaboration, "A guide to LIGO–Virgo detector noise and
+      extraction of transient gravitational-wave signals",
+      <em>Class. Quantum Grav.</em> <strong>37</strong>, 055002 (2020),
+      <a href="https://arxiv.org/abs/1908.11170">arXiv:1908.11170</a> —
+      chapter 9's noise budgets, from the source.</li>
+    <li>G. Heinzel, A. Rüdiger and R. Schilling, "Spectrum and spectral
+      density estimation by the discrete Fourier transform (DFT), including
+      a comprehensive list of window functions" (2002) — the free classic on
+      PSD estimation practicalities (windows, ENBW, normalization).</li>
+    <li>J. Vig, "Quartz crystal resonators and oscillators" tutorial —
+      source of chapter 7's accuracy-versus-stability picture.</li>
+  </ul>
+</main>
+
+<footer class="colophon">
+  Built as an experiment in interactive explanation. All simulations run
+  client-side; view source to see exactly what each plot computes.
+</footer>
+
+</body>
+</html>

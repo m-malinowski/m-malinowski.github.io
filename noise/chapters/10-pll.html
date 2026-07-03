@@ -1,0 +1,1109 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>10 · Case study: phase-locked loops — Making Sense of Noise</title>
+<link rel="stylesheet" href="../css/style.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"
+  onload="renderMathInElement(document.body, {delimiters:[
+    {left:'$$', right:'$$', display:true},
+    {left:'$', right:'$', display:false}]});"></script>
+<style>
+.blockdiag { width: 100%; height: auto; display: block; margin: 0.4rem 0 0.9rem;
+  font-family: var(--sans); }
+.blockdiag .wire { stroke: var(--ink-2); stroke-width: 1.3; fill: none; }
+.blockdiag .wire.dash { stroke-dasharray: 5 4; stroke-width: 1.1; }
+.blockdiag .arrowhead { fill: var(--ink-2); }
+.blockdiag .lbl { fill: var(--ink-2); font-size: 12px; }
+.blockdiag .sub { fill: var(--muted); font-size: 11px; }
+.blockdiag .node { fill: var(--ink-2); }
+.blockdiag .rescurve { stroke: var(--accent-2); stroke-width: 1.8; fill: none; }
+.blockdiag .blk { cursor: pointer; }
+.blockdiag .blk rect { fill: var(--surface); stroke: var(--axis);
+  stroke-width: 1.4; transition: stroke 0.12s; }
+.blockdiag .blk text { fill: var(--ink); font-size: 13.5px; }
+.blockdiag .blk .sub { fill: var(--muted); font-size: 11px; }
+.blockdiag .blk:hover rect { stroke: var(--ink-2); }
+.blockdiag .blk.sel rect { stroke: var(--accent); stroke-width: 2.6; }
+.blockdiag .blk:focus { outline: none; }
+.blockdiag .blk:focus-visible rect { stroke: var(--accent); stroke-dasharray: 3 3; }
+.diag-explain { display: grid; grid-template-columns: minmax(0, 1fr) 300px;
+  gap: 0 1.2rem; align-items: start; }
+@media (max-width: 720px) { .diag-explain { grid-template-columns: 1fr; } }
+.diag-title { font-family: var(--sans); font-weight: 600; font-size: 0.95rem;
+  margin: 0.2rem 0 0.4rem; }
+.diag-text p { margin: 0.3rem 0 0.6rem; font-size: 0.95rem; }
+</style>
+</head>
+<body>
+
+<nav class="site-nav">
+  <div class="nav-inner">
+    <a class="home" href="../index.html">Making Sense of Noise</a>
+    <div class="chapters">
+      <a href="01-pure-tone.html" title="The pure tone">1</a>
+      <a href="02-modulation.html" title="Modulation">2</a>
+      <a href="03-random-processes.html" title="Random processes">3</a>
+      <a href="04-psd.html" title="Power spectral density">4</a>
+      <a href="05-noise-colors.html" title="Colors of noise">5</a>
+      <a href="06-oscillator-noise.html" title="Amplitude, phase & frequency noise">6</a>
+      <a href="07-allan.html" title="Allan deviation">7</a>
+      <a href="08-sensitivity.html" title="Sensitivity">8</a>
+      <a href="09-ligo.html" title="LIGO case study">9</a>
+      <a href="10-pll.html" class="current" title="Phase-locked loops">10</a>
+    </div>
+  </div>
+</nav>
+
+<main>
+  <p class="chapter-kicker">Chapter 10</p>
+  <h1>Case study: phase-locked loops</h1>
+  <p class="lede">
+    Open any book on frequency standards and you meet the same figure: boxes
+    labeled <em>oscillator</em>, <em>multiplier</em>, <em>detector</em>,
+    arrows chasing each other in a ring. This chapter is about reading those
+    diagrams — what each box is <em>for</em>, and how the closed ring reshapes
+    every noise you met in chapters 1–9. The diagrams here are alive: click
+    the blocks.
+  </p>
+
+  <h2>Why lock anything?</h2>
+  <p>
+    Because no single oscillator has every virtue. A quartz crystal is
+    magnificently quiet close to the carrier but comes at one fixed, low
+    frequency — and multiplying it up to microwave frequencies multiplies its
+    phase noise too, ruining its floor far from the carrier. A microwave VCO
+    is tunable and clean far out, but its phase wanders badly close in. A
+    <strong>phase-locked loop</strong> welds the two into a single output that
+    follows the reference below a chosen <em>loop bandwidth</em> and the VCO
+    above it: each oscillator is trusted exactly where it is good. That one
+    sentence is the whole chapter; the demo in the
+    noise-shaping section below lets you find the best weld point yourself.
+  </p>
+
+  <h2>Anatomy of a phase-locked loop</h2>
+  <p>
+    Four blocks and a ring of arrows. The VCO's output is compared against
+    the reference in a phase detector; the phase <em>error</em> is filtered
+    and fed back to the VCO's tuning voltage so that the error shrinks.
+    Optionally a $\div N$ divider sits in the feedback path so a low reference
+    frequency can discipline a high output frequency. Click each block (or
+    tab to it) to see its job and its signal:
+  </p>
+
+  <figure class="demo">
+    <figcaption>Interactive block diagram: the generic PLL</figcaption>
+    <p class="demo-note">Click a block to highlight it and read what it is
+      for; the mini-plot shows that block's characteristic signal.</p>
+    <svg id="pll-diag" class="blockdiag" viewBox="0 0 760 250" role="group"
+         aria-label="PLL block diagram">
+      <defs>
+        <marker id="arr1" viewBox="0 0 10 10" refX="9" refY="5"
+                markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+          <path class="arrowhead" d="M0,0 L10,5 L0,10 z"></path>
+        </marker>
+      </defs>
+      <!-- wires -->
+      <path class="wire" d="M130 126 H182" marker-end="url(#arr1)"></path>
+      <path class="wire" d="M300 126 H352" marker-end="url(#arr1)"></path>
+      <path class="wire" d="M465 126 H517" marker-end="url(#arr1)"></path>
+      <path class="wire" d="M620 126 H732" marker-end="url(#arr1)"></path>
+      <circle class="node" cx="660" cy="126" r="3.2"></circle>
+      <text class="lbl" x="700" y="114" text-anchor="middle">output</text>
+      <path class="wire" d="M660 126 V212 H465" marker-end="url(#arr1)"></path>
+      <path class="wire" d="M382 212 H242 V159" marker-end="url(#arr1)"></path>
+      <text class="lbl" x="326" y="106" text-anchor="middle" font-size="11">error</text>
+      <text class="lbl" x="491" y="106" text-anchor="middle" font-size="11">control V</text>
+      <!-- blocks -->
+      <g class="blk" data-key="ref" tabindex="0" role="button" aria-pressed="false">
+        <rect x="15" y="100" width="115" height="52" rx="8"></rect>
+        <text x="72" y="122" text-anchor="middle">Reference</text>
+        <text class="sub" x="72" y="139" text-anchor="middle">100 MHz crystal</text>
+      </g>
+      <g class="blk" data-key="pd" tabindex="0" role="button" aria-pressed="false">
+        <rect x="185" y="100" width="115" height="52" rx="8"></rect>
+        <text x="242" y="122" text-anchor="middle">Phase detector</text>
+        <text class="sub" x="242" y="139" text-anchor="middle">V = K<tspan dy="2.5" font-size="8.5">d</tspan><tspan dy="-2.5">·Δφ</tspan></text>
+      </g>
+      <g class="blk" data-key="lf" tabindex="0" role="button" aria-pressed="false">
+        <rect x="355" y="100" width="110" height="52" rx="8"></rect>
+        <text x="410" y="122" text-anchor="middle">Loop filter</text>
+        <text class="sub" x="410" y="139" text-anchor="middle">F(f)</text>
+      </g>
+      <g class="blk" data-key="vco" tabindex="0" role="button" aria-pressed="false">
+        <rect x="520" y="100" width="100" height="52" rx="8"></rect>
+        <text x="570" y="122" text-anchor="middle">VCO</text>
+        <text class="sub" x="570" y="139" text-anchor="middle">K₀ Hz/V</text>
+      </g>
+      <g class="blk" data-key="div" tabindex="0" role="button" aria-pressed="false">
+        <rect x="382" y="190" width="83" height="44" rx="8"></rect>
+        <text x="423" y="209" text-anchor="middle">÷N</text>
+        <text class="sub" x="423" y="225" text-anchor="middle">divider</text>
+      </g>
+    </svg>
+    <div class="diag-explain">
+      <div class="diag-text" id="pll-panel"></div>
+      <div id="pll-mini"></div>
+    </div>
+  </figure>
+
+  <h2>Noise shaping: the loop bandwidth decides whom to trust</h2>
+  <p>
+    Now the mathematics, compactly. Around the ring, phase error is converted
+    to volts ($K_d$), filtered ($F$), and turned back into phase by the VCO —
+    which, being an integrator from volts to phase, contributes a factor
+    $1/(if)$. The open-loop gain is therefore
+  </p>
+  <p>
+    $$ G(f) \;=\; \frac{K}{i f}\, F(f),
+       \qquad K = K_d K_0 \ (\times\, 1/N \text{ with a divider}), $$
+  </p>
+  <p>
+    and standard feedback algebra (the same $1/(1+G)$ bookkeeping as
+    chapter 9's servo section) gives the closed-loop output phase as a
+    <em>weighted blend</em> of the two oscillators' phases:
+  </p>
+  <p>
+    $$ \varphi_{\mathrm{out}} \;=\; H\,\varphi_{\mathrm{ref}}
+       \;+\; (1 - H)\,\varphi_{\mathrm{vco}},
+       \qquad H = \frac{G}{1+G}. $$
+  </p>
+  <p>
+    To dock the notation explicitly onto chapter&nbsp;9: its disturbance
+    suppression $1/(1+G)$ is this chapter's $1-H$, and its sensor-noise
+    injection $G/(1+G)$ is this chapter's $H$ — same algebra, with the
+    "sensor" here being the reference-plus-phase-detector chain. Because of
+    the VCO's built-in $1/f$, $|G|$ is large at low $f$ and small
+    at high $f$: $H$ is a <strong>low-pass</strong> (the loop follows the
+    reference, but only slowly) and $1-H$ is a <strong>high-pass</strong>
+    (the loop cannot fix fast VCO wiggles). Note the flip side: inside the
+    bandwidth the loop <em>writes the reference's phase noise</em> — and the
+    divider's, and the phase detector's — straight onto the VCO. For the
+    workhorse integrator-plus-lead ("type 2") loop filter the closed-loop
+    response takes the textbook second-order form
+    (with $s = i\,2\pi f$ and $x = f/f_n$):
+  </p>
+  <p>
+    $$ H(s) = \frac{2\zeta\omega_n s + \omega_n^2}{s^2 + 2\zeta\omega_n s + \omega_n^2}, $$
+  </p>
+  <p>
+    $$ |H|^2 = \frac{1 + 4\zeta^2 x^2}{(1-x^2)^2 + 4\zeta^2 x^2},
+       \qquad
+       |1-H|^2 = \frac{x^4}{(1-x^2)^2 + 4\zeta^2 x^2}, $$
+  </p>
+  <p>
+    with natural frequency $f_n \approx$ the loop bandwidth $f_L$ and damping
+    $\zeta$. The composite spectrum is then computed exactly like a chapter-9
+    noise budget — in linear power units, never in dB:
+  </p>
+<pre><code>// closed-loop composite (linear units, then 10·log10 for dBc/Hz)
+const x = f / fn, z2 = 4 * zeta * zeta * x * x;
+const den = (1 - x * x) ** 2 + z2;
+const H2 = (1 + z2) / den;                       // |H|²  : low-pass
+const E2 = x ** 4 / den;                         // |1−H|²: high-pass
+const Ltot = N * N * Lref(f) * H2 + Lvco(f) * E2;</code></pre>
+
+  <figure class="demo">
+    <figcaption>The headline demo: welding two oscillators with one knob</figcaption>
+    <p class="demo-note">A 100 MHz crystal, multiplied by $N$ to the 10 GHz
+      carrier, locks a 10 GHz VCO. Drag the loop bandwidth $f_L$ and watch the
+      closed-loop total trade the (multiplied) reference for the VCO. The RMS
+      phase error is minimized when $f_L$ sits near the crossing of the two
+      free-running curves; the readout computes it as $\varphi_{\mathrm{rms}}
+      = \sqrt{\smash{\int} S_\varphi\,df} = \sqrt{\smash{2\int}
+      \mathcal{L}(f)\,df}$, using chapter 6's $\mathcal{L} = S_\varphi/2$ in
+      reverse. Lower the damping $\zeta$ and a servo bump grows at
+      $f_L$ — chapter 9's peaking, in a PLL.</p>
+    <div class="controls" id="ctl-shape"></div>
+    <div class="plots"><div id="plot-shape"></div></div>
+  </figure>
+
+  <p>
+    Three discoveries the sliders hand you. <strong>Too narrow</strong>: the
+    VCO's close-in wander leaks through $|1-H|^2$ and the phase error
+    explodes — at $f_L = 100\,$Hz it exceeds a radian, and a real loop would
+    be slipping cycles. <strong>Too wide</strong>: you copy the multiplied
+    reference's noise floor, $20\log_{10}N$ above the bare crystal's, out to
+    offsets where the VCO was already quieter. <strong>Low $\zeta$</strong>:
+    the loop resonates at $f_n$ and $|H|$ peaks (about $+5.8\,$dB at
+    $\zeta = 0.3$), stacking a bump onto the output — when you see a bump on
+    a beat note, you are usually looking at somebody's loop bandwidth.
+  </p>
+
+  <h2>The 20 log N tax</h2>
+  <p>
+    Why does multiplying a beautiful crystal wreck its floor? Phase is
+    counted in cycles, and a frequency multiplier by definition produces $N$
+    output cycles per input cycle — so every phase excursion, deterministic
+    or random, is multiplied by $N$ too:
+    $\varphi \to N\varphi$, hence $S_\varphi \to N^2 S_\varphi$, hence
+  </p>
+  <p>
+    $$ \mathcal{L}(f) \;\longrightarrow\; \mathcal{L}(f) + 20\log_{10} N
+       \quad \text{(everywhere, at every offset } f\text{)}. $$
+  </p>
+  <p>
+    This is the rule chapter&nbsp;6 leaned on when it declared frequency
+    multiplication "noise-neutral" in Leeson's model ($\mathcal{L} \propto
+    \nu_0^2$ exactly cancels the $+20\log_{10}N$) — here is where the tax
+    itself comes from. Worked number: a 5 MHz OCXO with
+    $\mathcal{L} = -120$ dBc/Hz at 1 kHz,
+    multiplied to 10 GHz ($N = 2000$, $20\log_{10}2000 \approx 66$ dB), arrives
+    at $-54$ dBc/Hz. This single line is why microwave synthesis is hard, and
+    it is exactly what the $N$ selector in the demo above does: the whole
+    reference curve rides up by $20\log_{10}N$, dragging the optimal loop
+    bandwidth down with it. The converse is a gift: frequency
+    <em>dividers</em> reduce phase noise by $20\log_{10}N$ — down to the
+    divider's own additive noise floor, which is why a good divider is one of
+    the quietest boxes in a synthesizer.
+  </p>
+
+  <div class="callout lab">
+    <div class="callout-title">Lab note: real loops have dirt</div>
+    The blocks themselves add noise, and inside the bandwidth the loop
+    faithfully writes it onto the output. A good analogue (mixer) phase
+    detector has an additive floor near $-150$ to $-160$ dBc/Hz; digital
+    phase-frequency detectors are noisier and add flicker. Expect
+    <strong>reference spurs</strong> — bright coherent sidebands (chapter 2)
+    at the phase-comparison frequency and its harmonics, from detector ripple
+    leaking into the VCO tune line. And every spur entering the loop is
+    shaped by the same $H$ or $1-H$ as the noise: spurs on the reference are
+    copied inside the bandwidth, spurs on the VCO are suppressed there. An
+    in-loop measurement of any of this is subject to chapter 8's caveat: the
+    error signal flatters the loop; witness the output against an independent
+    reference.
+  </div>
+
+  <h2>An atomic clock is a lock loop</h2>
+  <p>
+    Now the classic diagram this chapter promised to teach you to read: the
+    <strong>atomic frequency standard</strong>. A quartz oscillator is
+    multiplied up to the caesium hyperfine transition near 9.19 GHz, the
+    atoms are interrogated, and a control voltage steers the quartz so the
+    interrogation stays centered on the atomic line. The output of the clock
+    is the <em>quartz</em> — the atoms never emit your signal; they only
+    referee it. Click the blocks:
+  </p>
+
+  <figure class="demo">
+    <figcaption>Interactive block diagram: the atomic frequency standard</figcaption>
+    <p class="demo-note">The same five roles as the PLL above, wearing atomic
+      clothes. Click each block; the modulator + synchronous detector pair is
+      the trick worth understanding, and it gets its own demo below.</p>
+    <svg id="clk-diag" class="blockdiag" viewBox="0 0 760 330" role="group"
+         aria-label="Atomic frequency standard block diagram">
+      <defs>
+        <marker id="arr2" viewBox="0 0 10 10" refX="9" refY="5"
+                markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+          <path class="arrowhead" d="M0,0 L10,5 L0,10 z"></path>
+        </marker>
+      </defs>
+      <!-- wires -->
+      <path class="wire" d="M145 88 H192" marker-end="url(#arr2)"></path>
+      <path class="wire" d="M295 88 H342" marker-end="url(#arr2)"></path>
+      <path class="wire" d="M445 88 H542" marker-end="url(#arr2)"></path>
+      <text class="lbl" x="494" y="78" text-anchor="middle">ω ≟ ω₀</text>
+      <text class="lbl" x="450" y="152" text-anchor="middle" font-size="10.5">ω₀/2π = 9 192 631 770 Hz</text>
+      <path class="wire" d="M645 136 V166 H505 V187" marker-end="url(#arr2)"></path>
+      <text class="lbl" x="583" y="160" text-anchor="middle" font-size="11">error signal</text>
+      <path class="wire" d="M430 216 H333" marker-end="url(#arr2)"></path>
+      <path class="wire" d="M190 216 H80 V121" marker-end="url(#arr2)"></path>
+      <text class="lbl" x="66" y="172" text-anchor="middle">V</text>
+      <path class="wire dash" d="M470 292 H395 V121" marker-end="url(#arr2)"></path>
+      <path class="wire dash" d="M530 272 V247" marker-end="url(#arr2)"></path>
+      <circle class="node" cx="170" cy="88" r="3.2"></circle>
+      <path class="wire" d="M170 88 V36" marker-end="url(#arr2)"></path>
+      <text class="lbl" x="180" y="26">clock output</text>
+      <text class="lbl" x="180" y="41" font-size="11">sin Ωt,  Ω = ω/M</text>
+      <!-- blocks -->
+      <g class="blk" data-key="quartz" tabindex="0" role="button" aria-pressed="false">
+        <rect x="15" y="60" width="130" height="56" rx="8"></rect>
+        <text x="80" y="84" text-anchor="middle">Quartz VCXO</text>
+        <text class="sub" x="80" y="101" text-anchor="middle">Ω = Ω(V)</text>
+      </g>
+      <g class="blk" data-key="mult" tabindex="0" role="button" aria-pressed="false">
+        <rect x="195" y="60" width="100" height="56" rx="8"></rect>
+        <text x="245" y="84" text-anchor="middle">×M</text>
+        <text class="sub" x="245" y="101" text-anchor="middle">multiplier</text>
+      </g>
+      <g class="blk" data-key="moddet" tabindex="0" role="button" aria-pressed="false">
+        <rect x="345" y="60" width="100" height="56" rx="8"></rect>
+        <text x="395" y="92" text-anchor="middle">Modulator</text>
+      </g>
+      <g class="blk" data-key="atom" tabindex="0" role="button" aria-pressed="false">
+        <rect x="545" y="44" width="200" height="92" rx="8"></rect>
+        <text x="645" y="64" text-anchor="middle">Atomic resonator</text>
+        <path class="rescurve" id="clk-rescurve" d=""></path>
+        <text class="sub" x="645" y="130" text-anchor="middle">Q = ω₀/Δω&#160;&#160;·&#160;&#160;S/N</text>
+      </g>
+      <g class="blk" data-key="moddet" tabindex="0" role="button" aria-pressed="false">
+        <rect x="430" y="190" width="150" height="52" rx="8"></rect>
+        <text x="505" y="212" text-anchor="middle">Synchronous</text>
+        <text x="505" y="229" text-anchor="middle">detector</text>
+      </g>
+      <g class="blk" data-key="integ" tabindex="0" role="button" aria-pressed="false">
+        <rect x="190" y="190" width="143" height="52" rx="8"></rect>
+        <text x="261" y="212" text-anchor="middle">Integrator</text>
+        <text class="sub" x="261" y="229" text-anchor="middle">loop filter</text>
+      </g>
+      <g class="blk" data-key="moddet" tabindex="0" role="button" aria-pressed="false">
+        <rect x="470" y="272" width="120" height="40" rx="8"></rect>
+        <text x="530" y="297" text-anchor="middle" font-size="12.5">dither osc  fₘ</text>
+      </g>
+    </svg>
+    <div class="diag-text" id="clk-panel"></div>
+  </figure>
+
+  <div class="callout">
+    <div class="callout-title">Is this a phase-locked loop?</div>
+    Structurally, yes: a steered oscillator, an error signal, feedback, and
+    exactly the same $H$ / $1-H$ noise shaping — inside the loop bandwidth
+    the output inherits the discriminator (atoms + detection), outside it the
+    quartz flywheel. Strictly, though, it is a <strong>frequency-lock
+    loop</strong>: the dithered atomic line senses the frequency offset
+    $\nu - \nu_0$ from the transition, not an accumulated phase difference
+    against a running reference oscillator. The loop algebra of this chapter
+    carries over with $\varphi$ replaced by $\nu$.
+  </div>
+
+  <h3>The S-curve: how a symmetric line steers a loop</h3>
+  <p>
+    The atomic resonance is a <em>symmetric</em> curve: its height tells you
+    how far $|\,\nu - \nu_0|$ you are from center, but not on which
+    <em>side</em> — useless for feedback, which needs a signed error. The fix
+    is chapter 8's lock-in trick: <strong>dither</strong> the interrogation
+    frequency across the line at $f_m$ and demodulate the atomic response at
+    $f_m$. Sitting left of center, a positive dither swing increases the
+    signal; sitting right of center, it decreases it — the component at
+    $f_m$ flips sign as you cross the line. The demodulated output versus
+    detuning is an antisymmetric <strong>S-curve</strong>, linear through
+    zero: a proper error signal, conjured out of a symmetric bump.
+  </p>
+
+  <figure class="demo">
+    <figcaption>Dither, demodulate, lock: the S-curve at work</figcaption>
+    <p class="demo-note">Drag the detuning $\delta$ and watch the modulated
+      response (top right) flip phase as you cross the line; the S-curve
+      (bottom left) is its honestly computed first harmonic. Then tick
+      "close the loop" and press <em>run lock</em>: $\delta(t)$ relaxes to
+      the line center against noise. Untick it while running to watch the
+      free-running quartz wander off. Start the lock from $|\delta| > 1.5$
+      linewidths and notice how weakly the loop pulls — the S-curve dies
+      outside the line: a capture range.</p>
+    <div class="controls" id="ctl-scurve"></div>
+    <div class="plots two-col">
+      <div id="plot-sc-line"></div>
+      <div id="plot-sc-mod"></div>
+    </div>
+    <div class="plots two-col">
+      <div id="plot-sc-s"></div>
+      <div id="plot-sc-strip"></div>
+    </div>
+  </figure>
+
+  <p>
+    Play with the dither depth. The center slope — the <em>discriminator
+    sensitivity</em>, in chapter 8's language literally volts per hertz — is
+    greatest when the dither swings by about half a linewidth (the numerical
+    optimum here is an amplitude $a \approx 0.35\,\Delta\nu$, i.e. swinging
+    roughly between the half-maximum points; anything from
+    $0.2$ to $0.6\,\Delta\nu$ is within about 20% of it). Too small a dither
+    and the modulated signal vanishes into detector noise; too large and the
+    slope collapses — you are averaging over the whole line, effectively
+    broadening it.
+  </p>
+  <p>
+    And here the whole course lands in one formula. Within the loop
+    bandwidth, the clock output's fractional frequency stability is set by
+    the atoms and the detection SNR, not by the quartz:
+  </p>
+  <p>
+    $$ \sigma_y(\tau) \;\approx\; \frac{\Delta\nu}{\nu_0}\,
+       \frac{1}{\mathrm{SNR}}\, \tau^{-1/2}. $$
+  </p>
+  <p>
+    The discriminator splits the line to $\delta\nu \approx
+    \Delta\nu/\mathrm{SNR}$ in one second (chapter 8: noise referred to the
+    input via the S-curve slope), and successive interrogations average down
+    like white frequency noise — the $\tau^{-1/2}$ regime you met on every
+    Allan-deviation plot in chapter 7 <em>is this loop at work</em>. High
+    $Q = \omega_0/\Delta\omega$ and high SNR: that is the entire recipe for
+    an atomic clock, and the reason the definition of the second lives in a
+    box like this.
+  </p>
+
+  <h2>The same diagram everywhere</h2>
+  <p>
+    Once you can read one of these rings, you can read them all. Five roles,
+    four labs:
+  </p>
+  <div style="overflow-x: auto">
+  <table>
+    <thead>
+      <tr><th>role</th><th>RF synthesizer</th><th>atomic clock</th>
+          <th>PDH laser lock</th><th>LIGO arm lock</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>flywheel oscillator</td><td>VCO</td><td>quartz VCXO</td>
+          <td>laser</td><td>laser + test masses</td></tr>
+      <tr><td>frequency translation</td><td>÷N divider</td>
+          <td>×M multiplier</td><td>EOM RF sidebands</td>
+          <td>RF sidebands on the light</td></tr>
+      <tr><td>discriminator</td><td>mixer phase detector</td>
+          <td>dither + synchronous detector</td>
+          <td>reflection photodiode + mixer</td>
+          <td>photodiode + demodulation</td></tr>
+      <tr><td>reference</td><td>crystal oscillator</td>
+          <td>atomic transition</td><td>optical cavity</td>
+          <td>arm-cavity resonance</td></tr>
+      <tr><td>integrator</td><td>loop filter</td><td>integrator</td>
+          <td>servo amplifier</td><td>suspension actuators + servo</td></tr>
+    </tbody>
+  </table>
+  </div>
+  <p>
+    The moral: the loop algebra — $H$, $1-H$, the servo bump, the
+    $20\log_{10}N$ bookkeeping — is identical in every column. All the
+    physics hides in the <strong>discriminator</strong>: its sensitivity
+    (slope, V/Hz) and its noise floor set what the lock can possibly deliver,
+    exactly as the atomic line's $Q$ and SNR set a clock's
+    $\sigma_y(\tau)$.
+  </p>
+
+  <h2>Exercises</h2>
+
+  <div class="exercise">
+    <div class="ex-label">Exercise 10.1 — quartz to caesium</div>
+    <p>A 5 MHz quartz oscillator is multiplied to the caesium transition at
+    9 192 631 770 Hz. What is $M$, and by how many dB does the phase noise
+    rise? If the quartz shows $-130$ dBc/Hz at 1 kHz offset, what does the
+    multiplied signal show there? A decent 9 GHz dielectric-resonator
+    oscillator (DRO) manages $-95$ dBc/Hz at 1 kHz — qualitatively, where
+    should the loop bandwidth go if you lock the DRO to the multiplied
+    quartz?</p>
+    <details><summary>Solution</summary>
+      <p>$M = 9.192631770\times10^9 / 5\times10^6 \approx 1839$, so
+      $20\log_{10}M \approx 65$ dB. The multiplied quartz sits at
+      $-130 + 65 = -65$ dBc/Hz at 1 kHz — a full 30 dB <em>worse</em> than
+      the DRO there. But close to the carrier (below $\sim$10–100 Hz) the
+      multiplied quartz still wins, because the DRO's $1/f^3$ wander keeps
+      climbing. So the loop bandwidth belongs near the crossing of the two
+      curves: low, of order tens to a few hundred Hz — trust the quartz only
+      very close in, and let the DRO speak everywhere else.</p>
+    </details>
+  </div>
+
+  <div class="exercise">
+    <div class="ex-label">Exercise 10.2 — the VCO is an integrator</div>
+    <p>A VCO's frequency obeys $\nu = \nu_0 + K_0 V(t)$. Show that its
+    voltage-to-phase transfer function is $2\pi K_0 / s$, and hence that even
+    a flat loop filter $F(f) = F_0$ gives a first-order low-pass $H$. What is
+    the loop bandwidth?</p>
+    <details><summary>Solution</summary>
+      <p>Chapter 1: frequency is the slope of phase, so
+      $\dot\varphi = 2\pi\,\delta\nu = 2\pi K_0 V(t)$, and integrating (in
+      Laplace language, dividing by $s$) gives
+      $\varphi(s) = 2\pi K_0 V(s)/s$ — an integrator, with no capacitor in
+      sight. The open-loop gain is then $G(s) = K_d F_0 \cdot 2\pi K_0/s
+      \equiv K/s$, and
+      $H = G/(1+G) = 1/(1 + s/K)$: a one-pole low-pass with 3 dB bandwidth
+      $f_L = K/2\pi = K_d K_0 F_0$ in Hz. The $1/f$ that makes the loop a
+      low-pass is supplied by the physics of the VCO itself.</p>
+    </details>
+  </div>
+
+  <div class="exercise">
+    <div class="ex-label">Exercise 10.3 — splitting the line</div>
+    <p>For a Lorentzian resonance of FWHM $\Delta\nu$ and peak signal $S_0$,
+    the discriminator slope is at best of order $S_0/\Delta\nu$ (check this
+    against the S-curve demo). With $\mathrm{SNR} = 1000$ in 1 s of
+    averaging, what frequency uncertainty do you reach in 1 s? Convert to
+    $\sigma_y(1\,\mathrm{s})$ for a caesium beam tube with
+    $\Delta\nu \approx 100$ Hz.</p>
+    <details><summary>Solution</summary>
+      <p>An error-signal noise of $S_0/\mathrm{SNR}$ divided by a slope
+      $\sim S_0/\Delta\nu$ gives
+      $\delta\nu \approx \Delta\nu/\mathrm{SNR} = 100\,\mathrm{Hz}/1000 =
+      0.1$ Hz — you split the line a thousand ways. Fractionally,
+      $\sigma_y(1\,\mathrm{s}) \approx 0.1 / 9.19\times10^9 \approx
+      1\times10^{-11}$, in the right ballpark for a classic beam standard.
+      Longer averaging improves it as $\tau^{-1/2}$ (chapter 7), until
+      systematic shifts of the line itself take over.</p>
+    </details>
+  </div>
+
+  <div class="exercise">
+    <div class="ex-label">Exercise 10.4 — accurate but not stable</div>
+    <p>Why does an integrator in the loop filter make an atomic clock
+    <em>accurate</em> (zero mean frequency error, inherited from the atoms)
+    while doing nothing to remove its short-term <em>instability</em>?</p>
+    <details><summary>Solution</summary>
+      <p>An integrator has unbounded gain at DC: any nonzero <em>average</em>
+      error signal keeps charging it, sliding the quartz until the average is
+      exactly zero. So the mean output frequency is pinned to the atomic line
+      regardless of the quartz's calibration or drift — that is accuracy.
+      But a loop only <em>reshapes</em> noise (chapter 9): within the
+      bandwidth the output carries the discriminator's noise —
+      atomic-detection SNR, white frequency noise, the $\tau^{-1/2}$ of
+      exercise 10.3 — and above the bandwidth the quartz free-runs. Zero
+      mean error says nothing about the variance around that mean; the
+      integral of $S(f)\,|W(f)|^2$ is moved around in frequency, not
+      destroyed.</p>
+    </details>
+  </div>
+
+  <div class="exercise">
+    <div class="ex-label">Exercise 10.5 — the bump on the beat note</div>
+    <p>Your cavity-locked laser's beat note against an independent reference
+    shows a noise bump at 1 MHz that was absent unlocked. Which loop
+    parameter do you reach for, and what do you <em>not</em> do?</p>
+    <details><summary>Solution</summary>
+      <p>The bump marks the loop's unity-gain frequency, where
+      $|1+G|$ dips below 1 because the phase margin is small — chapter 9's
+      servo bump, here in a laser lock. Recover phase near 1 MHz: shorten
+      delay, remove a low-pass or resonance that eats phase there, or add a
+      lead (differentiator) stage; alternatively lower the gain so unity
+      gain retreats to a frequency with more margin. What you do
+      <em>not</em> do is crank up the gain — that pushes $G$ closer to $-1$
+      at the bump and makes it taller.</p>
+    </details>
+  </div>
+
+  <h2>Where you started, where you are</h2>
+  <p>
+    Ten chapters ago this course opened with one equation and three knobs:
+    $V(t) = A\cos(2\pi\nu_0 t + \varphi)$. Everything since has been that
+    equation under stress. The knobs wiggled deliberately gave sidebands
+    (chapter&nbsp;2); wiggled randomly they needed ensembles
+    (chapter&nbsp;3) and spectral densities (chapter&nbsp;4); the spectra
+    turned out to be power laws with personalities (chapter&nbsp;5), which
+    on the phase knob became $\mathcal{L}(f)$, linewidths and jitter
+    (chapter&nbsp;6), compressed into $\sigma_y(\tau)$ for clocks
+    (chapter&nbsp;7), priced in per-root-hertz for sensors
+    (chapter&nbsp;8), stacked into budgets and filter functions for LIGO
+    (chapter&nbsp;9), and finally reshaped at will by a feedback ring
+    (this chapter). If one sentence survives: <em>noise is a spectral
+    density; every measurement is a filter function; every quoted number is
+    their integral.</em> The next time an Allan plot, a dBc/Hz spec or a
+    lock-loop block diagram crosses your desk, it should read like prose.
+    Go twiddle the real knobs.
+  </p>
+
+  <nav class="pager">
+    <a class="prev" href="09-ligo.html"><span class="dir">Prev · Chapter 9</span>
+      Case study: LIGO and noise budgets</a>
+    <a class="next" href="../index.html"><span class="dir">Home</span>
+      Course overview</a>
+  </nav>
+</main>
+
+<script src="../js/lib/fft.js"></script>
+<script src="../js/lib/noise.js"></script>
+<script src="../js/lib/plot.js"></script>
+<script src="../js/lib/ui.js"></script>
+<script>
+'use strict';
+
+/* ---------- shared chapter-10 model ----------
+ * L(f) models in LINEAR ratio per Hz (dBc/Hz = 10·log10 of these).
+ * Lref100: 100 MHz crystal — −100 dBc/Hz at 10 Hz with 1/f³, 1/f² beyond
+ *          ~100 Hz, floor −165 dBc/Hz.
+ * Lvco:    10 GHz VCO — 1/f³ from −20 dBc/Hz at 100 Hz, 1/f² region,
+ *          floor −150 dBc/Hz.
+ */
+const Ch10 = (function () {
+  const Lref100 = f => 1e-10 * Math.pow(10 / f, 3) +
+                       1e-13 * Math.pow(100 / f, 2) + Math.pow(10, -16.5);
+  const Lvco = f => 1e-2 * Math.pow(100 / f, 3) +
+                    1e-8 * Math.pow(1e4 / f, 2) + 1e-15;
+  // |H|² and |1−H|² for the standard 2nd-order type-2 loop, x = f/fn.
+  function shaping(x, zeta) {
+    const x2 = x * x, z2 = 4 * zeta * zeta * x2;
+    const den = (1 - x2) * (1 - x2) + z2;
+    return { h2: (1 + z2) / den, e2: x2 * x2 / den };
+  }
+  function logspace(a, b, n) {
+    const out = new Float64Array(n);
+    const la = Math.log10(a), lb = Math.log10(b);
+    for (let i = 0; i < n; i++) out[i] = Math.pow(10, la + (lb - la) * i / (n - 1));
+    return out;
+  }
+  const dB = v => 10 * Math.log10(v);
+  const typeset = el => {
+    if (window.renderMathInElement) {
+      window.renderMathInElement(el, { delimiters: [
+        { left: '$$', right: '$$', display: true },
+        { left: '$', right: '$', display: false }] });
+    }
+  };
+  return { Lref100, Lvco, shaping, logspace, dB, typeset };
+})();
+
+/* ---------- demo 1: interactive PLL block diagram ---------- */
+(function () {
+  const svg = document.getElementById('pll-diag');
+  const panel = document.getElementById('pll-panel');
+  const miniHolder = document.getElementById('pll-mini');
+  // one shared loop state for all mini-plots
+  const state = { Kd: 1, K0: 5e6, N: 100, fz: 1e6 };
+
+  function miniPlot(opts) {
+    miniHolder.innerHTML = '';
+    return new Plot(miniHolder, Object.assign({ height: 220 }, opts));
+  }
+
+  const info = {
+    ref: {
+      title: 'Reference — the standard you trust',
+      body: '<p>Everything the loop does is an act of faith in this box: ' +
+        'below the loop bandwidth the output reproduces the reference’s ' +
+        'phase, wander and all. Here it is a 100 MHz crystal: superb close ' +
+        'to the carrier, but fixed in frequency — reaching the 10 GHz ' +
+        'carrier costs $\\times N$ multiplication and a $20\\log_{10}N$ ' +
+        'noise penalty, which ruins its far-out floor. The mini-plot shows ' +
+        'the two free-running $\\mathcal{L}(f)$ curves the loop welds: ' +
+        'multiplied crystal and VCO, each best on its own side.</p>',
+      mini: function () {
+        const p = miniPlot({ xlabel: 'offset f (Hz)', ylabel: 'ℒ(f) (dBc/Hz)',
+          xlog: true, xlim: [10, 1e8], ylim: [-170, 10], xunit: 'Hz' });
+        const f = Ch10.logspace(10, 1e8, 200);
+        p.line(f, f.map(v => Ch10.dB(state.N * state.N * Ch10.Lref100(v))),
+          { label: 'crystal ×100 → 10 GHz' });
+        p.line(f, f.map(v => Ch10.dB(Ch10.Lvco(v))), { label: 'VCO 10 GHz' });
+        p.draw();
+      }
+    },
+    pd: {
+      title: 'Phase detector — a mixer at quadrature',
+      body: '<p>Chapter 6 measured phase noise by mixing two signals at ' +
+        'quadrature; a PLL does the same thing in real time. The output ' +
+        'voltage is $V_e = K_d\\sin\\Delta\\varphi \\approx K_d\\,' +
+        '\\Delta\\varphi$ — about $K_d$ volts per radian near lock. It ' +
+        'measures only the phase <em>difference</em> between its two ' +
+        'inputs: the loop never knows absolute phase, only mismatch — ' +
+        'which is precisely the quantity feedback can drive to zero.</p>',
+      mini: function () {
+        const p = miniPlot({ xlabel: 'Δφ (rad)', ylabel: 'Vₑ / K_d',
+          xlim: [-Math.PI, Math.PI], ylim: [-1.3, 1.3] });
+        const x = Noise.linspace(-Math.PI, Math.PI, 200);
+        p.line(x, x.map(v => Math.sin(v)), { label: 'K_d·sin Δφ' });
+        p.line([-1.1, 1.1], [-1.1, 1.1], { label: 'slope K_d', dash: [5, 4],
+          color: '#898781', width: 1.2 });
+        p.points([0], [0], { r: 5 });
+        p.draw();
+      }
+    },
+    lf: {
+      title: 'Loop filter — gain versus frequency = whom you trust where',
+      body: '<p>The filter sets the loop gain at each offset $f$: high gain ' +
+        'means “correct the VCO here” (output follows reference), ' +
+        'low gain means “leave the VCO alone”. An ' +
+        '<em>integrator</em> makes the DC gain infinite, so the average ' +
+        'phase error is driven to exactly zero however small $K_d$ and ' +
+        '$K_0$ are. The classic type-2 shape below — $1/f$ up to a zero at ' +
+        '$f_z$, flat above — adds back the phase lead that keeps the loop ' +
+        'stable, and its placement sets the damping $\\zeta$ in the ' +
+        'noise-shaping demo.</p>',
+      mini: function () {
+        const p = miniPlot({ xlabel: 'f (Hz)', ylabel: '|F(f)| (arb.)',
+          xlog: true, ylog: true, xlim: [1e3, 1e8], ylim: [0.5, 2e3],
+          xunit: 'Hz' });
+        const f = Ch10.logspace(1e3, 1e8, 200);
+        p.guideX(state.fz, { label: 'zero f_z', dash: [4, 4] });
+        p.line(f, f.map(v => Math.sqrt(1 + (state.fz / v) * (state.fz / v))),
+          { label: 'integrator + lead' });
+        p.draw();
+      }
+    },
+    vco: {
+      title: 'VCO — tunable, and secretly an integrator',
+      body: '<p>Frequency proportional to control voltage: $\\nu = \\nu_0 + ' +
+        'K_0 V$, with $K_0$ in Hz/V (the line below). Tunable — the whole ' +
+        'point — and clean far from the carrier, but wandering badly close ' +
+        'in. Chapter 1’s slogan does engineering work here: frequency ' +
+        'is the <em>slope</em> of phase, so a voltage that sets frequency ' +
+        'gets integrated into phase, $\\varphi = 2\\pi K_0 V/s$. The VCO is ' +
+        'an integrator from volts to radians — the $1/f$ in the open-loop ' +
+        'gain comes from this box, for free.</p>',
+      mini: function () {
+        const p = miniPlot({ xlabel: 'control voltage V (V)',
+          ylabel: 'ν − ν₀ (MHz)', xlim: [-1, 1], ylim: [-6, 6] });
+        const x = Noise.linspace(-1, 1, 50);
+        p.line(x, x.map(v => state.K0 * v / 1e6), { label: 'slope K₀ = 5 MHz/V' });
+        p.points([0], [0], { r: 5 });
+        p.draw();
+      }
+    },
+    div: {
+      title: '÷N divider — a low reference disciplines a high output',
+      body: '<p>Divide the VCO’s output by $N$ before the phase ' +
+        'detector and the loop locks $\\nu_{\\mathrm{out}} = N\\,' +
+        '\\nu_{\\mathrm{ref}}$: a 100 MHz crystal can rule a 10 GHz VCO. ' +
+        'Dividing produces one output cycle per $N$ input cycles, so every ' +
+        'phase excursion shrinks by $N$ — $\\mathcal{L}$ drops by ' +
+        '$20\\log_{10}N$, down to the divider’s own floor (mini-plot). ' +
+        'The price appears on the other side of the loop: inside the ' +
+        'bandwidth the reference’s noise is written onto the output ' +
+        '<em>multiplied</em> by $N$. That $20\\log_{10}N$ tax is the ' +
+        'subject of the next two sections.</p>',
+      mini: function () {
+        const p = miniPlot({ xlabel: 'offset f (Hz)', ylabel: 'ℒ(f) (dBc/Hz)',
+          xlog: true, xlim: [100, 1e8], ylim: [-170, 0], xunit: 'Hz' });
+        const f = Ch10.logspace(100, 1e8, 200);
+        p.line(f, f.map(v => Ch10.dB(Ch10.Lvco(v))), { label: 'VCO at 10 GHz' });
+        p.line(f, f.map(v => Ch10.dB(Ch10.Lvco(v) / 100)),
+          { label: 'after ÷10: −20 dB' });
+        p.draw();
+      }
+    }
+  };
+
+  const blocks = svg.querySelectorAll('.blk');
+  function select(key) {
+    blocks.forEach(b => {
+      const on = b.dataset.key === key;
+      b.classList.toggle('sel', on);
+      b.setAttribute('aria-pressed', on ? 'true' : 'false');
+    });
+    const it = info[key];
+    panel.innerHTML = '<div class="diag-title">' + it.title + '</div>' + it.body;
+    Ch10.typeset(panel);
+    it.mini();
+  }
+  blocks.forEach(b => {
+    b.addEventListener('click', () => select(b.dataset.key));
+    b.addEventListener('keydown', e => {
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        select(b.dataset.key);
+      }
+    });
+  });
+  select('pd');   // default: the phase detector
+})();
+
+/* ---------- demo 2 (headline): noise shaping by loop bandwidth ---------- */
+(function () {
+  const plot = new Plot('#plot-shape', {
+    xlabel: 'offset frequency f (Hz)', ylabel: 'ℒ(f) (dBc/Hz)', height: 420,
+    xlog: true, ylog: false, xlim: [10, 1e8], ylim: [-180, 20], xunit: 'Hz'
+  });
+  const ctl = '#ctl-shape';
+  const fL = UI.slider(ctl, { label: 'loop bandwidth f_L', min: 100, max: 1e7,
+    log: true, value: 1e4, unit: 'Hz', fmt: v => Plot.fmtNum(v, 2),
+    onInput: draw });
+  const zeta = UI.slider(ctl, { label: 'damping ζ', min: 0.3, max: 2,
+    step: 0.01, value: 0.7, fmt: v => v.toFixed(2), onInput: draw });
+  const Nsel = UI.select(ctl, { label: 'multiplication N', options: [
+    { value: '10', label: 'N = 10 (1 GHz reference)' },
+    { value: '100', label: 'N = 100 (100 MHz reference)' },
+    { value: '1000', label: 'N = 1000 (10 MHz reference)' }],
+    value: '100', onChange: draw });
+  const rmsOut = UI.readout(ctl, { label: 'RMS phase error (10 Hz – 100 MHz)' });
+  const optOut = UI.readout(ctl, { label: 'optimal f_L (min RMS)' });
+  const crossOut = UI.readout(ctl, { label: 'free-running curves cross at' });
+
+  const fGrid = Ch10.logspace(10, 1e8, 400);
+
+  // σφ² = ∫ Sφ df with Sφ = 2·L (chapter 6: L = Sφ/2), in linear units.
+  function rmsPhase(fn, z, N) {
+    let v = 0, Sprev = 0;
+    for (let i = 0; i < fGrid.length; i++) {
+      const s = Ch10.shaping(fGrid[i] / fn, z);
+      const S = 2 * (N * N * Ch10.Lref100(fGrid[i]) * s.h2 +
+                     Ch10.Lvco(fGrid[i]) * s.e2);
+      if (i > 0) v += 0.5 * (S + Sprev) * (fGrid[i] - fGrid[i - 1]);
+      Sprev = S;
+    }
+    return Math.sqrt(v);
+  }
+
+  let optCache = {};                 // keyed by N|ζ — the scan is the slow bit
+  function optimum(z, N) {
+    const key = N + '|' + z.toFixed(2);
+    if (!optCache[key]) {
+      const scan = Ch10.logspace(100, 1e7, 120);
+      let bf = scan[0], bv = Infinity;
+      for (const fn of scan) {
+        const v = rmsPhase(fn, z, N);
+        if (v < bv) { bv = v; bf = fn; }
+      }
+      optCache[key] = { f: bf, v: bv };
+    }
+    return optCache[key];
+  }
+
+  function draw() {
+    const fn = fL.value, z = zeta.value, N = parseInt(Nsel.value, 10);
+    const n = fGrid.length;
+    const refBare = new Float64Array(n), vcoBare = new Float64Array(n);
+    const refShaped = new Float64Array(n), vcoShaped = new Float64Array(n);
+    const tot = new Float64Array(n);
+    let fCross = null;
+    for (let i = 0; i < n; i++) {
+      const f = fGrid[i];
+      const Lr = N * N * Ch10.Lref100(f), Lv = Ch10.Lvco(f);
+      const s = Ch10.shaping(f / fn, z);
+      refBare[i] = Ch10.dB(Lr);
+      vcoBare[i] = Ch10.dB(Lv);
+      refShaped[i] = Ch10.dB(Lr * s.h2);
+      vcoShaped[i] = Ch10.dB(Lv * s.e2);
+      tot[i] = Ch10.dB(Lr * s.h2 + Lv * s.e2);
+      if (fCross === null && Lr > Lv) fCross = f;   // ref becomes the worse one
+    }
+    plot.clear();
+    plot.guideX(fn, { label: 'f_L', dash: [4, 4] });
+    plot.line(fGrid, refBare, { label: 'reference ×N, free-running',
+      color: '#898781', dash: [7, 4], width: 1.2 });
+    plot.line(fGrid, vcoBare, { label: 'VCO, free-running',
+      color: '#898781', dash: [2, 3], width: 1.2 });
+    plot.line(fGrid, refShaped, { label: 'ref ×N through |H|²', width: 1.5 });
+    plot.line(fGrid, vcoShaped, { label: 'VCO through |1−H|²', width: 1.5 });
+    plot.line(fGrid, tot, { label: 'closed-loop total', width: 3 });
+    plot.draw();
+
+    const rms = rmsPhase(fn, z, N);
+    rmsOut.set(rms.toPrecision(2) + ' rad' +
+      (rms > 1 ? ' — cycle-slip territory!' : ''));
+    const opt = optimum(z, N);
+    optOut.set(Plot.fmtNum(opt.f, 2) + ' Hz → ' + opt.v.toPrecision(2) + ' rad');
+    crossOut.set(fCross ? Plot.fmtNum(fCross, 2) + ' Hz' : 'beyond 100 MHz');
+  }
+  draw();
+})();
+
+/* ---------- demo 3: atomic clock block diagram ---------- */
+(function () {
+  const svg = document.getElementById('clk-diag');
+  const panel = document.getElementById('clk-panel');
+
+  // draw the little resonance curve inside the atomic-resonator block
+  (function () {
+    const pts = [];
+    for (let i = 0; i <= 48; i++) {
+      const x = 560 + (170 * i) / 48;
+      const u = (x - 645) / 17;
+      pts.push((i ? 'L' : 'M') + x.toFixed(1) + ',' +
+               (114 - 40 / (1 + u * u)).toFixed(1));
+    }
+    document.getElementById('clk-rescurve').setAttribute('d', pts.join(' '));
+  })();
+
+  const info = {
+    quartz: {
+      title: 'Quartz VCXO — the flywheel, and the actual output',
+      body: '<p>The clock’s output is tapped <em>here</em>: you never ' +
+        'listen to the atoms, you listen to a quartz crystal that the atoms ' +
+        'continually correct. Quartz is superb over seconds — a clean, ' +
+        'strong, low-noise signal — but drifts over days as the crystal ' +
+        'ages. So it plays the flywheel: above the loop bandwidth its ' +
+        'stability <em>is</em> the clock’s stability, while its ' +
+        'long-term calibration is continuously steered by the control ' +
+        'voltage $V$ arriving from the integrator.</p>'
+    },
+    mult: {
+      title: '×M multiplier — climbing to the atomic transition',
+      body: '<p>Atoms take their orders near $\\omega_0/2\\pi = ' +
+        '9\\,192\\,631\\,770$ Hz; quartz oscillates at 5–100 MHz. The ' +
+        'multiplier chain bridges the gap, $\\omega = M\\Omega$, and ' +
+        'collects the $20\\log_{10}M$ tax on every phase excursion: from ' +
+        '5 MHz, $M \\approx 1839$ costs $+65$ dB. This is why the quartz ' +
+        'must be excellent <em>before</em> the atoms ever see it — noise ' +
+        'multiplied up to the interrogation frequency inside the loop ' +
+        'bandwidth is faithfully stamped onto the clock output.</p>'
+    },
+    moddet: {
+      title: 'Modulator + synchronous detector — making atoms readable',
+      body: '<p>You cannot feed an atomic transition into a mixer and get a ' +
+        'phase difference: the atoms only answer “how strongly do I ' +
+        'respond at the frequency you sent?” — and that response curve ' +
+        'is <em>symmetric</em>, so its height gives $|\\omega - \\omega_0|$ ' +
+        'but not the sign. The trick: the modulator dithers the ' +
+        'interrogation frequency across the line at $f_m$, and the ' +
+        'synchronous detector demodulates the atomic response at that same ' +
+        '$f_m$ — a lock-in amplifier, exactly chapter 8’s demo. The ' +
+        'result is an antisymmetric S-curve whose sign says which side of ' +
+        'the line you sit on: a usable error signal. The demo below is this ' +
+        'pair in action.</p>'
+    },
+    atom: {
+      title: 'Atomic resonator — the ruler',
+      body: '<p>The one component with nothing to adjust and everything to ' +
+        'respect. Its linewidth $\\Delta\\omega$ (equivalently ' +
+        '$Q = \\omega_0/\\Delta\\omega$) and the signal-to-noise of its ' +
+        'detection set how finely the loop can split the line: ' +
+        '$\\delta\\nu \\approx \\Delta\\nu/\\mathrm{SNR}$ per second of ' +
+        'averaging. Every atom of the same isotope carries the same ' +
+        'transition — this box is why the locked clock is <em>accurate</em>, ' +
+        'not merely stable, and why the SI second can be reproduced in any ' +
+        'lab on Earth.</p>'
+    },
+    integ: {
+      title: 'Integrator — why the clock inherits the atoms’ accuracy',
+      body: '<p>The loop filter here is an integrator: unbounded DC gain. ' +
+        'Any nonzero <em>average</em> error keeps charging it, walking the ' +
+        'quartz until the average error is exactly zero — so the mean ' +
+        'output frequency sits on the atomic line no matter how the quartz ' +
+        'is calibrated or how it drifts. The closed-loop output inherits ' +
+        'the <em>atom’s</em> accuracy and the quartz merely provides ' +
+        'the short-term flywheel; its time constant sets the loop bandwidth ' +
+        'dividing the two regimes.</p>'
+    }
+  };
+
+  const blocks = svg.querySelectorAll('.blk');
+  function select(key) {
+    blocks.forEach(b => {
+      const on = b.dataset.key === key;
+      b.classList.toggle('sel', on);
+      b.setAttribute('aria-pressed', on ? 'true' : 'false');
+    });
+    const it = info[key];
+    panel.innerHTML = '<div class="diag-title">' + it.title + '</div>' + it.body;
+    Ch10.typeset(panel);
+  }
+  blocks.forEach(b => {
+    b.addEventListener('click', () => select(b.dataset.key));
+    b.addEventListener('keydown', e => {
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        select(b.dataset.key);
+      }
+    });
+  });
+  select('moddet');   // default: the pair that makes atoms usable
+})();
+
+/* ---------- demo 4: the S-curve ---------- */
+(function () {
+  const pLine = new Plot('#plot-sc-line', {
+    xlabel: 'detuning (units of Δν)', ylabel: 'atomic response (arb.)',
+    height: 280, xlim: [-3, 3], ylim: [-0.05, 1.15]
+  });
+  const pMod = new Plot('#plot-sc-mod', {
+    xlabel: 'time (dither periods)', ylabel: 'signal (AC part, arb.)',
+    height: 280, xlim: [0, 3], ylim: [-0.8, 0.8]
+  });
+  const pS = new Plot('#plot-sc-s', {
+    xlabel: 'detuning δ (units of Δν)', ylabel: 'error signal E(δ) (arb.)',
+    height: 280, xlim: [-3, 3], ylim: [-0.75, 0.75]
+  });
+  const pStrip = new Plot('#plot-sc-strip', {
+    xlabel: 'time (s)', ylabel: 'detuning δ(t) (Δν)', height: 280,
+    xlim: [-30, 0], ylim: [-3.3, 3.3], hover: false
+  });
+
+  const ctl = '#ctl-scurve';
+  const delta = UI.slider(ctl, { label: 'detuning δ', min: -3, max: 3,
+    step: 0.01, value: 1.2, unit: 'Δν', fmt: v => v.toFixed(2), onInput: draw });
+  const dith = UI.slider(ctl, { label: 'dither depth a', min: 0.1, max: 2,
+    step: 0.01, value: 0.35, unit: 'Δν', fmt: v => v.toFixed(2), onInput: draw });
+  const closed = UI.checkbox(ctl, { label: 'close the loop', checked: false,
+    onChange: draw });
+  const gain = UI.slider(ctl, { label: 'loop gain', min: 0.2, max: 10,
+    log: true, value: 2, unit: '1/s', fmt: v => v.toFixed(2), onInput: draw });
+  const slopeOut = UI.readout(ctl, { label: 'discriminator slope at ν₀' });
+  const errOut = UI.readout(ctl, { label: 'error signal now' });
+
+  // Lorentzian line, FWHM = 1 in these units
+  const L = x => 1 / (1 + 4 * x * x);
+  // demodulated first harmonic of the dithered response (the honest lock-in)
+  const K = 64, sinTh = new Float64Array(K);
+  for (let k = 0; k < K; k++) sinTh[k] = Math.sin(2 * Math.PI * (k + 0.5) / K);
+  function sCurve(d, a) {
+    let s = 0;
+    for (let k = 0; k < K; k++) s += L(d + a * sinTh[k]) * sinTh[k];
+    return 2 * s / K;
+  }
+  function slope0(a) {
+    return (sCurve(1e-4, a) - sCurve(-1e-4, a)) / 2e-4;
+  }
+
+  const xs = Noise.linspace(-3, 3, 241);
+  const rand = Noise.rng(42);
+  let hist = [];            // {t, d} for the strip chart
+  let lastT = 0, playing = false;
+
+  function draw() {
+    const d = delta.value, a = dith.value;
+
+    // (a) the line with the dithered interrogation points riding on it
+    pLine.clear();
+    pLine.guideX(0, { label: 'ν₀', dash: [4, 4] });
+    pLine.line(xs, xs.map(L), { label: 'atomic line (FWHM Δν)' });
+    pLine.points([d - a, d + a], [L(d - a), L(d + a)],
+      { label: 'dithered probes δ ± a', r: 5 });
+    pLine.draw();
+
+    // (b) modulated response over 3 dither periods, AC part + reference
+    const nT = 180, tt = new Float64Array(nT), sig = new Float64Array(nT),
+          ref = new Float64Array(nT);
+    let mean = 0;
+    for (let i = 0; i < nT; i++) {
+      tt[i] = 3 * i / (nT - 1);
+      sig[i] = L(d + a * Math.sin(2 * Math.PI * tt[i]));
+      mean += sig[i] / nT;
+    }
+    for (let i = 0; i < nT; i++) {
+      sig[i] -= mean;
+      ref[i] = 0.2 * Math.sin(2 * Math.PI * tt[i]);
+    }
+    pMod.clear();
+    pMod.line(tt, sig, { label: 'resonator response' });
+    pMod.line(tt, ref, { label: 'dither reference (arb.)', dash: [5, 4],
+      color: '#898781', width: 1.2 });
+    pMod.draw();
+
+    // (c) the S-curve, its central slope, and the operating point
+    const sc = xs.map(x => sCurve(x, a));
+    const sl = slope0(a);
+    const xt = Noise.linspace(-0.7, 0.7, 2);
+    pS.clear();
+    pS.guideX(0, { label: 'ν₀', dash: [4, 4] });
+    pS.line(xs, sc, { label: 'error E(δ)' });
+    pS.line(xt, xt.map(x => sl * x), { label: 'central slope',
+      dash: [5, 4], color: '#898781', width: 1.2 });
+    pS.points([d], [sCurve(d, a)], { label: 'op. point', r: 5 });
+    pS.draw();
+
+    // (d) strip chart of δ(t)
+    pStrip.clear();
+    pStrip.guideY(0, { label: 'line center', dash: [4, 4] });
+    if (hist.length > 1) {
+      pStrip.line(hist.map(h => h.t - lastT), hist.map(h => h.d), {});
+    } else {
+      pStrip.line([-30, 0], [d, d], {});
+    }
+    pStrip.draw();
+
+    slopeOut.set(Math.abs(sl).toFixed(2) + ' per Δν' +
+      (Math.abs(Math.abs(sl) - 1.54) < 0.08 ? ' (≈ max)' : ''));
+    errOut.set(sCurve(d, a).toFixed(3));
+  }
+
+  UI.playButton(ctl, { label: 'run lock', onFrame: function (t, dt) {
+    playing = true;
+    dt = Math.min(dt || 0.016, 0.1);
+    lastT = t;
+    let d = delta.value;
+    d += 0.35 * Math.sqrt(dt) * Noise.randn(rand);           // noise kicks
+    if (closed.value) {
+      // E(δ) ≈ −|slope|·δ near center, so this is δ̇ = −g·δ when locked
+      const sl = Math.abs(slope0(dith.value));
+      d += gain.value * (sCurve(d, dith.value) / sl) * dt;
+    }
+    d = Math.max(-3, Math.min(3, d));
+    delta.value = d;
+    hist.push({ t: t, d: d });
+    while (hist.length > 2 && hist[0].t < t - 30) hist.shift();
+    if (hist.length > 900) hist = hist.filter((_, i) => i % 2 === 0);
+    draw();
+  } });
+  draw();
+})();
+</script>
+</body>
+</html>

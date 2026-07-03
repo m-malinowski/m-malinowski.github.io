@@ -1,0 +1,1319 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>4 · The power spectral density — Making Sense of Noise</title>
+<link rel="stylesheet" href="../css/style.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"
+  onload="renderMathInElement(document.body, {delimiters:[
+    {left:'$$', right:'$$', display:true},
+    {left:'$', right:'$', display:false}]});"></script>
+</head>
+<body>
+
+<nav class="site-nav">
+  <div class="nav-inner">
+    <a class="home" href="../index.html">Making Sense of Noise</a>
+    <div class="chapters">
+      <a href="01-pure-tone.html" title="The pure tone">1</a>
+      <a href="02-modulation.html" title="Modulation">2</a>
+      <a href="03-random-processes.html" title="Random processes">3</a>
+      <a href="04-psd.html" class="current" title="Power spectral density">4</a>
+      <a href="05-noise-colors.html" title="Colors of noise">5</a>
+      <a href="06-oscillator-noise.html" title="Amplitude, phase & frequency noise">6</a>
+      <a href="07-allan.html" title="Allan deviation">7</a>
+      <a href="08-sensitivity.html" title="Sensitivity">8</a>
+      <a href="09-ligo.html" title="LIGO case study">9</a>
+      <a href="10-pll.html" title="Phase-locked loops">10</a>
+    </div>
+  </div>
+</nav>
+
+<main>
+  <p class="chapter-kicker">Chapter 4</p>
+  <h1>The power spectral density</h1>
+  <p class="lede">
+    Stare at a noise time-trace for as long as you like: it will tell you
+    almost nothing. The question that <em>has</em> an answer is "how much
+    noise power lives at which frequencies?" — and the power spectral density
+    is that answer. Every noise number you will ever quote —
+    V/√Hz on a datasheet, dBc/Hz on a phase-noise plot, pT/√Hz for a
+    magnetometer — is this one object in different clothes. This is the
+    keystone chapter of the course.
+  </p>
+
+  <h2>From the FFT to the PSD</h2>
+  <p>
+    Chapter 3 left us with random processes: signals $x(t)$ whose individual
+    wiggles are unpredictable but whose <em>statistics</em> are stable. The
+    natural instinct of anyone with an oscilloscope is to record a stretch of
+    the signal for a time $T$ and take its Fourier transform,
+  </p>
+  <p>
+    $$ X_T(f) \;=\; \int_0^{T} x(t)\, e^{-i 2\pi f t}\, dt . $$
+  </p>
+  <p>
+    Look at what this integral <em>is</em>: at each instant it takes the
+    sample $x(t)$, points it in the direction $e^{-i2\pi f t}$ (chapter 1's
+    phasor, run backwards at the analysis frequency), and adds it to a
+    running sum. $X_T(f)$ is the endpoint of a <strong>walk in the complex
+    plane</strong>. That one picture contains the whole definition of the
+    PSD. For a deterministic tone analyzed <em>at its own frequency</em>,
+    every step points the same way — the walk is a straight ray, and
+    $|X_T(f)|$ grows like $T$. Analyzed off-frequency, the steps' directions
+    rotate at the detuning and the walk just circles — no growth: that is
+    why a tone contributes only <em>at</em> its frequency. For
+    <em>noise</em>, the steps have random signs — the walk is exactly
+    chapter&nbsp;3's random walk, so $|X_T(f)|$ grows only like $\sqrt{T}$
+    and $|X_T(f)|^2$ like $T$, not $T^2$. Watch all three:
+  </p>
+
+  <figure class="demo">
+    <figcaption>$X_T(f)$ is a walk in the complex plane</figcaption>
+    <p class="demo-note">Top: the record $x(t)$ itself (the part consumed so
+      far in color). Bottom left: the running sum $X_t(f)$ as the record
+      grows (press play). Bottom right: $|X_t(f)|$ against record length on
+      log–log axes, with the two possible slopes dashed. A tone on
+      resonance walks straight ($\propto t$); detuned, it goes in circles
+      (bounded); noise random-walks ($\propto \sqrt{t}$, in expectation —
+      single records wobble around it). "New sample" rerolls the noise, or
+      the tone's starting phase, and regrows the record. Since noise power
+      $|X_t|^2$ grows like $t$, dividing by $t$ is exactly what settles it
+      — that division is the next equation.</p>
+    <div class="controls" id="ctl-xt"></div>
+    <div class="plots">
+      <div id="plot-xt-sig"></div>
+    </div>
+    <div class="plots two-col">
+      <canvas id="xt-walk-canvas" height="300"></canvas>
+      <div id="plot-xt-growth"></div>
+    </div>
+  </figure>
+
+  <p>
+    $|X_T(f)|^2$ itself therefore never settles down as you record longer —
+    but $|X_T(f)|^2 / T$ does (in expectation). So we define the
+    <strong>power spectral density</strong>:
+  </p>
+  <p>
+    $$ S_x(f) \;=\; \lim_{T\to\infty} \frac{2\,\big\langle |X_T(f)|^2 \big\rangle}{T},
+       \qquad f \ge 0 . $$
+  </p>
+  <p>
+    The angle brackets are an ensemble average (over repeated records), and
+    the factor of 2 folds the mathematically symmetric negative-frequency half
+    of the spectrum onto the physical, positive-frequency half. The payoff of
+    this exact normalization is one beautiful identity — Parseval's theorem in
+    its most useful form:
+  </p>
+  <p>
+    $$ \int_0^{\infty} S_x(f)\, df \;=\; \operatorname{Var}(x) \;=\; x_{\mathrm{rms}}^2
+       \qquad \text{(zero-mean $x$)} . $$
+  </p>
+  <p>
+    <strong>The area under the PSD is the mean-square value of the signal.</strong>
+    Everything in this chapter, and much of the rest of the course, is an
+    application of that sentence. Watch the identity assemble itself: sweep
+    the cutoff below and admit the signal's frequencies one decade at a
+    time.
+  </p>
+
+  <figure class="demo">
+    <figcaption>Parseval, live: the area accumulates into the variance</figcaption>
+    <p class="demo-note">Drag the cutoff $f^{*}$. Top: the piece of the
+      signal built from only the frequencies below $f^{*}$ (full signal in
+      grey) — it visibly grows into the whole thing. Left: the PSD with
+      $\int_0^{f^*} S\,df$ shaded. Right: that running area versus $f^{*}$,
+      climbing to the dashed line — which is $\mathrm{Var}(x)$ computed in
+      the <em>time domain</em>, knowing nothing about spectra. The two
+      readouts agree at every cutoff, and at the top of the sweep the
+      identity is complete.</p>
+    <div class="controls" id="ctl-pv"></div>
+    <div class="plots">
+      <div id="plot-pv-t"></div>
+    </div>
+    <div class="plots two-col">
+      <div id="plot-pv-psd"></div>
+      <div id="plot-pv-cum"></div>
+    </div>
+  </figure>
+
+  <div class="callout">
+    <div class="callout-title">Energy signals vs power signals — why the 1/T is really there</div>
+    There is a cleaner way to say why the definition divides by $T$. A pulse —
+    anything that starts and ends — has finite total <em>energy</em>
+    $\int x^2\,dt$, and Fourier analysis hands you an <em>energy</em> spectral
+    density $|X(f)|^2$ with no limit needed. Stationary noise never starts or
+    ends: its energy is infinite, and $|X_T(f)|^2$ duly diverges as you record
+    longer. What stays finite is the <em>power</em>, the time-average of
+    $x^2$ — so the honest spectral object is power per unit frequency, and the
+    $1/T$ (plus the ensemble average) is exactly the "per unit time" that
+    turns a divergent energy into a finite power. One habit to build:
+    whenever you meet a new spectral quantity, ask first whether it is an
+    energy density (pulses, single-shot signals) or a power density
+    (stationary noise, everything else in this course) — a surprising number
+    of unit confusions are just these two mixed up.
+  </div>
+
+  <div class="callout warn">
+    <div class="callout-title">Conventions, stated loudly</div>
+    Throughout this site we use <strong>one-sided</strong> PSDs (defined for
+    $f \ge 0$, including the factor 2 above) and <strong>ordinary frequency
+    in hertz</strong> (never rad/s). With these choices,
+    $\int_0^\infty S_x\,df = x_{\mathrm{rms}}^2$, full stop.
+    Be warned that <strong>two-sided</strong> PSDs also exist: symmetric in
+    $\pm f$, exactly half our value at each $|f|$, integrating to the same
+    variance over the whole line. Papers routinely fail to say which one they
+    mean, and this is the single most common unit ambiguity in the noise
+    literature — a silent factor of 2 (or $\sqrt 2$ in amplitude units).
+    When you read "$S(f) = \dots$", your first question is always:
+    one-sided or two-sided? In Hz or rad/s?
+  </div>
+
+  <p>
+    One more connection, so tidy it deserves its own paragraph. The
+    autocorrelation $R_x(\tau) = \langle x(t)\,x(t+\tau)\rangle$ from
+    chapter 3 and the PSD are a Fourier-transform pair (the
+    <strong>Wiener–Khinchin theorem</strong>):
+  </p>
+  <p>
+    $$ S_x(f) \;=\; 2\!\int_{-\infty}^{\infty} R_x(\tau)\, e^{-i 2\pi f \tau}\, d\tau
+       \qquad (f > 0,\ \text{one-sided}). $$
+  </p>
+  <p>
+    The two descriptions of "memory" are the same object: a delta-function
+    correlation (no memory at all) transforms to a flat, white spectrum, while
+    a slowly decaying correlation (long memory) transforms to a spectrum
+    concentrated at low frequency. Setting $\tau = 0$ recovers the area rule:
+    $R_x(0) = \operatorname{Var}(x) = \int_0^\infty S_x\, df$.
+  </p>
+  <p>
+    Chapter 3's three autocorrelation stories now line up as one dial. Both
+    panels below are <em>measured from the same record</em>; the theorem is
+    the claim that they always agree with each other:
+  </p>
+
+  <figure class="demo">
+    <figcaption>Wiener–Khinchin, live: the same memory, in τ and in f</figcaption>
+    <p class="demo-note">Pick a process; the top strip shows the record
+      itself, and below it the two transforms of the same data: measured
+      autocorrelation (left) and measured PSD (right), theory dashed on
+      both. White noise: a delta at $\tau=0$ ↔ a flat spectrum. Filtered
+      noise: drag $\tau_c$ and watch the exponential widen while the
+      Lorentzian narrows — the reciprocity of chapter 3, now exact. Sine in
+      noise: the never-fading cosine ↔ a sharp line standing on the noise's
+      flat floor.</p>
+    <div class="controls" id="ctl-wk"></div>
+    <div class="plots">
+      <div id="plot-wk-t"></div>
+    </div>
+    <div class="plots two-col">
+      <div id="plot-wk-r"></div>
+      <div id="plot-wk-s"></div>
+    </div>
+  </figure>
+
+  <h2>Units: it is a density</h2>
+  <p>
+    If $x$ is a voltage in volts, then $|X_T|^2/T$ carries units of
+    $\mathrm{V^2\,s} = \mathrm{V^2/Hz}$. So the PSD of a voltage is measured
+    in <strong>V²/Hz</strong> — volts squared <em>per hertz</em>. The "per
+    hertz" matters in exactly the way "per cubic metre" matters for mass
+    density: the PSD is not a power, it is a power <em>density</em> along the
+    frequency axis. The power in a band is the <em>area</em> over that band,
+    $$ P_{[f_1,f_2]} \;=\; \int_{f_1}^{f_2} S_x(f)\, df , $$
+    just as mass is density times volume. A PSD value at a single frequency
+    means nothing by itself until you multiply by a bandwidth.
+  </p>
+  <p>
+    Datasheets usually quote the square root of the PSD, the
+    <strong>amplitude spectral density</strong> (ASD),
+    $\sqrt{S_x(f)}$ in $\mathrm{V/\sqrt{Hz}}$ — those famous
+    "nV/√Hz" numbers on every op-amp datasheet. Same information, amplitude
+    units instead of power units. To get an rms from an ASD you multiply by
+    the square root of your bandwidth (for a flat spectrum):
+    $x_{\mathrm{rms}} = \sqrt{S_x}\cdot\sqrt{\Delta f}$.
+  </p>
+  <table>
+    <thead>
+      <tr><th>signal unit</th><th>PSD unit</th><th>ASD unit</th><th>typical lab example</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>voltage, V</td><td>V²/Hz</td><td>V/√Hz</td><td>amplifier input noise, 3&nbsp;nV/√Hz</td></tr>
+      <tr><td>displacement, m</td><td>m²/Hz</td><td>m/√Hz</td><td>LIGO strain arm, 10⁻¹⁹&nbsp;m/√Hz</td></tr>
+      <tr><td>magnetic field, T</td><td>T²/Hz</td><td>T/√Hz</td><td>magnetometer floor, 1&nbsp;pT/√Hz</td></tr>
+      <tr><td>frequency, Hz</td><td>Hz²/Hz</td><td>Hz/√Hz</td><td>laser frequency noise (chapter 6)</td></tr>
+      <tr><td>phase, rad</td><td>rad²/Hz</td><td>rad/√Hz</td><td>phase noise $S_\varphi$, dBc/Hz (chapter 6)</td></tr>
+    </tbody>
+  </table>
+
+  <h2>The area under the PSD is the RMS you measure</h2>
+  <p>
+    Time to make the central claim physical. Below is a noise voltage —
+    white noise gently rolled off by a one-pole low-pass (corner $f_c$),
+    sampled at rate $f_s$ for a duration $T$; all three are sliders, so you
+    can also watch what the acquisition itself does (a higher $f_s$ extends
+    the spectrum's reach toward its Nyquist edge $f_s/2$; a longer $T$
+    smooths the estimate). Follow it with an ideal band-pass from $f_1$ to
+    $f_2$ (in the demo: a brick-wall filter in the FFT domain) and read the
+    output on a true-rms voltmeter. The claim is that the voltmeter reading
+    is exactly the square root of the shaded area under the PSD:
+  </p>
+  <p>
+    $$ x_{\mathrm{rms}}^{\,\text{in band}} \;=\;
+       \sqrt{\int_{f_1}^{f_2} S_x(f)\, df\,} . $$
+  </p>
+  <p>
+    Drag the band edges. Watch the shaded area, the filtered trace, and the
+    two readouts — one <em>predicted</em> from the area, one
+    <em>measured</em> from the filtered samples. They track each other
+    everywhere: wide band, narrow band, on the flat part, down the roll-off.
+    This is the whole meaning of a PSD.
+  </p>
+
+  <figure class="demo">
+    <figcaption>Band power: the shaded area is the rms² of the filtered signal</figcaption>
+    <p class="demo-note">The circuit above is the experiment: noisy signal →
+      band-pass ($f_1$ to $f_2$, set by the sliders) → true-rms voltmeter,
+      whose display reads live. The claim: the voltmeter must always show
+      $\sqrt{\text{shaded area}}$ — compare it against the predicted
+      readout as you drag. The two knobs separate the two ideas: fix the
+      bandwidth $\Delta f$ and <em>slide the centre</em> — on the plateau
+      the voltmeter barely moves (same $S$, same $\Delta f$), then it falls
+      as the band rides down the roll-off, tracking
+      $\sqrt{S \cdot \Delta f}$ with the local level $S$. Straddle the
+      corner and only the full integral gets it right. (Edges clamp at the
+      measurable range.) Left: the PSD with the band
+      shaded. Right: the filtered trace (full trace in grey) with the
+      predicted ±rms dashed.
+      Bottom: the distribution of the filtered samples in real millivolts,
+      against a Gaussian of width $\sqrt{\text{area}}$ — no fitted
+      parameters, so it matches only if the area really is the
+      variance.</p>
+    <svg viewBox="0 0 470 92" style="max-width:460px;display:block;margin:2px auto 4px;">
+      <g fill="none" stroke="var(--axis)" stroke-width="1.6">
+        <circle cx="34" cy="40" r="15"/>
+        <path d="M49 40 H92"/>
+        <rect x="92" y="18" width="128" height="44" rx="8"/>
+        <path d="M220 40 H262"/>
+        <rect x="262" y="14" width="174" height="52" rx="8"/>
+      </g>
+      <g font-family="system-ui, sans-serif" font-size="12" fill="var(--ink-2)">
+        <text x="34" y="45" text-anchor="middle" font-size="15">~</text>
+        <text id="lp-label" x="8" y="82" text-anchor="start">noise, LP 250 Hz</text>
+        <text x="156" y="36" text-anchor="middle" font-weight="600">band-pass</text>
+        <text id="bp-label" x="156" y="53" text-anchor="middle">10 – 100 Hz</text>
+        <text x="349" y="82" text-anchor="middle">true-rms voltmeter</text>
+      </g>
+      <text id="vm-read" x="349" y="46" text-anchor="middle"
+        font-family="ui-monospace, Menlo, monospace" font-size="17"
+        fill="var(--ink)">0.0 mV</text>
+    </svg>
+    <div class="controls" id="ctl-band"></div>
+    <div class="plots two-col">
+      <div id="plot-band-psd"></div>
+      <div id="plot-band-time"></div>
+    </div>
+    <div class="plots">
+      <div id="plot-band-hist"></div>
+    </div>
+  </figure>
+
+  <p>
+    Two things worth noticing while you play. First, an equal-looking band on
+    the log axis (say 10–100&nbsp;Hz vs 100–1000&nbsp;Hz) does <em>not</em>
+    carry equal power: the area rule is about linear hertz, and a decade
+    higher up contains ten times more hertz. Second, when you narrow the band
+    the filtered trace does not just shrink — it becomes slower and more
+    sinusoidal, ringing near the band's centre frequency. A narrow slice of
+    noise looks like a wobbly sine wave: that observation becomes important
+    when we discuss what a spectrum analyzer actually measures.
+  </p>
+
+  <div class="callout">
+    <div class="callout-title">Why do T and f_s nudge the predicted rms?</div>
+    Sharp eyes will notice that changing the duration or the sample rate
+    moves the <em>predicted</em> rms by a little, even though neither
+    appears in the area rule. That is because the prediction integrates the
+    <strong>measured</strong> PSD — deliberately, so that both readouts
+    come from the same data — and a measured PSD is a statistical estimate:
+    the band's area scatters from record to record by roughly
+    $1/\sqrt{\Delta f \cdot T}$ (independent samples ≈ bandwidth ×
+    duration). Push $T$ up and watch the prediction settle; change $f_s$
+    and you have effectively drawn a fresh record (and re-gridded the
+    bins), so the area re-rolls within that scatter. The true area never
+    moved. This wobble <em>is</em> the next section's subject, met in the
+    wild before its theory.
+  </div>
+
+  <h2>Estimating a PSD honestly</h2>
+  <p>
+    Now the uncomfortable part. The definition of $S_x$ contains an ensemble
+    average $\langle\cdot\rangle$ that your single lab record does not have.
+    If you just take one FFT of one record and square it — the
+    <strong>raw periodogram</strong> — you get an estimate whose
+    <em>expectation</em> is the true PSD but whose fluctuation is enormous:
+    each frequency bin is the sum of the squares of two Gaussian numbers (the
+    real and imaginary parts of $X_T$), i.e. a chi-squared variable with 2
+    degrees of freedom. Its standard deviation equals its mean.
+    <strong>Every bin of a raw periodogram is uncertain by about 100%</strong>
+    — and recording longer does not help, because a longer record just gives
+    you <em>more</em> bins, each one still 100% scattered.
+  </p>
+  <p>
+    The fix is to average. <strong>Welch's method</strong>: chop the record
+    into $K$ segments, window each segment (more on that below), take the
+    periodogram of each, and average the $K$ periodograms bin by bin. The
+    fluctuation shrinks like $1/\sqrt{K}$; the price is frequency resolution,
+    since each segment is shorter — $\Delta f = f_s/n_{\mathrm{seg}}$. That
+    trade (smoothness vs resolution) is the fundamental bargain of spectrum
+    estimation; there is no free lunch, only a well-chosen $K$.
+  </p>
+
+  <figure class="demo">
+    <figcaption>Averaging periodograms: the fuzz collapses as $1/\sqrt{K}$</figcaption>
+    <p class="demo-note">Top: the record actually used, chopped into the $K$
+      segments being averaged (only the first $K \times 0.512$&nbsp;s of the
+      full record is consumed — more averaging spends more data). Bottom:
+      the estimate against the known true PSD (dashed). $K=1$ is the raw
+      periodogram: 100% scatter, no matter how long the record. Untick "log
+      frequency axis" to answer a classic puzzle — see the callout
+      below.</p>
+    <div class="controls" id="ctl-welch"></div>
+    <div class="plots">
+      <div id="plot-welch-t"></div>
+      <div id="plot-welch"></div>
+    </div>
+  </figure>
+
+  <div class="callout">
+    <div class="callout-title">Why does the fuzz look worse at high frequency?</div>
+    It doesn't — every bin of the estimate has exactly the same fractional
+    scatter ($1/\sqrt{K}$; the bins are statistically identical). The
+    growing fuzz toward the right is an artifact of the
+    <strong>logarithmic frequency axis</strong>: the FFT's bins are spaced
+    <em>linearly</em>, so a log axis packs ten times more bins into each
+    centimetre for every decade you move right. Near 10&nbsp;Hz one pixel
+    column shows a single bin's polite wiggle; near 1&nbsp;kHz it shows the
+    full spread of hundreds of independent draws — you are seeing the
+    extremes of a crowd, not noisier statistics. Flip the demo to a linear
+    axis and the fuzz becomes uniform across the band. (Log-log PSD plots
+    from real analyzers often <em>don't</em> show this because they average
+    neighbouring bins into log-spaced display points — which also quietly
+    improves the estimate at high $f$.)
+  </div>
+
+  <div class="callout">
+    <div class="callout-title">Why the window?</div>
+    Chopping a record into segments creates artificial sharp edges, and sharp
+    edges have broad spectra: a strong narrow line would "leak" a skirt of
+    spurious power across the whole spectrum, burying weak features. A
+    <strong>window</strong> (we use the Hann window, a raised cosine that
+    tapers each segment smoothly to zero) suppresses this leakage
+    dramatically, at the cost of slightly widening every spectral feature.
+    The widening is quantified by the window's <strong>equivalent noise
+    bandwidth</strong> (ENBW): each frequency bin behaves like a little
+    band-pass filter collecting noise from around its centre, and the ENBW
+    is the width of the ideal brick-wall filter that would collect the
+    <em>same noise power</em> — the bin's effective width, in hertz, for
+    all power bookkeeping. With no window each bin is $\Delta f = 1/T$
+    wide; the Hann window's gentler skirts make it collect a little more,
+    $\mathrm{ENBW} = 1.5\,\Delta f$. That number is exactly what the next
+    section needs; the DFT notes in the course page's reading list table
+    ENBW for all the common windows.
+  </div>
+
+  <h2>Lines vs noise floors: the spectrum-analyzer trap</h2>
+  <p>
+    A PSD plot in the lab almost always shows two kinds of feature at once:
+    sharp <strong>lines</strong> (a 50/60&nbsp;Hz pickup, a carrier, a
+    calibration tone) sticking out of a smooth <strong>noise floor</strong>.
+    These two objects have <em>different units</em>, and confusing them is
+    the classic spectrum-analyzer mistake.
+  </p>
+  <p>
+    A pure sine of amplitude $A$ carries power $A^2/2$ concentrated at one
+    frequency — in the $T\to\infty$ limit its PSD is a delta function,
+    $\frac{A^2}{2}\,\delta(f - f_0)$. In a real measurement with resolution
+    $\Delta f$, all of that power lands in essentially one bin, so the
+    <em>height</em> you read in V²/Hz is about $\frac{A^2/2}{\mathrm{ENBW}}$,
+    where ENBW is the bin's effective width from the window callout above
+    ($1.5\,\Delta f$ for our Hann window) — the height depends on
+    <em>your</em> resolution, not on the signal! Halve
+    $\Delta f$ and the spike doubles in height while its area stays fixed at
+    $A^2/2$. The noise floor does the opposite: it is a genuine density, so
+    its level in V²/Hz stays put while its <em>per-bin power</em> shrinks
+    with the bin width. Try it:
+  </p>
+
+  <figure class="demo">
+    <figcaption>A sine plus white noise: line height moves with resolution, floor does not</figcaption>
+    <p class="demo-note">The same data, plotted both ways. Left: the PSD in
+      V²/Hz — slide the segment length (finer resolution → narrower bins)
+      and the spike at 250&nbsp;Hz grows taller and narrower, its
+      <em>area</em> pinned at $A^2/2 = 0.125\ \mathrm{V^2}$, while the
+      noise floor never moves. Right: what a swept spectrum analyzer shows —
+      <em>power per resolution bandwidth</em> — where everything is
+      reversed: the line's height is pinned at $A^2/2$ and the
+      <em>floor</em> rides up and down with the RBW.</p>
+    <div class="controls" id="ctl-line"></div>
+    <div class="plots two-col">
+      <div id="plot-line"></div>
+      <div id="plot-line-rbw"></div>
+    </div>
+  </figure>
+
+  <p>
+    Now the trap. A swept spectrum analyzer displays <em>power per resolution
+    bandwidth</em>, not power per hertz. The unit on its screen is dBm per
+    RBW — dBm is the RF world's absolute power unit, decibels relative to
+    1&nbsp;mW ($0\ \mathrm{dBm} = 1$ mW, $-30\ \mathrm{dBm} = 1\ \mu$W), and
+    dBm/Hz is a power density in the same currency. On that display
+    everything is reversed: the <strong>line height stays fixed</strong> as
+    you change RBW (the line's power all fits inside any RBW), while the
+    <strong>noise floor moves</strong> — up 10&nbsp;dB for every 10× wider
+    RBW, because a wider filter collects more noise power. Same physics, the
+    opposite visual behaviour, purely because of what is being plotted.
+  </p>
+
+  <div class="callout lab">
+    <div class="callout-title">Lab note: quoting numbers off an analyzer</div>
+    To quote a <strong>noise floor</strong> from a swept analyzer, you must
+    normalize by the RBW: use the marker-noise mode (which reads directly in
+    dBm/Hz, correcting for the filter's ENBW) or subtract
+    $10\log_{10}(\mathrm{RBW}/\mathrm{Hz})$ yourself. To quote a
+    <strong>line</strong>, use its <em>power</em> (dBm, or its area in
+    V²) — never its height in density units, which is an artifact of your
+    resolution setting. If a colleague's "noise floor" changes when they
+    change RBW, they are quoting per-RBW numbers; if their "carrier level"
+    changes, they are quoting a density. Both are fixable in one line of
+    arithmetic — once you notice.
+  </div>
+
+  <h2>The essential code</h2>
+  <p>
+    The band-pass filter behind the central demo is worth seeing: a
+    brick-wall filter is three steps in the FFT domain. Zeroing a bin $k$
+    requires also zeroing its negative-frequency mirror $N-k$, or the inverse
+    transform stops being real.
+  </p>
+<pre><code>// brick-wall band-pass: FFT, zero everything outside [f1, f2], inverse FFT
+const N = x.length;                          // power of 2, sample rate fs
+const re = Float64Array.from(x);
+const im = new Float64Array(N);
+FFT.fft(re, im);
+for (let k = 0; k &lt;= N / 2; k++) {
+  const f = k * fs / N;
+  if (f &lt; f1 || f &gt; f2) {
+    re[k] = im[k] = 0;
+    if (k &gt; 0 &amp;&amp; k &lt; N / 2) re[N - k] = im[N - k] = 0;   // mirror bin
+  }
+}
+FFT.ifft(re, im);        // re[] is now the filtered time trace
+// check: Noise.rms(re)² equals the PSD area between f1 and f2</code></pre>
+
+  <p>
+    You now own the tool. The obvious next question is what shapes $S(f)$
+    actually takes when you point it at real hardware — and it turns out
+    that almost everything in a lab lands on a handful of straight lines on
+    a log–log plot. Those straight lines, and the very different
+    personalities behind them, are the next chapter.
+  </p>
+
+  <h2>Exercises</h2>
+
+  <div class="exercise">
+    <div class="ex-label">Exercise 4.1 — reading a datasheet</div>
+    <p>An amplifier datasheet quotes input voltage noise of
+    3&nbsp;nV/√Hz, flat out to 100&nbsp;kHz. Your measurement has a
+    10&nbsp;kHz bandwidth. What rms voltage noise do you expect at the
+    input?</p>
+    <details><summary>Solution</summary>
+      <p>For a flat spectrum, rms = ASD × √(bandwidth):
+      $3\,\mathrm{nV/\sqrt{Hz}} \times \sqrt{10^4\,\mathrm{Hz}}
+      = 3\,\mathrm{nV} \times 100 = 300\,\mathrm{nV} = 0.3\ \mu\mathrm{V}$
+      rms. Notice the units work only because the ASD is a density: the √Hz
+      in the denominator eats the √Hz of the bandwidth.</p>
+    </details>
+  </div>
+
+  <div class="exercise">
+    <div class="ex-label">Exercise 4.2 — two-sided to one-sided</div>
+    <p>A theory paper reports a (two-sided) displacement noise spectrum
+    $S^{\mathrm{2s}}_x(f) = 2\times10^{-34}\ \mathrm{m^2/Hz}$, flat, defined
+    for $-\infty &lt; f &lt; \infty$. What is the one-sided PSD, and what ASD
+    would you quote on a plot?</p>
+    <details><summary>Solution</summary>
+      <p>The one-sided PSD folds negative frequencies onto positive ones:
+      $S_x = 2\,S^{\mathrm{2s}}_x = 4\times10^{-34}\ \mathrm{m^2/Hz}$. The
+      ASD is its square root, $\sqrt{S_x} = 2\times10^{-17}\ \mathrm{m/\sqrt{Hz}}$.
+      Note the ASD changes only by $\sqrt2$ — which is exactly why this
+      mistake survives casual sanity checks.</p>
+    </details>
+  </div>
+
+  <div class="exercise">
+    <div class="ex-label">Exercise 4.3 — normalizing by the RBW</div>
+    <p>A spectrum analyzer with RBW = 100&nbsp;kHz shows a noise floor of
+    −90&nbsp;dBm. What is the noise floor in dBm/Hz? (Ignore the small ENBW
+    correction.)</p>
+    <details><summary>Solution</summary>
+      <p>Divide by the bandwidth, i.e. subtract
+      $10\log_{10}(10^5) = 50$&nbsp;dB:
+      $-90 - 50 = -140\ \mathrm{dBm/Hz}$. (Marker-noise mode also applies a
+      small correction, typically a couple of dB, for the RBW filter's ENBW
+      and the analyzer's detector statistics.)</p>
+    </details>
+  </div>
+
+  <div class="exercise">
+    <div class="ex-label">Exercise 4.4 — the incredible growing spike</div>
+    <p>A 1&nbsp;V rms sine is measured with an FFT analyzer, first with
+    $\Delta f = 1$&nbsp;Hz bins, then with $\Delta f = 0.01$&nbsp;Hz bins
+    (assume ideal rectangular bins and a bin-centred tone). What peak PSD
+    height do you read in each case? What stays the same?</p>
+    <details><summary>Solution</summary>
+      <p>The sine's total power is $(1\ \mathrm{V\,rms})^2 = 1\ \mathrm{V^2}$,
+      all in one bin. Height = power / bin width:
+      $1\ \mathrm{V^2}/1\ \mathrm{Hz} = 1\ \mathrm{V^2/Hz}$ in the first
+      case, $1/0.01 = 100\ \mathrm{V^2/Hz}$ in the second. The
+      <em>area</em> is 1&nbsp;V² both times — that is the number that
+      describes the signal. (A real window spreads the power over
+      ~ENBW instead of one bin, scaling both heights by the same factor.)</p>
+    </details>
+  </div>
+
+  <div class="exercise">
+    <div class="ex-label">Exercise 4.5 — why longer records don't smooth</div>
+    <p>You double the length of a noise record and recompute the raw
+    periodogram, hoping it will look smoother. It doesn't. Why not, and what
+    should you do instead?</p>
+    <details><summary>Solution</summary>
+      <p>Doubling $T$ halves the bin width $\Delta f = 1/T$, so you get twice
+      as many bins — but each bin is still a chi-squared variable with 2
+      degrees of freedom (one complex FFT value squared), i.e. still
+      ~100% uncertain. Longer records buy <em>resolution</em>, never
+      smoothness. Smoothness comes only from averaging: split the record into
+      $K$ segments and Welch-average ($\sigma \propto 1/\sqrt K$), or
+      equivalently average adjacent bins. The second demo on this page is
+      exactly this experiment.</p>
+    </details>
+  </div>
+
+  <nav class="pager">
+    <a class="prev" href="03-random-processes.html"><span class="dir">Previous · Chapter 3</span>
+      From signals to noise: random processes</a>
+    <a class="next" href="05-noise-colors.html"><span class="dir">Next · Chapter 5</span>
+      The colors of noise</a>
+  </nav>
+</main>
+
+<script src="../js/lib/fft.js"></script>
+<script src="../js/lib/noise.js"></script>
+<script src="../js/lib/plot.js"></script>
+<script src="../js/lib/ui.js"></script>
+<script>
+'use strict';
+
+/* ---------- demo 0: X_T(f) as a walk in the complex plane ---------- */
+(function () {
+  const fs = 256, TMAX = 16, N = fs * TMAX;
+  const nu0 = 8;                          // tone frequency, Hz
+  const canvas = document.getElementById('xt-walk-canvas');
+  canvas.style.height = '300px';   // CSS-pin (retina-safe)
+  const pS = new Plot('#plot-xt-sig', {
+    xlabel: 'time (s)', ylabel: 'x(t)', height: 140,
+    xlim: [0, TMAX], ylim: [-4.5, 4.5], xunit: 's', hover: false
+  });
+  const pG = new Plot('#plot-xt-growth', {
+    xlabel: 'record length t (s)', ylabel: '|X_t(f)|', height: 300,
+    xlog: true, ylog: true, xlim: [0.05, TMAX], ylim: [3e-3, 20], xunit: 's'
+  });
+  const ctl = '#ctl-xt';
+  let seed = 4;
+  const mode = UI.select(ctl, { label: 'signal & analysis frequency', options: [
+    { value: 'res', label: 'tone, analyzed on resonance (f = ν₀)' },
+    { value: 'det', label: 'tone, detuned (f = ν₀ + 0.4 Hz)' },
+    { value: 'noise', label: 'white noise' }
+  ], value: 'res', onChange: () => { build(); restart(); } });
+  UI.button(ctl, { label: 'new sample ↻',
+    onClick: () => { seed++; build(); restart(); } });
+
+  let px, py, mag, sig, tArr, reveal = 1;
+  let pb = null, lastTT = 0, ttOff = 0;
+
+  // reveal from scratch when playing (visible feedback), instantly when not
+  function restart() {
+    ttOff = lastTT;
+    reveal = (pb && pb.running) ? 0.02 : 1;
+    drawAll();
+  }
+
+  function build() {
+    const rand = Noise.rng(seed);
+    const f = mode.value === 'det' ? nu0 + 0.4 : nu0;
+    // tones get a fresh random starting phase per sample (chapter 3's
+    // random-phase draw) so "new sample" is meaningful in every mode
+    const ph = 2 * Math.PI * rand();
+    const dt = 1 / fs;
+    px = new Float64Array(N + 1); py = new Float64Array(N + 1);
+    mag = new Float64Array(N + 1);
+    sig = new Float64Array(N);
+    tArr = new Float64Array(N + 1);
+    let re = 0, im = 0;
+    for (let i = 0; i < N; i++) {
+      const t = i * dt;
+      const x = mode.value === 'noise' ? Noise.randn(rand)
+                                       : Math.cos(2 * Math.PI * nu0 * t + ph);
+      sig[i] = x;
+      re += x * Math.cos(2 * Math.PI * f * t) * dt;
+      im -= x * Math.sin(2 * Math.PI * f * t) * dt;
+      px[i + 1] = re; py[i + 1] = im;
+      mag[i + 1] = Math.hypot(re, im);
+      tArr[i + 1] = t + dt;
+    }
+  }
+
+  function drawSig() {
+    const n = Math.max(2, Math.round(reveal * N));
+    const step = 2;
+    const tU = [], xU = [], tR = [], xR = [];
+    for (let i = 0; i < N; i += step) {
+      if (i <= n) { tU.push(tArr[i]); xU.push(sig[i]); }
+      else { tR.push(tArr[i]); xR.push(sig[i]); }
+    }
+    pS.o.ylim = mode.value === 'noise' ? [-4.5, 4.5] : [-1.35, 1.35];
+    pS.clear();
+    if (tR.length) pS.line(tR, xR, { color: '#898781', width: 1 });
+    pS.line(tU, xU, { width: 1 });
+    pS.draw();
+  }
+
+  function drawWalk() {
+    const dpr = window.devicePixelRatio || 1;
+    const W = canvas.clientWidth || 500, H = 300;
+    const bw = Math.round(W * dpr), bh = Math.round(H * dpr);
+    if (canvas.width !== bw || canvas.height !== bh) {
+      canvas.width = bw; canvas.height = bh;
+    }
+    const ctx = canvas.getContext('2d');
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    const dark = matchMedia('(prefers-color-scheme: dark)').matches;
+    ctx.fillStyle = dark ? '#1a1a19' : '#fcfcfb';
+    ctx.fillRect(0, 0, W, H);
+    // fit the FULL path (so the view never rescales while playing)
+    let m = 1e-9;
+    for (let i = 0; i <= N; i++) {
+      m = Math.max(m, Math.abs(px[i]), Math.abs(py[i]));
+    }
+    const cx = W / 2, cy = H / 2, sc = (Math.min(W, H) / 2 - 18) / m;
+    ctx.strokeStyle = dark ? '#2c2c2a' : '#e1e0d9';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(cx - W / 2 + 8, cy); ctx.lineTo(cx + W / 2 - 8, cy);
+    ctx.moveTo(cx, 12); ctx.lineTo(cx, H - 12);
+    ctx.stroke();
+    ctx.fillStyle = '#898781';
+    ctx.font = '11px system-ui, sans-serif';
+    ctx.textAlign = 'left'; ctx.textBaseline = 'top';
+    ctx.fillText('Im', cx + 5, 12);
+    ctx.fillText('Re', cx + W / 2 - 28, cy + 5);
+    // the walk up to the reveal point
+    const n = Math.max(2, Math.round(reveal * N));
+    ctx.strokeStyle = dark ? '#3987e5' : '#2a78d6';
+    ctx.lineWidth = 1.6;
+    ctx.beginPath();
+    ctx.moveTo(cx, cy);
+    const step = Math.max(1, Math.floor(n / 2000));
+    for (let i = 0; i <= n; i += step) {
+      ctx.lineTo(cx + px[i] * sc, cy - py[i] * sc);
+    }
+    ctx.stroke();
+    // tip dot with surface ring
+    ctx.fillStyle = dark ? '#c98500' : '#eda100';
+    ctx.strokeStyle = dark ? '#1a1a19' : '#fcfcfb';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.arc(cx + px[n] * sc, cy - py[n] * sc, 5, 0, 2 * Math.PI);
+    ctx.fill(); ctx.stroke();
+  }
+
+  function drawGrowth() {
+    const n = Math.max(8, Math.round(reveal * N));
+    // log-spaced subsample of |X_t|
+    const ts = [], ms = [];
+    for (let k = 0; k < 220; k++) {
+      const i = Math.max(2, Math.round(Math.pow(N, k / 219)));
+      if (i > n) break;
+      ts.push(tArr[i]); ms.push(mag[i]);
+    }
+    const tg = [0.05, TMAX];
+    pG.clear();
+    pG.line(tg, tg.map(t => t / 2), { label: '∝ t (coherent)',
+      color: '#898781', width: 1.5, dash: [6, 4] });
+    pG.line(tg, tg.map(t => Math.sqrt(Math.PI / 4) * Math.sqrt(t / fs)),
+      { label: '∝ √t (random walk)', color: '#898781', width: 1.5,
+        dash: [2, 3] });
+    pG.line(ts, ms, { label: '|X_t(f)| this record' });
+    pG.draw();
+  }
+
+  function drawAll() { drawSig(); drawWalk(); drawGrowth(); }
+  pb = UI.playButton(ctl, { onFrame: (tt) => {
+    lastTT = tt;
+    reveal = Math.min(1, 0.01 + (tt - ttOff) / 12);
+    drawAll();
+  } });
+  build();
+  drawAll();
+})();
+
+/* ---------- demo: Parseval accumulating ---------- */
+(function () {
+  const fs = 2000, N = 1 << 15, h0 = 1e-3, fc = 250;   // 16.4 s record
+
+  const pT = new Plot('#plot-pv-t', {
+    xlabel: 'time (s)', ylabel: 'V(t)', height: 150,
+    xlim: [0, 1], ylim: [-2.6, 2.6], xunit: 's', hover: false
+  });
+  const pP = new Plot('#plot-pv-psd', {
+    xlabel: 'frequency (Hz)', ylabel: 'PSD (V²/Hz)', height: 280,
+    xlog: true, ylog: true, xlim: [1, 1000], ylim: [1e-5, 4e-3], xunit: 'Hz'
+  });
+  const pC = new Plot('#plot-pv-cum', {
+    xlabel: 'cutoff f* (Hz)', ylabel: 'area so far (V²)', height: 280,
+    xlog: true, xlim: [1, 1000], ylim: [0, 0.55], xunit: 'Hz'
+  });
+  const ctl = '#ctl-pv';
+  let seed = 11;
+  const fst = UI.slider(ctl, { label: 'cutoff f*', min: 2, max: 1000,
+    log: true, value: 50, unit: 'Hz', fmt: v => v.toPrecision(3),
+    onInput: draw });
+  const roA = UI.readout(ctl, { label: 'area up to f* (V²)' });
+  const roV = UI.readout(ctl, { label: 'Var of the partial signal (V²)' });
+  UI.button(ctl, { label: 'new sample ↻',
+    onClick: () => { seed++; make(); draw(); } });
+
+  let x, Xre, Xim, F, PSD, df, cum, varFull;
+  function make() {
+    const rand = Noise.rng(seed);
+    const sigma = Math.sqrt(h0 * fs / 2);
+    const re = new Float64Array(N), im = new Float64Array(N);
+    for (let i = 0; i < N; i++) re[i] = sigma * Noise.randn(rand);
+    FFT.fft(re, im);
+    for (let k = 0; k <= N / 2; k++) {
+      const f = k * fs / N;
+      const H = 1 / Math.sqrt(1 + (f / fc) * (f / fc));
+      re[k] *= H; im[k] *= H;
+      if (k > 0 && k < N / 2) { re[N - k] *= H; im[N - k] *= H; }
+    }
+    Xre = re; Xim = im;
+    const tre = Float64Array.from(re), tim = Float64Array.from(im);
+    FFT.ifft(tre, tim);
+    x = tre;
+    const m = Noise.mean(x);
+    let v = 0;
+    for (let i = 0; i < N; i++) v += (x[i] - m) * (x[i] - m);
+    varFull = v / N;
+    const w = FFT.welch(x, fs, { nseg: 4096 });
+    F = w.f; PSD = w.psd; df = F[1] - F[0];
+    // running integral of the measured PSD
+    cum = new Float64Array(F.length);
+    for (let k = 1; k < F.length; k++) cum[k] = cum[k - 1] + PSD[k] * df;
+  }
+
+  function lowpassed(fcut) {
+    const re = Float64Array.from(Xre), im = Float64Array.from(Xim);
+    for (let k = 0; k <= N / 2; k++) {
+      const f = k * fs / N;
+      if (f > fcut) {
+        re[k] = im[k] = 0;
+        if (k > 0 && k < N / 2) { re[N - k] = im[N - k] = 0; }
+      }
+    }
+    FFT.ifft(re, im);
+    return re;
+  }
+
+  const tAxis = new Float64Array(fs);
+  for (let i = 0; i < fs; i++) tAxis[i] = i / fs;
+
+  function draw() {
+    const fcut = fst.value;
+    const y = lowpassed(fcut);
+    let v = 0;
+    for (let i = 0; i < N; i++) v += y[i] * y[i];
+    const varLow = v / N;
+    let kc = 1;
+    while (kc < F.length - 1 && F[kc] < fcut) kc++;
+    const area = cum[kc];
+
+    pT.clear();
+    pT.line(tAxis, x.subarray(0, fs), { label: 'full signal',
+      color: '#898781', width: 1 });
+    pT.line(tAxis, y.subarray(0, fs),
+      { label: 'frequencies below f* only', width: 1 });
+    pT.draw();
+
+    // shaded region of the PSD below the cutoff
+    const bf = [], bp = [];
+    for (let k = 1; k < F.length; k++) {
+      if (F[k] <= fcut) { bf.push(F[k]); bp.push(PSD[k]); }
+    }
+    pP.clear();
+    pP.guideX(fcut, { label: 'f*' });
+    pP.line(F.subarray(1), PSD.subarray(1), { label: 'PSD S(f)' });
+    if (bf.length) pP.line(bf, bp, { label: 'area so far', fill: true });
+    pP.draw();
+
+    pC.clear();
+    pC.guideY(varFull, { label: 'Var(x), time domain' });
+    pC.guideX(fcut, {});
+    pC.line(F.subarray(1), cum.subarray(1),
+      { label: 'cumulative ∫₀^f S df′' });
+    pC.points([F[kc]], [area], {});
+    pC.draw();
+
+    roA.set(area.toFixed(3) + ' V²');
+    roV.set(varLow.toFixed(3) + ' V²');
+  }
+  make();
+  draw();
+})();
+
+/* ---------- demo 0b: Wiener–Khinchin side by side ---------- */
+(function () {
+  const fs = 500, N = 1 << 15;           // 65.5 s record
+  const KMAX = 500;                      // lags out to 1 s
+  const F0 = 5, SIG = 0.3;               // sine-in-noise parameters
+
+  const pTr = new Plot('#plot-wk-t', {
+    xlabel: 'time (s)', ylabel: 'x(t)', height: 140,
+    xlim: [0, 4], ylim: [-4.5, 4.5], xunit: 's', hover: false
+  });
+  const pR = new Plot('#plot-wk-r', {
+    xlabel: 'lag τ (s)', ylabel: 'R(τ)', height: 280,
+    xlim: [0, 1], ylim: [-0.65, 1.15], xunit: 's'
+  });
+  const pS = new Plot('#plot-wk-s', {
+    xlabel: 'frequency (Hz)', ylabel: 'PSD (1/Hz units)', height: 280,
+    xlog: true, ylog: true, xlim: [0.1, 250], ylim: [1e-6, 10], xunit: 'Hz'
+  });
+  const ctl = '#ctl-wk';
+  let seed = 3;
+  const mode = UI.select(ctl, { label: 'process', options: [
+    { value: 'white', label: 'white noise (no memory)' },
+    { value: 'ou', label: 'filtered noise (exponential memory)' },
+    { value: 'sine', label: 'sine + weak noise (memory that never fades)' }
+  ], value: 'ou', onChange: draw });
+  const tc = UI.slider(ctl, { label: 'memory τc (filtered case)', min: 0.02,
+    max: 0.3, log: true, value: 0.08, unit: 's', fmt: v => v.toPrecision(2),
+    onInput: draw });
+  UI.button(ctl, { label: 'new sample ↻', onClick: () => { seed++; draw(); } });
+
+  const tau = Noise.linspace(0, (KMAX - 1) / fs, KMAX);
+
+  function draw() {
+    const rand = Noise.rng(seed);
+    const m = mode.value;
+    const x = new Float64Array(N);
+    if (m === 'white') {
+      for (let i = 0; i < N; i++) x[i] = Noise.randn(rand);
+    } else if (m === 'ou') {
+      const a = Math.exp(-1 / (fs * tc.value)), b = Math.sqrt(1 - a * a);
+      let y = Noise.randn(rand);
+      for (let i = 0; i < N; i++) {
+        y = a * y + b * Noise.randn(rand);
+        x[i] = y;
+      }
+    } else {
+      const ph = 2 * Math.PI * rand();
+      for (let i = 0; i < N; i++) {
+        x[i] = Math.cos(2 * Math.PI * F0 * i / fs + ph) +
+               SIG * Noise.randn(rand);
+      }
+    }
+
+    // the record itself: first four seconds
+    const nT = 4 * fs;
+    const tT = new Float64Array(nT);
+    for (let i = 0; i < nT; i++) tT[i] = i / fs;
+    pTr.o.ylim = m === 'sine' ? [-2.2, 2.2] : [-4.5, 4.5];
+    pTr.clear();
+    pTr.line(tT, x.subarray(0, nT), { width: 1 });
+    pTr.draw();
+
+    // measured autocorrelation
+    const R = new Float64Array(KMAX);
+    for (let k = 0; k < KMAX; k++) {
+      let s = 0;
+      for (let i = 0; i < N - k; i++) s += x[i] * x[i + k];
+      R[k] = s / (N - k);
+    }
+    // theory
+    let Rth, Sth;
+    if (m === 'white') {
+      Rth = tau.map((t, k) => k === 0 ? 1 : 0);
+      Sth = f => 2 / fs;
+    } else if (m === 'ou') {
+      const T = tc.value;
+      Rth = tau.map(t => Math.exp(-t / T));
+      Sth = f => 4 * T / (1 + Math.pow(2 * Math.PI * f * T, 2));
+    } else {
+      Rth = tau.map((t, k) => 0.5 * Math.cos(2 * Math.PI * F0 * t) +
+                              (k === 0 ? SIG * SIG : 0));
+      Sth = f => 2 * SIG * SIG / fs;   // the floor; the line rides on top
+    }
+
+    pR.clear();
+    pR.guideY(0, {});
+    pR.line(tau, Rth, { label: 'theory', dash: [6, 4] });
+    pR.line(tau, R, { label: 'measured' });
+    pR.draw();
+
+    const { f, psd } = FFT.welch(x, fs, { nseg: 4096 });
+    const fq = f.subarray(1), pq = psd.subarray(1);
+    pS.clear();
+    if (m === 'sine') pS.guideX(F0, { label: 'the line: A²/2, all in one bin' });
+    pS.line(fq, Array.from(fq, Sth),
+      { label: m === 'sine' ? 'theory (noise floor)' : 'theory',
+        dash: [6, 4] });
+    pS.line(fq, pq, { label: 'measured (Welch)' });
+    pS.draw();
+  }
+  draw();
+})();
+
+/* ---------- demo 1: band power = area under the PSD ---------- */
+(function () {
+  const h0 = 1e-3;                       // white PSD level, V²/Hz
+
+  const pPSD = new Plot('#plot-band-psd', {
+    xlabel: 'frequency (Hz)', ylabel: 'PSD (V²/Hz)', height: 300,
+    xlog: true, ylog: true, xlim: [1, 1000], ylim: [1e-5, 4e-3],
+    xunit: 'Hz', yunit: 'V²/Hz'
+  });
+  const pT = new Plot('#plot-band-time', {
+    xlabel: 'time (s)', ylabel: 'V(t)', height: 300,
+    xlim: [0, 1], ylim: [-2.6, 2.6], xunit: 's', yunit: 'V', hover: false
+  });
+  const pH = new Plot('#plot-band-hist', {
+    xlabel: 'filtered value (mV)', ylabel: 'probability density (1/mV)',
+    height: 240, xunit: 'mV'
+  });
+
+  const ctl = '#ctl-band';
+  const fCen = UI.slider(ctl, { label: 'band centre', min: 5, max: 800,
+    log: true, value: 55, unit: 'Hz', fmt: v => v.toPrecision(3),
+    onInput: draw });
+  const fWid = UI.slider(ctl, { label: 'bandwidth Δf', min: 2, max: 400,
+    log: true, value: 90, unit: 'Hz', fmt: v => v.toPrecision(3),
+    onInput: draw });
+  const fcS = UI.slider(ctl, { label: 'low-pass corner f_c', min: 50, max: 800,
+    log: true, value: 250, unit: 'Hz', fmt: v => v.toFixed(0),
+    onInput: () => { make(); draw(); } });
+  const fsS = UI.slider(ctl, { label: 'sample rate f_s', min: 500, max: 8000,
+    log: true, value: 2000, unit: 'Hz', fmt: v => (v / 1000).toPrecision(2) + 'k',
+    onInput: () => { make(); draw(); } });
+  const TdS = UI.slider(ctl, { label: 'duration T', min: 2, max: 60,
+    log: true, value: 33, unit: 's', fmt: v => v.toFixed(0),
+    onInput: () => { make(); draw(); } });
+  const roPred = UI.readout(ctl, { label: 'predicted rms √(area)' });
+  const roRec = UI.readout(ctl, { label: 'actual record' });
+  let seed = 42;
+  UI.button(ctl, { label: 'new sample ↻',
+    onClick: () => { seed += 1; make(); draw(); } });
+
+  let x, Xre, Xim, F, PSD, df, fs, N, fc, tAxis, nShow;
+  function make() {
+    // the FFT needs a power-of-two record: honor T as closely as possible
+    fs = fsS.value;
+    fc = fcS.value;
+    N = Math.min(1 << 17, Math.max(1 << 12, FFT.nextPow2(fs * TdS.value) >> 1));
+    if (N / fs < TdS.value * 0.75) N = Math.min(1 << 17, N << 1);
+    const sigma = Math.sqrt(h0 * fs / 2);
+    nShow = Math.min(Math.round(fs), N);       // first second for display
+    tAxis = new Float64Array(nShow);
+    for (let i = 0; i < nShow; i++) tAxis[i] = i / fs;
+    // deterministic axis adaptation (functions of the sliders, never of
+    // the sample): spectrum runs to Nyquist, trace covers ±4·rms
+    pPSD.o.xlim = [1, fs / 2];
+    const amp = 4 * Math.sqrt(h0 * fc * Math.PI / 2);
+    pT.o.ylim = [-amp, amp];
+    roRec.set((N / fs).toPrecision(3) + ' s  (N = ' + N + ')');
+    document.getElementById('lp-label').textContent =
+      'noise, LP ' + Math.round(fc) + ' Hz';
+    const rand = Noise.rng(seed);
+    // white noise, then shape by one-pole low-pass in the FFT domain
+    const re = new Float64Array(N), im = new Float64Array(N);
+    for (let i = 0; i < N; i++) re[i] = sigma * Noise.randn(rand);
+    FFT.fft(re, im);
+    for (let k = 0; k <= N / 2; k++) {
+      const f = k * fs / N;
+      const H = 1 / Math.sqrt(1 + (f / fc) * (f / fc));
+      re[k] *= H; im[k] *= H;
+      if (k > 0 && k < N / 2) { re[N - k] *= H; im[N - k] *= H; }
+    }
+    Xre = re; Xim = im;                       // keep spectrum for the filter
+    const tre = Float64Array.from(re), tim = Float64Array.from(im);
+    FFT.ifft(tre, tim);
+    x = tre;                                  // the time-domain noise record
+    const w = FFT.welch(x, fs, { nseg: 4096 });
+    F = w.f; PSD = w.psd; df = F[1] - F[0];
+  }
+
+  // integral of the Welch PSD over [lo,hi], with fractional edge bins
+  function bandArea(lo, hi) {
+    let area = 0;
+    for (let k = 1; k < F.length; k++) {
+      const a = Math.max(lo, F[k] - df / 2), b = Math.min(hi, F[k] + df / 2);
+      if (b > a) area += PSD[k] * (b - a);
+    }
+    return area;
+  }
+
+  // brick-wall band-pass via the precomputed spectrum
+  function bandFilter(lo, hi) {
+    const re = Float64Array.from(Xre), im = Float64Array.from(Xim);
+    for (let k = 0; k <= N / 2; k++) {
+      const f = k * fs / N;
+      if (f < lo || f > hi) {
+        re[k] = im[k] = 0;
+        if (k > 0 && k < N / 2) { re[N - k] = im[N - k] = 0; }
+      }
+    }
+    FFT.ifft(re, im);
+    return re;
+  }
+
+  function draw() {
+    // centre ± width/2, clamped to the measurable range for this f_s
+    const nyq = 0.98 * fs / 2;
+    const lo = Math.max(1, Math.min(fCen.value - fWid.value / 2, nyq - 1));
+    const hi = Math.max(lo + 0.5, Math.min(fCen.value + fWid.value / 2, nyq));
+    const y = bandFilter(lo, hi);
+    const pred = Math.sqrt(bandArea(lo, hi));
+    const meas = Noise.rms(y);
+
+    // shaded band series (PSD samples inside the band, plus exact edges)
+    const bf = [], bp = [];
+    const interp = f => {
+      const k = Math.min(F.length - 2, Math.max(1, Math.floor(f / df)));
+      const t = (f - F[k]) / df;
+      return PSD[k] * (1 - t) + PSD[k + 1] * t;
+    };
+    bf.push(lo); bp.push(interp(lo));
+    for (let k = 1; k < F.length; k++) {
+      if (F[k] > lo && F[k] < hi) { bf.push(F[k]); bp.push(PSD[k]); }
+    }
+    bf.push(hi); bp.push(interp(hi));
+
+    pPSD.clear();
+    pPSD.guideX(lo, { label: 'f₁' });
+    pPSD.guideX(hi, { label: 'f₂' });
+    pPSD.line(F.subarray(1), PSD.subarray(1), { label: 'PSD S(f)' });
+    pPSD.line(bf, bp, { label: 'selected band', fill: true });
+    pPSD.draw();
+
+    pT.clear();
+    pT.guideY(pred, { label: '±√area', color: '#898781' });
+    pT.guideY(-pred, { color: '#898781' });
+    pT.line(tAxis, x.subarray(0, nShow), { label: 'full signal',
+      color: '#898781', width: 1 });
+    pT.line(tAxis, y.subarray(0, nShow), { label: 'band-pass filtered' });
+    pT.draw();
+
+    // histogram of the filtered samples in real millivolts; the dashed
+    // Gaussian is drawn from the PREDICTED rms sqrt(area) — no free
+    // parameters, so it matches only if the area rule is right
+    const sp = pred * 1e3;                  // predicted rms in mV
+    const nb = 48, loH = -4 * sp, hiH = 4 * sp, bw = (hiH - loH) / nb;
+    const counts = new Float64Array(nb);
+    for (let i = 0; i < N; i++) {
+      const v = y[i] * 1e3;
+      const b = Math.floor((v - loH) / bw);
+      if (b >= 0 && b < nb) counts[b]++;
+    }
+    const hx = [], hy = [];
+    for (let b = 0; b < nb; b++) {
+      const d = counts[b] / (N * bw);       // probability density per mV
+      hx.push(loH + b * bw, loH + (b + 1) * bw);
+      hy.push(d, d);
+    }
+    const gx = Noise.linspace(loH, hiH, 161);
+    const gy = gx.map(v =>
+      Math.exp(-v * v / (2 * sp * sp)) / (sp * Math.sqrt(2 * Math.PI)));
+    pH.clear();
+    pH.line(hx, hy, { label: 'measured distribution', fill: true });
+    pH.line(gx, gy, { label: 'Gaussian from √(area), in mV',
+      color: '#898781', width: 1.5, dash: [6, 4] });
+    pH.draw();
+
+    roPred.set((pred * 1e3).toFixed(1) + ' mV');
+    // the "instruments" on the schematic read live
+    document.getElementById('vm-read').textContent =
+      (meas * 1e3).toFixed(1) + ' mV';
+    document.getElementById('bp-label').textContent =
+      Plot.fmtNum(lo, 3) + ' – ' + Plot.fmtNum(hi, 3) + ' Hz';
+  }
+  make();
+  draw();
+})();
+
+/* ---------- demo 2: Welch averaging vs the raw periodogram ---------- */
+(function () {
+  const fs = 2000, nseg = 1024, Kmax = 64, N = Kmax * nseg;
+  const sigma = 1;                       // true one-sided PSD = 2σ²/fs = 1e-3
+  const trueLevel = 2 * sigma * sigma / fs;
+
+  const pT = new Plot('#plot-welch-t', {
+    xlabel: 'time (s)', ylabel: 'record x(t)', height: 160,
+    xlim: [0, N / fs], ylim: [-4.5, 4.5], xunit: 's', hover: false
+  });
+  const plot = new Plot('#plot-welch', {
+    xlabel: 'frequency (Hz)', ylabel: 'PSD estimate (V²/Hz)', height: 300,
+    xlog: true, ylog: true, xlim: [2, 1000], ylim: [1e-5, 2e-2],
+    xunit: 'Hz', yunit: 'V²/Hz'
+  });
+
+  const ctl = '#ctl-welch';
+  const Ksel = UI.select(ctl, { label: 'segments averaged K',
+    options: [
+      { value: '1',  label: 'K = 1 (raw periodogram)' },
+      { value: '4',  label: 'K = 4' },
+      { value: '16', label: 'K = 16' },
+      { value: '64', label: 'K = 64' }
+    ], value: '16', onChange: draw });
+  const logX = UI.checkbox(ctl, { label: 'log frequency axis',
+    checked: true, onChange: () => {
+      plot.o.xlog = logX.value;
+      plot.o.xlim = logX.value ? [2, 1000] : [0, 1000];
+      draw();
+    } });
+  const roScatter = UI.readout(ctl, { label: 'bin-to-bin scatter σ/mean' });
+  let seed = 7;
+  UI.button(ctl, { label: 'new sample ↻', onClick: () => { make(); draw(); } });
+
+  let x;
+  function make() {
+    seed += 1;
+    const rand = Noise.rng(seed);
+    x = Noise.white(N, rand);          // σ = 1
+  }
+
+  function draw() {
+    const K = parseInt(Ksel.value, 10);
+
+    // the record, chopped: used part in color, unused remainder in grey,
+    // segment boundaries dashed
+    const step = 16;                       // decimate for display
+    const nUsed = K * nseg;
+    const tU = [], xU = [], tR = [], xR = [];
+    for (let i = 0; i < N; i += step) {
+      if (i < nUsed) { tU.push(i / fs); xU.push(x[i]); }
+      else { tR.push(i / fs); xR.push(x[i]); }
+    }
+    pT.clear();
+    for (let k = 1; k <= K; k++) pT.guideX(k * nseg / fs, {});
+    if (tR.length) {
+      pT.line(tR, xR, { label: 'unused', color: '#898781', width: 1 });
+    }
+    pT.line(tU, xU, { label: 'the K segments averaged', width: 1 });
+    pT.draw();
+
+    const { f, psd } = FFT.welch(x.subarray(0, K * nseg), fs,
+      { nseg: nseg, overlap: 0 });
+    // scatter of the estimate relative to its mean (skip DC-adjacent bins)
+    let m = 0, n = 0;
+    for (let k = 5; k < psd.length - 1; k++) { m += psd[k]; n++; }
+    m /= n;
+    let v = 0;
+    for (let k = 5; k < psd.length - 1; k++) v += (psd[k] - m) * (psd[k] - m);
+    const scatter = Math.sqrt(v / n) / m;
+
+    plot.clear();
+    plot.guideY(trueLevel, { label: 'true level 2σ²/fs' });
+    plot.line(f.subarray(1), psd.subarray(1), { label: 'Welch estimate' });
+    plot.draw();
+    roScatter.set(scatter.toFixed(2) + '  (expect 1/√K = ' +
+      (1 / Math.sqrt(K)).toFixed(2) + ')');
+  }
+  make();
+  draw();
+})();
+
+/* ---------- demo 3: lines vs noise floors ---------- */
+(function () {
+  const fs = 2000, N = 1 << 16;
+  const A = 0.5, f0 = 250;               // line power A²/2 = 0.125 V²
+  const sigma = 1;                       // floor 2σ²/fs = 1e-3 V²/Hz
+
+  const plot = new Plot('#plot-line', {
+    xlabel: 'frequency (Hz)', ylabel: 'PSD (V²/Hz)', height: 300,
+    xlog: true, ylog: true, xlim: [2, 1000], ylim: [1e-5, 3],
+    xunit: 'Hz', yunit: 'V²/Hz'
+  });
+  const pRbw = new Plot('#plot-line-rbw', {
+    xlabel: 'frequency (Hz)', ylabel: 'power per RBW (V²)', height: 300,
+    xlog: true, ylog: true, xlim: [2, 1000], ylim: [3e-6, 3],
+    xunit: 'Hz', yunit: 'V²'
+  });
+
+  const ctl = '#ctl-line';
+  const expSl = UI.slider(ctl, { label: 'resolution: segment length', min: 10,
+    max: 15, step: 1, value: 11, fmt: v => (1 << v) + ' pts', onInput: draw });
+  const roDf   = UI.readout(ctl, { label: 'bin width Δf = fs/nseg' });
+  const roPeak = UI.readout(ctl, { label: 'peak height (varies!)' });
+  const roArea = UI.readout(ctl, { label: 'line area (constant ≈ A²/2 = 0.125 V²)' });
+
+  const rand = Noise.rng(2026);
+  const x = new Float64Array(N);
+  for (let i = 0; i < N; i++) {
+    x[i] = A * Math.sin(2 * Math.PI * f0 * i / fs) + sigma * Noise.randn(rand);
+  }
+
+  function median(arr) {
+    const s = Array.from(arr).sort((a, b) => a - b);
+    return s[Math.floor(s.length / 2)];
+  }
+
+  function draw() {
+    const nseg = 1 << expSl.value;
+    const { f, psd } = FFT.welch(x, fs, { nseg: nseg });
+    const df = f[1] - f[0];
+    // peak bin and line area (floor-subtracted, ±6 bins around the peak)
+    const k0 = Math.round(f0 / df);
+    const floor = median(psd.subarray(1));
+    let peak = 0, area = 0;
+    for (let k = Math.max(1, k0 - 6); k <= Math.min(psd.length - 1, k0 + 6); k++) {
+      if (psd[k] > peak) peak = psd[k];
+      area += (psd[k] - floor) * df;
+    }
+    plot.clear();
+    plot.guideY(2 * sigma * sigma / fs, { label: 'noise floor (never moves)' });
+    plot.line(f.subarray(1), psd.subarray(1),
+      { label: 'PSD, Δf = ' + df.toFixed(3) + ' Hz' });
+    plot.draw();
+
+    // the swept-analyzer view of the SAME data: power collected per
+    // resolution bandwidth (here RBW = the bin's ENBW = 1.5 Δf for Hann)
+    const enbw = 1.5 * df;
+    const pb = Float64Array.from(psd, v => v * enbw);
+    pRbw.clear();
+    pRbw.guideY(A * A / 2, { label: 'line power A²/2 (never moves)' });
+    pRbw.line(f.subarray(1), pb.subarray(1),
+      { label: 'per RBW = ' + enbw.toFixed(3) + ' Hz' });
+    pRbw.draw();
+
+    roDf.set(df.toFixed(3) + ' Hz');
+    roPeak.set(peak.toPrecision(3) + ' V²/Hz');
+    roArea.set(area.toPrecision(3) + ' V²');
+  }
+  draw();
+})();
+</script>
+</body>
+</html>

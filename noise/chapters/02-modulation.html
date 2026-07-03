@@ -1,0 +1,855 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>2 · Wiggling the knobs: modulation — Making Sense of Noise</title>
+<link rel="stylesheet" href="../css/style.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"
+  onload="renderMathInElement(document.body, {delimiters:[
+    {left:'$$', right:'$$', display:true},
+    {left:'$', right:'$', display:false}]});"></script>
+</head>
+<body>
+
+<nav class="site-nav">
+  <div class="nav-inner">
+    <a class="home" href="../index.html">Making Sense of Noise</a>
+    <div class="chapters">
+      <a href="01-pure-tone.html" title="The pure tone">1</a>
+      <a href="02-modulation.html" class="current" title="Modulation">2</a>
+      <a href="03-random-processes.html" title="Random processes">3</a>
+      <a href="04-psd.html" title="Power spectral density">4</a>
+      <a href="05-noise-colors.html" title="Colors of noise">5</a>
+      <a href="06-oscillator-noise.html" title="Amplitude, phase & frequency noise">6</a>
+      <a href="07-allan.html" title="Allan deviation">7</a>
+      <a href="08-sensitivity.html" title="Sensitivity">8</a>
+      <a href="09-ligo.html" title="LIGO case study">9</a>
+      <a href="10-pll.html" title="Phase-locked loops">10</a>
+    </div>
+  </div>
+</nav>
+
+<main>
+  <p class="chapter-kicker">Chapter 2</p>
+  <h1>Wiggling the knobs: modulation</h1>
+  <p class="lede">
+    Chapter 1 gave us a signal with three knobs,
+    $V(t) = A\cos(2\pi\nu_0 t + \varphi)$. Noise, when it arrives in later
+    chapters, will be nothing but these knobs being wiggled <em>randomly</em>.
+    So before touching randomness we wiggle each knob with the simplest
+    possible motion — a single sinusoid — and learn everything there is to
+    know about <strong>sidebands</strong> in a setting where every line can be
+    checked by hand.
+  </p>
+
+  <h2>Amplitude modulation</h2>
+  <p>
+    Wiggle the amplitude knob sinusoidally at a <em>modulation frequency</em>
+    $f_m$, with a fractional <em>modulation depth</em> $m$:
+  </p>
+  <p>
+    $$ V(t) = A_0\big[1 + m\cos(2\pi f_m t)\big]\cos(2\pi\nu_0 t). $$
+  </p>
+  <p>
+    In the time domain this is a carrier whose envelope breathes. To see what
+    it is in the frequency domain, just multiply out and use the
+    product-to-sum identity
+    $\cos a \cos b = \tfrac12\cos(a+b) + \tfrac12\cos(a-b)$:
+  </p>
+  <p>
+    $$ \begin{aligned} V(t) = A_0\cos(2\pi\nu_0 t)
+      &\;+\; \frac{mA_0}{2}\cos\!\big(2\pi(\nu_0 + f_m)t\big) \\[2pt]
+      &\;+\; \frac{mA_0}{2}\cos\!\big(2\pi(\nu_0 - f_m)t\big). \end{aligned} $$
+  </p>
+  <p>
+    No approximation was made: an amplitude-modulated tone <em>is exactly</em>
+    three pure tones. The original carrier at $\nu_0$ is untouched, and two
+    new lines — <strong>sidebands</strong> — appear symmetrically at
+    $\nu_0 \pm f_m$, each with amplitude $mA_0/2$. Since power goes as
+    amplitude squared, each sideband carries a fraction
+  </p>
+  <p>
+    $$ \frac{P_{\text{sideband}}}{P_{\text{carrier}}} = \frac{m^2}{4},
+       \qquad\text{i.e.}\qquad 20\log_{10}\!\frac{m}{2}\ \text{dBc} $$
+  </p>
+  <p>
+    of the carrier power ("dBc" = decibels relative to the carrier). A 20%
+    modulation depth puts each sideband 20&nbsp;dB below the carrier; 2%
+    puts it 40&nbsp;dB down. Check the prediction against the live spectrum:
+  </p>
+
+  <figure class="demo">
+    <figcaption>Amplitude modulation: carrier + two sidebands</figcaption>
+    <p class="demo-note">Left: the time trace with its breathing envelope
+      (dashed). Right: the spectrum — always exactly three lines. The depth
+      $m$ sets the sideband <em>height</em>; $f_m$ sets their <em>spacing</em>
+      from the carrier. The dashed horizontal line is the prediction
+      $20\log_{10}(m/2)$ dBc below the carrier — the sideband peaks must
+      touch it.</p>
+    <div class="controls" id="ctl-am"></div>
+    <div class="plots two-col">
+      <div id="plot-am-t"></div>
+      <div id="plot-am-f"></div>
+    </div>
+  </figure>
+
+  <p>
+    Note what the two sidebands are doing, because it echoes the beats of
+    chapter 1 in reverse: there, two tones made a breathing envelope; here, a
+    breathing envelope <em>is</em> two tones flanking the carrier. Sidebands
+    are not a metaphor — a spectrum analyzer really shows three resolvable
+    lines, and you can filter one out with a sharp enough filter.
+  </p>
+
+  <h2>Phase modulation</h2>
+  <p>
+    Now wiggle the phase knob instead, by $\beta$ radians at frequency $f_m$:
+  </p>
+  <p>
+    $$ V(t) = A\cos\!\big(2\pi\nu_0 t + \beta\sin(2\pi f_m t)\big). $$
+  </p>
+  <p>
+    The number $\beta$ is called the <strong>modulation index</strong> and it
+    is measured in <em>radians</em> — it is the peak phase excursion. For
+    small excursions, expand with
+    $\cos(x + \epsilon) \approx \cos x - \epsilon\sin x$:
+  </p>
+  <p>
+    $$ V(t) \approx A\cos(2\pi\nu_0 t)
+      \;+\; \frac{A\beta}{2}\cos\!\big(2\pi(\nu_0 + f_m)t\big)
+      \;-\; \frac{A\beta}{2}\cos\!\big(2\pi(\nu_0 - f_m)t\big), $$
+  </p>
+  <p>
+    where the last step used
+    $\sin a \sin b = \tfrac12\cos(a-b) - \tfrac12\cos(a+b)$. Again a carrier
+    and two sidebands at $\nu_0 \pm f_m$, each of amplitude $A\beta/2$ — the
+    <em>same</em> sideband amplitude as an AM signal with $m = \beta$. The
+    only difference is that minus sign on the lower sideband.
+  </p>
+
+  <div class="callout warn">
+    <div class="callout-title">AM and PM look identical on a spectrum analyzer</div>
+    An AM signal with depth $m$ and a PM signal with index $\beta = m$ have
+    sidebands of <em>exactly the same height</em>: $20\log_{10}(m/2)$ dBc.
+    A spectrum analyzer measures only the magnitude of each spectral line, so
+    it cannot tell them apart. The difference — that minus sign — is hidden
+    in the <em>relative phases</em> of the sidebands, which the phasor
+    picture below makes visible. Remember this: in chapter 6, when a spectrum
+    analyzer shows you a noise pedestal around your carrier, you will not be
+    able to tell amplitude noise from phase noise without a phase-sensitive
+    measurement.
+  </div>
+
+  <p>
+    What happens when $\beta$ is <em>not</em> small? The expansion doesn't
+    stop at first order. The exact result is one of the prettiest identities
+    in applied mathematics — the Jacobi–Anger expansion in terms of
+    <strong>Bessel functions</strong> $J_n$:
+  </p>
+  <p>
+    $$ e^{\,i\beta\sin\theta} \;=\; \sum_{n=-\infty}^{\infty} J_n(\beta)\,
+       e^{\,in\theta}, $$
+  </p>
+  <p>
+    which turns the phase-modulated tone into an exact sum of pure tones,
+  </p>
+  <p>
+    $$ V(t) = A \sum_{n=-\infty}^{\infty} J_n(\beta)\,
+       \cos\!\big(2\pi(\nu_0 + n f_m)t\big). $$
+  </p>
+  <p>
+    Phase modulation generates a <em>ladder</em> of sidebands at every
+    harmonic $\nu_0 \pm n f_m$, with amplitudes $J_n(\beta)$
+    (and $J_{-n} = (-1)^n J_n$, so the ladder is symmetric in magnitude).
+    Three facts to take away:
+  </p>
+  <ul>
+    <li>For $\beta \ll 1$, $J_0 \approx 1$, $J_1 \approx \beta/2$, and
+      higher orders scale as $\beta^n$ — recovering the small-$\beta$ result.</li>
+    <li>Total power is conserved: $\sum_n J_n^2(\beta) = 1$. The envelope
+      never changes (the arrow keeps length $A$), so power taken by sidebands
+      is <em>stolen from the carrier</em>.</li>
+    <li>The carrier amplitude is $J_0(\beta)$, which passes through
+      <strong>zero at $\beta \approx 2.405$</strong>: drive the phase hard
+      enough and the carrier vanishes entirely, with all the power in
+      sidebands.</li>
+  </ul>
+
+  <div class="callout lab">
+    <div class="callout-title">Lab note: calibrating an EOM with the carrier null</div>
+    An electro-optic phase modulator imposes exactly this waveform on a laser,
+    but its radians-per-volt coefficient is rarely known well. The classic
+    calibration: put the beam on a scanning cavity or an optical spectrum
+    analyzer and turn up the RF drive until the <em>carrier disappears</em>.
+    At that point you know $\beta = 2.405$ rad, no photodetector calibration
+    needed — the Bessel function is the ruler. (Watch the demo's carrier
+    power readout do the same thing.)
+  </div>
+
+  <figure class="demo">
+    <figcaption>Phase modulation: the Bessel ladder</figcaption>
+    <p class="demo-note">Left: the time trace. Unlike AM, the envelope stays
+      pinned at $\pm A$ — it is the <em>zero crossings</em> that shift back
+      and forth (compare against the faint unmodulated carrier). Right: the
+      spectrum on a log scale. Raise $\beta$ and watch sidebands sprout at
+      every multiple of $f_m$; near $\beta = 2.405$ the carrier itself dies.</p>
+    <div class="controls" id="ctl-pm"></div>
+    <div class="plots two-col">
+      <div id="plot-pm-t"></div>
+      <div id="plot-pm-f"></div>
+    </div>
+  </figure>
+
+  <h2>The phasor picture of sidebands</h2>
+  <p>
+    Here is the deepest intuition in this chapter — the picture that will let
+    you <em>see</em> the difference between amplitude and phase noise in
+    chapter 6. Climb into the frame rotating with the carrier at $\nu_0$
+    (chapter 1's rotating arrow, viewed from a co-rotating camera). In this
+    frame the carrier is a frozen arrow of length $A$. The upper sideband, at
+    $\nu_0 + f_m$, rotates <em>faster</em> than the frame, so it appears as a
+    small arrow turning counter-clockwise at $f_m$; the lower sideband turns
+    clockwise at $f_m$. Two small counter-rotating arrows riding on the tip
+    of a big one — that is what modulation looks like.
+  </p>
+  <p>
+    Everything is in how the two small arrows are phased. Write the complex
+    envelope (the signal with the carrier rotation divided out), with
+    $\theta = 2\pi f_m t$:
+  </p>
+  <p>
+    $$ \text{AM:}\quad 1 + \tfrac{m}{2}e^{\,i\theta} + \tfrac{m}{2}e^{-i\theta}
+       = 1 + m\cos\theta
+       \qquad\text{(real: } \parallel \text{ carrier)}, $$
+  </p>
+  <p>
+    $$ \text{PM:}\quad 1 + \tfrac{\beta}{2}e^{\,i\theta} - \tfrac{\beta}{2}e^{-i\theta}
+       = 1 + i\beta\sin\theta
+       \qquad\text{(imaginary: } \perp \text{ carrier)}. $$
+  </p>
+  <p>
+    For AM the two arrows are mirror images about the carrier: their sum
+    always lies <strong>along</strong> the carrier, so the tip slides in and
+    out — the length breathes, the angle never moves. For PM the lower
+    arrow is flipped by 180° (that minus sign): the pair's sum is always
+    <strong>perpendicular</strong> to the carrier, so the tip swings side to
+    side — the angle wobbles, the length (to first order) never changes.
+    Same two arrows, one relative sign, completely different physics.
+  </p>
+
+  <figure class="demo">
+    <figcaption>Two counter-rotating arrows: AM vs PM in the rotating frame</figcaption>
+    <p class="demo-note">The long arrow is the carrier; the two short ones
+      are the first-order sidebands, counter-rotating at $\pm f_m$ in the
+      rotating frame; the faint copies show the same two sidebands as
+      phasors from the origin — what the spectrum analyzer sees: three
+      tones. Switch AM ↔ PM and watch the resultant's tip path rotate by
+      90°: along the carrier (breathing length) for AM, across it (swinging
+      angle) for PM. Then switch to the <em>lab frame</em>: the carrier
+      spins at $\nu_0$, the upper sideband slightly faster, the lower
+      slightly slower — modulation is this three-arrow race, and the
+      rotating frame is just the view from the carrier's saddle. Press
+      play.</p>
+    <div class="controls" id="ctl-ph"></div>
+    <div class="plots"><canvas id="phasor-sb-canvas" height="320"></canvas></div>
+  </figure>
+
+  <p>
+    One more payoff hides in the PM picture. The first-order tip path is a
+    straight line <em>tangent</em> to the circle of radius $A$ — but the true
+    PM signal has constant length, so its tip really moves on the faint
+    circular <em>arc</em>. The gap between the straight line and the arc is
+    second order in $\beta$, and it is precisely what the higher-order Bessel
+    sidebands are for: adding $J_2, J_3, \dots$ terms bends the straight line
+    onto the arc. Small $\beta$: line ≈ arc, two sidebands suffice. Large
+    $\beta$: you need the whole ladder.
+  </p>
+
+  <h2>Frequency modulation</h2>
+  <p>
+    The third knob. Wiggle the <em>frequency</em> sinusoidally with peak
+    <em>frequency deviation</em> $\Delta\nu$:
+  </p>
+  <p>
+    $$ \nu(t) = \nu_0 + \Delta\nu \cos(2\pi f_m t). $$
+  </p>
+  <p>
+    Chapter 1's one-liner — <em>frequency is the slope of phase</em>,
+    $\nu(t) = \dot\Phi/2\pi$ — tells us exactly what signal this is. To get
+    the phase, integrate:
+  </p>
+  <p>
+    $$ \Phi(t) = 2\pi\!\int_0^t \nu(t')\,dt'
+       = 2\pi\nu_0 t + \frac{\Delta\nu}{f_m}\,\sin(2\pi f_m t). $$
+  </p>
+  <p>
+    Compare with the PM waveform above: <strong>FM is PM</strong> with
+    modulation index
+  </p>
+  <p>
+    $$ \beta = \frac{\Delta\nu}{f_m}. $$
+  </p>
+  <p>
+    There is no third kind of modulation — only the amplitude knob and the
+    phase knob, with FM being the phase knob driven through an integrator.
+    But the formula $\beta = \Delta\nu/f_m$ has a consequence that trips
+    people up constantly: <em>the same frequency deviation produces a very
+    different spectrum depending on how fast you wiggle</em>.
+  </p>
+  <ul>
+    <li><strong>Narrowband FM</strong> ($f_m \gg \Delta\nu$, so
+      $\beta \ll 1$): two puny sidebands at $\nu_0 \pm f_m$, carrier barely
+      touched. Fast, gentle wiggling hardly disturbs the phase.</li>
+    <li><strong>Wideband FM</strong> ($f_m \ll \Delta\nu$, so
+      $\beta \gg 1$): a dense forest of Bessel sidebands filling the band the
+      instantaneous frequency actually sweeps, $\nu_0 \pm \Delta\nu$.</li>
+  </ul>
+  <p>
+    A serviceable estimate covering both limits is <strong>Carson's
+    rule</strong> for the bandwidth containing ~98% of the power:
+  </p>
+  <p>
+    $$ B \approx 2\,(\Delta\nu + f_m). $$
+  </p>
+
+  <figure class="demo">
+    <figcaption>Frequency modulation: deviation and rate are separate knobs</figcaption>
+    <p class="demo-note">Left: the instantaneous frequency $\nu(t)$ you are
+      programming. Right: the resulting spectrum, with Carson's-rule edges
+      dashed. Now hold $\Delta\nu$ fixed and <em>raise</em> $f_m$: the
+      sidebands spread apart but the ladder thins out, because
+      $\beta = \Delta\nu/f_m$ drops — watch the readout.</p>
+    <div class="controls" id="ctl-fm"></div>
+    <div class="plots two-col">
+      <div id="plot-fm-nu"></div>
+      <div id="plot-fm-f"></div>
+    </div>
+  </figure>
+
+  <h2>Noise is modulation at every frequency at once</h2>
+  <p>
+    Now the point of the whole exercise. A noisy oscillator is
+    $V(t) = A\cos(2\pi\nu_0 t + \varphi(t))$ with $\varphi(t)$ a random
+    wiggle. But any $\varphi(t)$ can be decomposed into Fourier components —
+    a sum of sinusoidal phase modulations, one at every frequency $f$, each
+    with its own tiny index $\beta(f) \ll 1$. Each component does exactly
+    what this chapter taught: it plants one pair of sidebands at
+    $\nu_0 \pm f$, of power $\beta(f)^2/4$ relative to the carrier, with the
+    PM phase signature. Sum over all components and the discrete sidebands
+    merge into a continuous <strong>noise pedestal</strong> hugging the
+    carrier — the "skirt" you see around every real oscillator's line on a
+    spectrum analyzer. A phase-noise pedestal is nothing but a continuum of
+    PM sidebands. Making this quantitative — how the pedestal's shape encodes
+    the spectral density of $\varphi(t)$ — needs the language of random
+    processes (chapter 3) and spectral densities (chapter 4), and pays off in
+    chapter 6, where the picture becomes the working definition of phase
+    noise $\mathcal{L}(f)$.
+  </p>
+
+  <h2>The same thing in code</h2>
+  <p>
+    The honest way to synthesize a phase- or frequency-modulated signal —
+    and the way the FM demo above actually does it — is to accumulate the
+    phase sample by sample, advancing it at the instantaneous frequency.
+    This works for <em>any</em> $\nu(t)$, including the random ones of later
+    chapters:
+  </p>
+<pre><code>// synthesize V(t) = A cos Φ(t)  with  ν(t) = ν0 + Δν cos(2π f_m t)
+let phi = 0;                       // Φ(0)
+for (let i = 0; i &lt; N; i++) {
+  const t  = i / fs;
+  const nu = nu0 + dnu * Math.cos(2 * Math.PI * fm * t);
+  V[i] = A * Math.cos(phi);
+  phi += 2 * Math.PI * nu / fs;    // dΦ = 2π ν(t) dt
+}
+</code></pre>
+  <p>
+    The single line <code>phi += 2 * Math.PI * nu / fs</code> is chapter 1's
+    "frequency is the slope of phase", run forward as a numerical integral.
+    Replace the cosine by a random sequence and you have synthesized
+    frequency noise; that is literally how the demos of chapter 6 work.
+  </p>
+
+  <h2>Exercises</h2>
+
+  <div class="exercise">
+    <div class="ex-label">Exercise 2.1 — reading sideband levels</div>
+    <p>An AM signal has modulation depth $m = 0.2$. How far below the
+    carrier does each sideband sit, in dBc? Check with the first demo.</p>
+    <details><summary>Solution</summary>
+      <p>Each sideband has amplitude $m/2 = 0.1$ relative to the carrier, so
+      its relative power is $m^2/4 = 0.01$, i.e.
+      $20\log_{10}(0.1) = -20$ dBc. A handy anchor to memorize: 20% AM (or
+      $\beta = 0.2$&nbsp;rad of PM) ⇒ sidebands at −20&nbsp;dBc; every factor
+      of 10 in $m$ moves them 20&nbsp;dB.</p>
+    </details>
+  </div>
+
+  <div class="exercise">
+    <div class="ex-label">Exercise 2.2 — the carrier null</div>
+    <p>You drive an EOM harder and harder until the optical carrier vanishes
+    on a scanning cavity. What is the modulation index, and what fraction of
+    the optical power is now in <em>each</em> first-order sideband?</p>
+    <details><summary>Solution</summary>
+      <p>The carrier amplitude is $J_0(\beta)$, whose first zero is at
+      $\beta \approx 2.405$ rad. There, $J_1(2.405) \approx 0.519$, so each
+      first-order sideband holds $J_1^2 \approx 0.27$ — about 27% of the
+      total power, or 54% in the pair. (The remainder sits in higher orders:
+      $2J_2^2 \approx 37\%$, $2J_3^2 \approx 8\%$, …, summing to 1 because
+      $\sum_n J_n^2 = 1$.)</p>
+    </details>
+  </div>
+
+  <div class="exercise">
+    <div class="ex-label">Exercise 2.3 — FM radio</div>
+    <p>Broadcast FM uses a peak frequency deviation $\Delta\nu = 75$ kHz to
+    carry audio up to $f_m = 15$ kHz. What is the modulation index at the
+    highest audio frequency, and roughly what bandwidth does one station
+    occupy by Carson's rule?</p>
+    <details><summary>Solution</summary>
+      <p>$\beta = \Delta\nu/f_m = 75/15 = 5$ — solidly wideband FM, so
+      expect a Bessel ladder of ~$\beta + 1$ significant sideband orders.
+      Carson: $B \approx 2(\Delta\nu + f_m) = 2(75 + 15) = 180$ kHz. That is
+      why FM stations are spaced 200&nbsp;kHz apart on the dial.</p>
+    </details>
+  </div>
+
+  <div class="exercise">
+    <div class="ex-label">Exercise 2.4 — the sign that separates AM from PM</div>
+    <p>Narrowband PM has the same sideband <em>magnitudes</em> as AM, but the
+    lower sideband is flipped by 180°. Using the phasor picture, show that
+    this flip is forced: if both sidebands had the AM sign, the resultant's
+    angle could not wobble; with the flip, its length cannot (to first
+    order).</p>
+    <details><summary>Solution</summary>
+      <p>With the AM signs the pair sums to
+      $\tfrac{m}{2}e^{i\theta} + \tfrac{m}{2}e^{-i\theta} = m\cos\theta$:
+      the imaginary parts of the two counter-rotating arrows always cancel,
+      so the sum is pinned parallel to the carrier — pure length change,
+      zero angle change. Flip the lower arrow's sign and it is the real
+      parts that cancel:
+      $\tfrac{\beta}{2}e^{i\theta} - \tfrac{\beta}{2}e^{-i\theta}
+      = i\beta\sin\theta$, pinned perpendicular — the tip swings the angle
+      by $\approx \beta\sin\theta$ while the length changes only at
+      $O(\beta^2)$. The relative sideband phase is the <em>only</em> place
+      the AM/PM distinction lives.</p>
+    </details>
+  </div>
+
+  <div class="exercise">
+    <div class="ex-label">Exercise 2.5 — residual amplitude modulation in a beat note</div>
+    <p>You heterodyne a laser against a reference, producing a beat
+    $V(t) \propto \cos(2\pi\nu_b t + \varphi(t))$, and demodulate it with an
+    IQ (two-quadrature) mixer locked to the mean beat phase. The laser has a
+    residual <em>amplitude</em> modulation (RAM) at $f_m$ from an imperfect
+    modulator. In which demodulated quadrature does the RAM appear, and
+    where does the laser's phase noise appear?</p>
+    <details><summary>Solution</summary>
+      <p>In the frame rotating at the beat frequency, the phasor picture
+      applies directly: amplitude modulation moves the resultant
+      <em>along</em> the mean phasor, phase modulation <em>across</em> it.
+      So RAM shows up in the in-phase (I) quadrature and phase noise in the
+      quadrature (Q) component. This is precisely how an IQ demodulator (or
+      a lock-in) separates amplitude noise from phase noise on the same beat
+      — and why a spectrum analyzer, which measures only $I^2 + Q^2$
+      magnitudes, cannot (see the callout above, and chapter 6).</p>
+    </details>
+  </div>
+
+  <nav class="pager">
+    <a class="prev" href="01-pure-tone.html"><span class="dir">Previous · Chapter 1</span>
+      The pure tone</a>
+    <a class="next" href="03-random-processes.html"><span class="dir">Next · Chapter 3</span>
+      From signals to noise: random processes</a>
+  </nav>
+</main>
+
+<script src="../js/lib/fft.js"></script>
+<script src="../js/lib/noise.js"></script>
+<script src="../js/lib/plot.js"></script>
+<script src="../js/lib/ui.js"></script>
+<script>
+'use strict';
+
+// J0 via its integral representation: J0(x) = (1/π) ∫₀^π cos(x sin θ) dθ.
+// Midpoint rule with 256 points is exact to ~1e-12 for |x| < 10.
+function besselJ0(x) {
+  const M = 256;
+  let s = 0;
+  for (let k = 0; k < M; k++) {
+    const th = Math.PI * (k + 0.5) / M;
+    s += Math.cos(x * Math.sin(th));
+  }
+  return s / M;
+}
+
+/* ---------- demo 1: amplitude modulation ---------- */
+(function () {
+  const pT = new Plot('#plot-am-t', {
+    xlabel: 'time (s)', ylabel: 'V(t)', height: 280,
+    xlim: [0, 1], ylim: [-2.3, 2.3], hover: false
+  });
+  const pF = new Plot('#plot-am-f', {
+    xlabel: 'frequency (Hz)', ylabel: 'PSD (arb.)', height: 280,
+    xlim: [35, 65], xunit: 'Hz'
+  });
+  const ctl = '#ctl-am';
+  const m  = UI.slider(ctl, { label: 'depth m', min: 0, max: 1, step: 0.01,
+    value: 0.5, onInput: draw });
+  const fm = UI.slider(ctl, { label: 'mod. frequency fₘ', min: 2, max: 12,
+    step: 0.1, value: 5, unit: 'Hz', fmt: v => v.toFixed(1), onInput: draw });
+
+  const nu0 = 50, fs = 1024, N = 16384;
+  function draw() {
+    const md = m.value, f = fm.value;
+    const x = new Float64Array(N);
+    for (let i = 0; i < N; i++) {
+      const t = i / fs;
+      x[i] = (1 + md * Math.cos(2 * Math.PI * f * t)) *
+             Math.cos(2 * Math.PI * nu0 * t);
+    }
+    // time trace: first second, plus the envelope
+    const nShow = fs;
+    const t = new Float64Array(nShow), env = new Float64Array(nShow);
+    for (let i = 0; i < nShow; i++) {
+      t[i] = i / fs;
+      env[i] = 1 + md * Math.cos(2 * Math.PI * f * t[i]);
+    }
+    pT.clear();
+    pT.line(t, x.slice(0, nShow), { label: 'V(t)' });
+    pT.line(t, env, { label: 'envelope', width: 1.5, dash: [6, 4] });
+    pT.line(t, env.map(v => -v), { width: 1.5, dash: [6, 4],
+      color: '#1baf7a', hover: false });
+    pT.draw();
+
+    const { f: ff, psd } = FFT.welch(x, fs, { nseg: 8192 });
+    pF.clear();
+    pF.guideX(nu0, { label: 'ν₀' });
+    if (md > 0) {
+      // theory as a line the sideband peaks must touch: sideband power is
+      // (m/2)^2 of the carrier's, so mark that height off the measured peak
+      let pC = 0;
+      for (let k = 0; k < psd.length; k++) if (psd[k] > pC) pC = psd[k];
+      pF.guideY(pC * (md / 2) * (md / 2), {
+        label: 'predicted: ' + (20 * Math.log10(md / 2)).toFixed(1) + ' dBc'
+      });
+    }
+    pF.line(ff, psd, { fill: true });
+    pF.draw();
+  }
+  draw();
+})();
+
+/* ---------- demo 2: phase modulation & the Bessel ladder ---------- */
+(function () {
+  const pT = new Plot('#plot-pm-t', {
+    xlabel: 'time (s)', ylabel: 'V(t)', height: 280,
+    xlim: [0, 0.25], ylim: [-1.4, 1.4], hover: false
+  });
+  const pF = new Plot('#plot-pm-f', {
+    xlabel: 'frequency (Hz)', ylabel: 'PSD (arb., log)', height: 280,
+    xlim: [0, 100], ylog: true, ylim: [1e-6, 10], xunit: 'Hz'
+  });
+  const ctl = '#ctl-pm';
+  const beta = UI.slider(ctl, { label: 'index β', min: 0, max: 6, step: 0.02,
+    value: 1, unit: 'rad', fmt: v => v.toFixed(2), onInput: draw });
+  const fm = UI.slider(ctl, { label: 'mod. frequency fₘ', min: 2, max: 6,
+    step: 0.1, value: 4, unit: 'Hz', fmt: v => v.toFixed(1), onInput: draw });
+  const cp = UI.readout(ctl, { label: 'carrier power J₀(β)²' });
+
+  const nu0 = 50, fs = 1024, N = 16384;
+  function draw() {
+    const b = beta.value, f = fm.value;
+    const x = new Float64Array(N);
+    for (let i = 0; i < N; i++) {
+      const t = i / fs;
+      x[i] = Math.cos(2 * Math.PI * nu0 * t + b * Math.sin(2 * Math.PI * f * t));
+    }
+    const nShow = fs / 4;
+    const t = new Float64Array(nShow), ref = new Float64Array(nShow);
+    for (let i = 0; i < nShow; i++) {
+      t[i] = i / fs;
+      ref[i] = Math.cos(2 * Math.PI * nu0 * t[i]);
+    }
+    pT.clear();
+    pT.guideY(1, { label: 'envelope', dash: [4, 4] });
+    pT.guideY(-1, { dash: [4, 4] });
+    pT.line(t, ref, { label: 'unmodulated', color: '#898781', width: 1 });
+    pT.line(t, x.slice(0, nShow), { label: 'phase-modulated' });
+    pT.draw();
+
+    const { f: ff, psd } = FFT.welch(x, fs, { nseg: 8192 });
+    pF.clear();
+    pF.guideX(nu0, { label: 'ν₀' });
+    pF.line(ff.subarray(1), psd.subarray(1), { fill: true });
+    pF.draw();
+
+    const j0 = besselJ0(b);
+    const p0 = j0 * j0;
+    cp.set(p0 > 1e-8
+      ? p0.toFixed(3) + '  (' + (10 * Math.log10(p0)).toFixed(1) + ' dBc)'
+      : '≈ 0 — carrier null! (β ≈ 2.405)');
+  }
+  draw();
+})();
+
+/* ---------- demo 3: the phasor picture of sidebands ---------- */
+(function () {
+  const canvas = document.getElementById('phasor-sb-canvas');
+  canvas.style.height = '320px';   // CSS-pin so backing-store size never feeds back
+  const ctl = '#ctl-ph';
+  const mode = UI.select(ctl, { label: 'modulation', options: [
+    { value: 'AM', label: 'AM (amplitude)' },
+    { value: 'PM', label: 'PM (phase)' }], value: 'PM',
+    onChange: () => render(lastT) });
+  const frame = UI.select(ctl, { label: 'frame', options: [
+    { value: 'rot', label: 'rotating (carrier frozen)' },
+    { value: 'lab', label: 'lab (carrier spins)' }], value: 'rot',
+    onChange: () => render(lastT) });
+  const depth = UI.slider(ctl, { label: 'depth m or β', min: 0.05, max: 0.8,
+    step: 0.01, value: 0.5, onInput: () => render(lastT) });
+  const showOrig = UI.checkbox(ctl, { label: 'sidebands from origin',
+    checked: true, onChange: () => render(lastT) });
+
+  const fAnim = 0.25;   // modulation frequency, Hz (slowed down)
+  const fCar = 1.0;     // carrier rotation rate in the lab frame, Hz
+  let lastT = 0.8;      // start mid-swing so the static frame is informative
+
+  function arrow(ctx, x0, y0, x1, y1, color, w) {
+    ctx.strokeStyle = color;
+    ctx.fillStyle = color;
+    ctx.lineWidth = w;
+    ctx.beginPath();
+    ctx.moveTo(x0, y0); ctx.lineTo(x1, y1);
+    ctx.stroke();
+    const ang = Math.atan2(y1 - y0, x1 - x0);
+    const h = Math.max(7, 3.2 * w);
+    ctx.beginPath();
+    ctx.moveTo(x1, y1);
+    ctx.lineTo(x1 - h * Math.cos(ang - 0.4), y1 - h * Math.sin(ang - 0.4));
+    ctx.lineTo(x1 - h * Math.cos(ang + 0.4), y1 - h * Math.sin(ang + 0.4));
+    ctx.closePath();
+    ctx.fill();
+  }
+
+  // one evaluation of all the arrows at animation time tau
+  function vectors(tau, d, am, lab) {
+    const th = 2 * Math.PI * fAnim * tau;          // modulation phase
+    const thc = lab ? 2 * Math.PI * fCar * tau : 0; // carrier phase (lab only)
+    const car = [Math.cos(thc), Math.sin(thc)];
+    // upper sideband rotates at fc+fm, lower at fc−fm (lab frame view);
+    // in the rotating frame that is just ±fm
+    const s1 = [0.5 * d * Math.cos(thc + th), 0.5 * d * Math.sin(thc + th)];
+    const sg = am ? 1 : -1;
+    const s2 = [sg * 0.5 * d * Math.cos(thc - th),
+                sg * 0.5 * d * Math.sin(thc - th)];
+    return { car, s1, s2,
+      res: [car[0] + s1[0] + s2[0], car[1] + s1[1] + s2[1]] };
+  }
+
+  function render(t) {
+    lastT = t;
+    const d = depth.value;
+    const am = mode.value === 'AM';
+    const lab = frame.value === 'lab';
+
+    const dpr = window.devicePixelRatio || 1;
+    const W = canvas.clientWidth || 600, H = 320;
+    const bw = Math.round(W * dpr), bh = Math.round(H * dpr);
+    if (canvas.width !== bw || canvas.height !== bh) {
+      canvas.width = bw; canvas.height = bh;
+    }
+    const ctx = canvas.getContext('2d');
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    const dark = matchMedia('(prefers-color-scheme: dark)').matches;
+    const surface = dark ? '#1a1a19' : '#fcfcfb';
+    const grid  = dark ? '#2c2c2a' : '#e1e0d9';
+    const ink   = dark ? '#ffffff' : '#0b0b0b';
+    const muted = '#898781';
+    const cCar  = dark ? '#3987e5' : '#2a78d6';   // carrier
+    const cSb   = dark ? '#199e70' : '#1baf7a';   // sidebands
+    const cRes  = dark ? '#c98500' : '#eda100';   // resultant
+    ctx.fillStyle = surface;
+    ctx.fillRect(0, 0, W, H);
+
+    const cy = H / 2;
+    const scale = H / 2 - 34;          // pixels per unit carrier amplitude
+    // rotating frame: everything lives near +x, so shift left a little;
+    // lab frame: the picture is centered on the origin
+    const cx = lab ? W / 2 : W / 2 - 0.275 * scale;
+    const R = scale + 14;
+
+    // frame axes
+    ctx.strokeStyle = grid;
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    if (lab) {
+      ctx.moveTo(cx - R, cy); ctx.lineTo(cx + R, cy);
+    } else {
+      ctx.moveTo(cx - 0.4 * scale, cy); ctx.lineTo(cx + 1.55 * scale, cy);
+    }
+    ctx.moveTo(cx, cy - R); ctx.lineTo(cx, cy + R);
+    ctx.stroke();
+    ctx.fillStyle = muted;
+    ctx.font = '11px system-ui, sans-serif';
+    ctx.textAlign = 'left'; ctx.textBaseline = 'top';
+    ctx.fillText(lab ? 'lab frame (carrier spins at ν₀; upper sideband ' +
+                       'faster, lower slower)'
+                     : 'rotating frame (carrier frozen)', 10, 8);
+
+    // circle of radius A = 1 (constant envelope)
+    ctx.strokeStyle = grid;
+    ctx.beginPath();
+    ctx.arc(cx, cy, scale, 0, 2 * Math.PI);
+    ctx.stroke();
+
+    const X = v => cx + v * scale, Y = v => cy - v * scale;
+
+    // tip path: analytic dashes in the rotating frame, a fading trail in
+    // the lab frame (there the path is a rosette, best shown by history)
+    if (!lab) {
+      ctx.strokeStyle = muted;
+      ctx.setLineDash([5, 4]);
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      if (am) {
+        ctx.moveTo(cx + (1 - d) * scale, cy);
+        ctx.lineTo(cx + (1 + d) * scale, cy);
+      } else {
+        ctx.moveTo(cx + scale, cy - d * scale);
+        ctx.lineTo(cx + scale, cy + d * scale);
+      }
+      ctx.stroke();
+      ctx.setLineDash([]);
+      if (!am) {
+        // the exact PM trajectory: an arc of the constant-|A| circle
+        ctx.strokeStyle = cRes;
+        ctx.globalAlpha = 0.35;
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.arc(cx, cy, scale, -d, d);
+        ctx.stroke();
+        ctx.globalAlpha = 1;
+      }
+    } else {
+      // trail: resultant tip over the last stretch of animation time,
+      // drawn in three segments of increasing opacity (older = fainter)
+      const nTr = 180, span = 3.2;      // seconds of history
+      for (let seg = 0; seg < 3; seg++) {
+        ctx.strokeStyle = muted;
+        ctx.globalAlpha = 0.15 + 0.2 * seg;
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        const a0 = seg / 3, a1 = (seg + 1) / 3;
+        for (let i = Math.floor(nTr * a0); i <= Math.floor(nTr * a1); i++) {
+          const tau = t - span * (1 - i / nTr);
+          const v = vectors(tau, d, am, lab);
+          const px = X(v.res[0]), py = Y(v.res[1]);
+          if (i === Math.floor(nTr * a0)) ctx.moveTo(px, py);
+          else ctx.lineTo(px, py);
+        }
+        ctx.stroke();
+      }
+      ctx.globalAlpha = 1;
+    }
+
+    // the arrows themselves
+    const v = vectors(t, d, am, lab);
+    // sidebands individually, from the origin (faint), if requested
+    if (showOrig.value) {
+      ctx.globalAlpha = 0.55;
+      arrow(ctx, X(0), Y(0), X(v.s1[0]), Y(v.s1[1]), cSb, 1.5);
+      arrow(ctx, X(0), Y(0), X(v.s2[0]), Y(v.s2[1]), cSb, 1.5);
+      ctx.globalAlpha = 1;
+    }
+    // carrier, sidebands tip-to-tail on the carrier's tip, resultant
+    arrow(ctx, X(0), Y(0), X(v.car[0]), Y(v.car[1]), cCar, 3);
+    arrow(ctx, X(v.car[0]), Y(v.car[1]),
+          X(v.car[0] + v.s1[0]), Y(v.car[1] + v.s1[1]), cSb, 2);
+    arrow(ctx, X(v.car[0] + v.s1[0]), Y(v.car[1] + v.s1[1]),
+          X(v.res[0]), Y(v.res[1]), cSb, 2);
+    arrow(ctx, X(0), Y(0), X(v.res[0]), Y(v.res[1]), cRes, 1.8);
+
+    // legend (ink text, colored swatches)
+    const items = [[cCar, 'carrier'], [cSb, 'sidebands (±fₘ, tip-to-tail)']];
+    if (showOrig.value) items.push([cSb, 'same sidebands, from origin (faint)']);
+    items.push([cRes, 'resultant'], [muted, 'tip path']);
+    let ly = H - items.length * 16 - 8;
+    for (const [col, lab] of items) {
+      ctx.strokeStyle = col;
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.moveTo(12, ly + 6); ctx.lineTo(30, ly + 6);
+      ctx.stroke();
+      ctx.fillStyle = ink;
+      ctx.textAlign = 'left'; ctx.textBaseline = 'top';
+      ctx.fillText(lab, 36, ly);
+      ly += 16;
+    }
+  }
+
+  UI.playButton(ctl, { onFrame: t => render(t + 0.8) });
+  render(lastT);
+})();
+
+/* ---------- demo 4: frequency modulation ---------- */
+(function () {
+  const pN = new Plot('#plot-fm-nu', {
+    xlabel: 'time (s)', ylabel: 'ν(t) (Hz)', height: 280,
+    xlim: [0, 1], ylim: [25, 75], hover: false
+  });
+  const pF = new Plot('#plot-fm-f', {
+    xlabel: 'frequency (Hz)', ylabel: 'PSD (arb., log)', height: 280,
+    xlim: [15, 85], ylog: true, ylim: [1e-6, 10], xunit: 'Hz'
+  });
+  const ctl = '#ctl-fm';
+  const dnu = UI.slider(ctl, { label: 'deviation Δν', min: 0, max: 20,
+    step: 0.25, value: 10, unit: 'Hz', fmt: v => v.toFixed(2), onInput: draw });
+  const fm = UI.slider(ctl, { label: 'mod. frequency fₘ', min: 1, max: 10,
+    step: 0.1, value: 5, unit: 'Hz', fmt: v => v.toFixed(1), onInput: draw });
+  const bOut = UI.readout(ctl, { label: 'index β = Δν/fₘ' });
+  const cOut = UI.readout(ctl, { label: 'Carson bandwidth 2(Δν+fₘ)' });
+
+  const nu0 = 50, fs = 1024, N = 16384;
+  function draw() {
+    const dv = dnu.value, f = fm.value;
+    // honest synthesis: accumulate the phase, dΦ = 2π ν(t) dt
+    const x = new Float64Array(N);
+    let phi = 0;
+    for (let i = 0; i < N; i++) {
+      const t = i / fs;
+      const nu = nu0 + dv * Math.cos(2 * Math.PI * f * t);
+      x[i] = Math.cos(phi);
+      phi += 2 * Math.PI * nu / fs;
+    }
+    // programmed instantaneous frequency, first second
+    const nShow = fs;
+    const t = new Float64Array(nShow), inst = new Float64Array(nShow);
+    for (let i = 0; i < nShow; i++) {
+      t[i] = i / fs;
+      inst[i] = nu0 + dv * Math.cos(2 * Math.PI * f * t[i]);
+    }
+    pN.clear();
+    pN.guideY(nu0, { label: 'ν₀' });
+    pN.line(t, inst, { label: 'ν(t)' });
+    pN.draw();
+
+    const { f: ff, psd } = FFT.welch(x, fs, { nseg: 8192 });
+    const B = 2 * (dv + f);
+    pF.clear();
+    pF.guideX(nu0 - B / 2, { dash: [5, 4] });
+    pF.guideX(nu0 + B / 2, { label: 'Carson', dash: [5, 4] });
+    pF.line(ff.subarray(1), psd.subarray(1), { fill: true });
+    pF.draw();
+
+    bOut.set((dv / f).toFixed(2) + ' rad');
+    cOut.set(B.toFixed(1) + ' Hz');
+  }
+  draw();
+})();
+</script>
+</body>
+</html>

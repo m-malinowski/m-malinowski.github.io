@@ -1,0 +1,950 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>3 · From signals to noise: random processes — Making Sense of Noise</title>
+<link rel="stylesheet" href="../css/style.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"
+  onload="renderMathInElement(document.body, {delimiters:[
+    {left:'$$', right:'$$', display:true},
+    {left:'$', right:'$', display:false}]});"></script>
+</head>
+<body>
+
+<nav class="site-nav">
+  <div class="nav-inner">
+    <a class="home" href="../index.html">Making Sense of Noise</a>
+    <div class="chapters">
+      <a href="01-pure-tone.html" title="The pure tone">1</a>
+      <a href="02-modulation.html" title="Modulation">2</a>
+      <a href="03-random-processes.html" class="current" title="Random processes">3</a>
+      <a href="04-psd.html" title="Power spectral density">4</a>
+      <a href="05-noise-colors.html" title="Colors of noise">5</a>
+      <a href="06-oscillator-noise.html" title="Amplitude, phase & frequency noise">6</a>
+      <a href="07-allan.html" title="Allan deviation">7</a>
+      <a href="08-sensitivity.html" title="Sensitivity">8</a>
+      <a href="09-ligo.html" title="LIGO case study">9</a>
+      <a href="10-pll.html" title="Phase-locked loops">10</a>
+    </div>
+  </div>
+</nav>
+
+<main>
+  <p class="chapter-kicker">Chapter 3</p>
+  <h1>From signals to noise: random processes</h1>
+  <p class="lede">
+    Every signal so far was deterministic: rerun the experiment and you get the
+    identical trace. Noise means the opposite — rerun it and you get a
+    <em>different</em> trace. The honest mathematical object is therefore not
+    one trace but the whole collection of traces you could have gotten, each
+    with its probability. This chapter builds that object, gives it statistics
+    (mean, variance, correlation), and explains the small miracle — ergodicity
+    — that lets a lab measure any of this from a single record.
+  </p>
+
+  <h2>One experiment, many movies</h2>
+  <p>
+    Point a photodiode at a "constant" laser and record the voltage for four
+    seconds. Now do it again. The two records disagree in every detail, yet
+    they are obviously siblings: same typical size, same typical wiggliness,
+    same character. What is reproducible is not the trace but the
+    <em>statistics of traces</em>.
+  </p>
+  <p>
+    A <strong>random process</strong> $x(t)$ is exactly this: a rule that
+    assigns probabilities to whole time-records. Each run of the experiment
+    draws one complete record — one <strong>realization</strong> — from that
+    rule, the way each roll of a die draws one face. The set of all possible
+    realizations, weighted by their probabilities, is called the
+    <strong>ensemble</strong>. Think of it as a stack of movies of the same
+    experiment, one per parallel universe. Any statement beginning "the noise
+    has…" (a mean, a variance, a spectrum) is a statement about the ensemble,
+    not about any single movie.
+  </p>
+
+  <figure class="demo">
+    <figcaption>The ensemble: twelve parallel universes, one experiment</figcaption>
+    <p class="demo-note">Left: 12 realizations of the same process; one is
+      highlighted, the gray ones are the runs you didn't get. Right: the
+      ensemble mean and the mean&nbsp;±&nbsp;σ band estimated from 200
+      realizations. Switch the process type: for white noise the band is flat;
+      for the random walk it fans out like $\sqrt{t}$.</p>
+    <div class="controls" id="ctl-ensemble"></div>
+    <div class="plots two-col">
+      <div id="plot-ens-traces"></div>
+      <div id="plot-ens-stats"></div>
+    </div>
+  </figure>
+
+  <p>
+    Averaging <em>vertically</em> through the stack of movies — across
+    realizations, at a fixed time $t$ — is called an <strong>ensemble
+    average</strong>, written $\langle \cdot \rangle$. The right-hand panel
+    above is computed exactly that way: at each $t$, average $x(t)$ over 200
+    realizations. Note that this is a completely different operation from
+    averaging <em>horizontally</em> along one trace; keeping the two straight
+    is half of this chapter.
+  </p>
+
+  <h2>Ensemble statistics: mean, variance, and memory</h2>
+  <p>
+    The first two statistics are the ones you would guess. At each instant
+    $t$ the ensemble has a mean and a variance,
+  </p>
+  <p>
+    $$ \mu(t) = \langle x(t) \rangle, \qquad
+       \sigma^2(t) = \big\langle \big[x(t) - \mu(t)\big]^2 \big\rangle . $$
+  </p>
+  <p>
+    But a noise trace is not just a sequence of independent random numbers —
+    neighbouring values usually know about each other. The statistic that
+    captures this is the <strong>autocorrelation function</strong>,
+  </p>
+  <p>
+    $$ R_x(t_1, t_2) = \langle x(t_1)\, x(t_2) \rangle , $$
+  </p>
+  <p>
+    the ensemble average of the product of the signal at two different times.
+    For the processes we will care about most, the statistics do not depend on
+    absolute time (more on that in a moment), and $R_x$ depends only on the
+    time <em>separation</em> $\tau = t_2 - t_1$:
+  </p>
+  <p>
+    $$ R_x(\tau) = \langle x(t)\, x(t+\tau) \rangle . $$
+  </p>
+  <p>
+    Read it as a question: <em>if the noise is high now, is it still high a
+    time $\tau$ later?</em> If yes, the product $x(t)x(t+\tau)$ tends to be
+    positive and $R_x(\tau)$ is large; if by time $\tau$ the noise has
+    forgotten where it was, positive and negative products cancel and
+    $R_x(\tau)\to 0$. The autocorrelation is the <strong>memory of the
+    noise</strong>, and $R_x(0) = \sigma^2$ (for a zero-mean process) is just
+    the variance.
+  </p>
+  <p>
+    The cleanest laboratory of memory needs one piece of hardware vocabulary
+    first. A <strong>low-pass filter</strong> is anything <em>sluggish</em> —
+    anything whose output cannot follow a fast-changing input and instead
+    keeps relaxing toward it: a capacitor charging through a resistor, a
+    thermometer catching up with a stirred bath, a heavy stage settling
+    after a push. The simplest kind (a <em>single-pole</em> filter) relaxes
+    exponentially, and its <strong>time constant</strong> $\tau_c$ is its
+    sluggishness in seconds: poke it once and the response dies away as
+    $e^{-t/\tau_c}$ — after a few $\tau_c$ the poke is forgotten. (Chapter 4
+    will translate "sluggish" into frequency language; here the time picture
+    is all we need.)
+  </p>
+  <p>
+    Now feed <em>noise</em> into something sluggish. Every random kick
+    lingers in the output for about $\tau_c$ before fading, so the output
+    at nearby times is built from the same recent kicks — the filter's
+    sluggishness has become the noise's <em>memory</em>. The result is
+    called an <em>Ornstein–Uhlenbeck</em> process. Discretely, with sample
+    spacing $\Delta t$,
+  </p>
+  <p>
+    $$ y_{i+1} = a\, y_i + \sqrt{1-a^2}\; w_i, \qquad a = e^{-\Delta t/\tau_c}, $$
+  </p>
+  <p>
+    where $w_i$ are independent unit Gaussians; the $\sqrt{1-a^2}$ factor keeps
+    the variance pinned at 1 whatever $\tau_c$ is. Its autocorrelation is a
+    pure exponential, $R_y(\tau) = e^{-|\tau|/\tau_c}$: the process remembers
+    itself for about one filter time constant and no longer.
+  </p>
+
+  <figure class="demo">
+    <figcaption>Memory, made of hardware: noise through an RC filter</figcaption>
+    <p class="demo-note">The circuit <em>is</em> the demo: a white noise
+      source (it could be the resistor's own thermal noise — chapter 5)
+      drives a resistor–capacitor low-pass, and the capacitor voltage
+      $y(t)$ is an Ornstein–Uhlenbeck process with $\tau_c = RC$. Dial $R$
+      and $C$: large $RC$ looks smooth and sluggish, small $RC$ jagged.
+      Right: the autocorrelation estimated from a 40&nbsp;s record against
+      the theoretical $e^{-\tau/RC}$. The estimate gets noisy for long
+      $\tau_c$ — the record then holds fewer independent chunks.</p>
+    <svg viewBox="0 0 470 122" style="max-width:460px;display:block;margin:2px auto 4px;">
+      <g fill="none" stroke="var(--axis)" stroke-width="1.6">
+        <circle cx="42" cy="52" r="15"/>
+        <path d="M42 37 V30 H110"/>
+        <path d="M110 30 l8 -8 l12 16 l12 -16 l12 16 l12 -16 l12 16 l8 -8 H196"/>
+        <path d="M196 30 H420"/>
+        <path d="M300 30 V52"/>
+        <path d="M282 52 H318"/>
+        <path d="M282 62 H318"/>
+        <path d="M300 62 V84"/>
+        <path d="M42 67 V84 H420"/>
+      </g>
+      <circle cx="300" cy="30" r="3" fill="var(--axis)"/>
+      <circle cx="420" cy="30" r="3.2" fill="none" stroke="var(--axis)" stroke-width="1.6"/>
+      <circle cx="420" cy="84" r="3.2" fill="none" stroke="var(--axis)" stroke-width="1.6"/>
+      <g font-family="system-ui, sans-serif" font-size="13" fill="var(--ink-2)">
+        <text x="42" y="57" text-anchor="middle" font-size="15">~</text>
+        <text x="42" y="112" text-anchor="middle" font-size="12">white noise in</text>
+        <text id="rc-r-label" x="153" y="14" text-anchor="middle">R = 100 kΩ</text>
+        <text id="rc-c-label" x="326" y="61">C = 1.0 µF</text>
+        <text x="434" y="34" font-size="13">y(t)</text>
+        <text x="420" y="112" text-anchor="middle" font-size="12">to the scope</text>
+      </g>
+    </svg>
+    <div class="controls" id="ctl-memory"></div>
+    <div class="plots two-col">
+      <div id="plot-mem-t"></div>
+      <div id="plot-mem-r"></div>
+    </div>
+  </figure>
+
+  <p>
+    Notice the trade you can see by eye: <strong>short memory ↔ wide
+    bandwidth, long memory ↔ narrow bandwidth</strong>. A filter that passes
+    only slow frequencies produces noise whose value persists; noise that
+    forgets instantly must contain arbitrarily fast components. The exact
+    statement — that $R_x(\tau)$ and the power spectral density are a Fourier
+    pair — is the Wiener–Khinchin theorem, and it is the whole subject of the
+    next chapter. (The readout above shows the filter's 3&nbsp;dB bandwidth
+    $1/2\pi RC$ so you can watch the reciprocity happen.) And the same
+    mathematics arrives with other hardware: a micron-sized bead in an
+    optical tweezer is an OU process in <em>position</em> — trap stiffness
+    playing the role of $1/RC$ — and biophysicists calibrate their traps by
+    fitting exactly this exponential memory.
+  </p>
+
+  <h2>Stationarity: does the process age?</h2>
+  <p>
+    A process is <strong>stationary</strong> if its statistics are unchanged
+    by a shift of the time origin: the ensemble looks the same whether you
+    start recording now or an hour from now. In practice one usually demands
+    only <strong>wide-sense stationarity</strong>: the mean $\mu(t)$ is
+    constant and $R_x(t_1,t_2)$ depends only on $\tau = t_2-t_1$. That is the
+    condition under which writing $R_x(\tau)$, as we did above, is legal.
+  </p>
+  <p>
+    White noise is stationary — every sample is a fresh, identically
+    distributed draw. The random walk is the canonical
+    <em>non</em>-stationary process. Write it as a sum of independent
+    increments: after time $t$ it has accumulated $t/\Delta t$ independent
+    steps of variance $\sigma^2 \Delta t$ each. Independent variances add, so
+  </p>
+  <p>
+    $$ \mathrm{Var}\big[x(t)\big] \;=\; \frac{t}{\Delta t}\cdot \sigma^2 \Delta t
+       \;=\; \sigma^2 t . $$
+  </p>
+  <p>
+    The variance grows linearly with time — the ensemble spreads out forever,
+    and the typical excursion grows as $\sigma\sqrt{t}$. No time shift can
+    map this ensemble onto itself: a walk observed from $t=100$&nbsp;s is
+    statistically wider than one observed from $t=0$.
+  </p>
+
+  <figure class="demo">
+    <figcaption>The random-walk fan: variance grows like $t$</figcaption>
+    <p class="demo-note">Left: 100 random walks ($\sigma = 1$ per
+      $\sqrt{\text{s}}$) with the $\pm\sigma\sqrt{t}$ envelope — the fan.
+      Right: the ensemble variance measured across 400 walks at each time,
+      against the straight line $\sigma^2 t$.</p>
+    <div class="controls" id="ctl-walk"></div>
+    <div class="plots two-col">
+      <div id="plot-walk-fan"></div>
+      <div id="plot-walk-var"></div>
+    </div>
+  </figure>
+
+  <div class="callout warn">
+    <div class="callout-title">Why you should care in the lab</div>
+    Most textbook noise machinery — power spectral densities, Wiener–Khinchin,
+    "the noise floor is X" — <em>assumes stationarity</em>. Random-walk-like
+    noise (chapter 5 will call it $1/f^2$) and drifting setups violate it, and
+    naively applying stationary tools to them gives answers that depend on how
+    long you happened to measure. Chapter 7's Allan deviation exists precisely
+    because clocks misbehave this way.
+  </div>
+
+  <div class="callout">
+    <div class="callout-title">Why all the square roots?</div>
+    Noise formulas are full of square roots — the $\sqrt{t}$ fan above,
+    $/\sqrt{\mathrm{Hz}}$ on every datasheet, the $1/\sqrt{T}$ of averaging
+    — and they all have one source. Look again at the derivation above: over
+    <em>any</em> interval $\Delta t$, the walk's increment is Gaussian with
+    variance $\propto \Delta t$ — it is the <strong>variance</strong> (the
+    square) that is proportional to time, so the typical <em>size</em> of
+    anything random picks up a square root when you take it back out of
+    variance-land: kick size $\propto\sqrt{\Delta t}$. This is not a convention but a corner we are
+    backed into: if increments instead had variance
+    $\propto (\Delta t)^\alpha$, then chopping a fixed time $T$ into
+    $N$ steps would give total variance
+    $N\,(T/N)^\alpha = N^{1-\alpha}\,T^{\alpha}$, which as
+    $N\to\infty$ dies to zero for $\alpha>1$ and blows up for
+    $\alpha<1$. Only $\alpha=1$ survives the continuum limit. The resulting
+    idealized process is called the <strong>Wiener process</strong> $W(t)$ —
+    the object that drives all of stochastic calculus. So the answer to the
+    title's question fits in one sentence: <em>independent noises add in
+    variance, not in amplitude</em>. Everything in the noise business
+    doubles and halves in the square, and every practical quantity — kick
+    sizes, fan widths, datasheet sensitivities, averaging gains — is that
+    square's square root.
+  </div>
+
+  <h2>A subtlety worth loving: the random-phase sine</h2>
+  <p>
+    Here is a process that recalibrates your intuition about what "random"
+    means. Take a perfect tone from chapter 1 and randomize only its phase:
+  </p>
+  <p>
+    $$ x(t) = A \cos(2\pi\nu_0 t + \varphi), \qquad
+       \varphi \sim \text{uniform on } [0, 2\pi) , $$
+  </p>
+  <p>
+    with $\varphi$ drawn <em>once per realization</em>. Every single movie in
+    the ensemble is a flawless, deterministic-looking cosine — nothing jagged
+    anywhere. Yet as an ensemble this is a perfectly respectable stationary
+    random process: averaging over $\varphi$,
+  </p>
+  <p>
+    $$ \langle x(t) \rangle = 0, \qquad
+       R_x(\tau) = \frac{A^2}{2} \cos(2\pi\nu_0 \tau) , $$
+  </p>
+  <p>
+    independent of $t$ (exercise 3.2 does the two-line integral). Select
+    "sine, random phase" in the first demo and the ensemble panels show the
+    first two claims: clean cosines slid against each other, mean zero, ±σ
+    band flat at $A/\sqrt{2}$. The third claim — that cosine autocorrelation
+    — deserves to be <em>measured</em>, exactly as we measured the RC
+    filter's above:
+  </p>
+
+  <figure class="demo">
+    <figcaption>The autocorrelation of a random-phase sine: memory that never fades</figcaption>
+    <p class="demo-note">Left: a few realizations — identical cosines,
+      random starting phases. Right: $R(\tau)/R(0)$ measured along one
+      record, with the theory $\cos(2\pi\nu_0\tau)$ overlaid. Compare the RC
+      demo above: there the memory died as $e^{-\tau/RC}$; here it
+      oscillates undiminished forever — knowing the value now predicts the
+      value arbitrarily far into the future.</p>
+    <div class="controls" id="ctl-rps"></div>
+    <div class="plots two-col">
+      <div id="plot-rps-t"></div>
+      <div id="plot-rps-r"></div>
+    </div>
+  </figure>
+
+  <p>
+    The moral: <strong>noise is not the same as "jagged"</strong>.
+    Randomness lives in the ensemble — in what you couldn't predict before
+    the run — not in the roughness of any one trace. And set the two
+    autocorrelation demos side by side, because together they are the seed
+    of the deepest fact in the course: exponential forgetting (the RC
+    filter) will turn out to mean a smeared-out spectrum, while this
+    never-fading oscillation <em>is</em> what an infinitely sharp spectral
+    line at $\nu_0$ looks like in the time domain. The dial connecting the
+    two is the next chapter.
+  </p>
+
+  <h2>Ergodicity: why one trace is enough</h2>
+  <p>
+    Everything above was defined over the ensemble — but nobody owns 200
+    parallel universes. Your data logger records <em>one</em> realization, and
+    from it you compute <em>time</em> averages: the mean of the samples, the
+    average of $x(t)x(t+\tau)$ along the record, and so on. A process is
+    <strong>ergodic</strong> if these time averages, taken over one
+    sufficiently long record, converge to the ensemble averages:
+  </p>
+  <p>
+    $$ \lim_{T\to\infty} \frac{1}{T} \int_0^T x(t)\, x(t+\tau)\, dt
+       \;=\; \langle x(t)\, x(t+\tau)\rangle \;=\; R_x(\tau) . $$
+  </p>
+  <p>
+    Intuitively, an ergodic process wanders through all of its typical
+    behaviours given enough time, so one long movie samples the ensemble as
+    well as many short ones. Well-behaved stationary processes — filtered
+    thermal noise, shot noise, the OU process above — are ergodic. And this is
+    the silent assumption of essentially every instrument you own: a spectrum
+    analyzer averaging successive sweeps, a lock-in's output filter, a
+    frequency counter's gate — all replace ensemble averages by time averages
+    and hope the process cooperates. (Only stationary processes can be
+    ergodic: a time average produces one number, so it cannot track a
+    time-dependent $\mu(t)$.)
+  </p>
+
+  <div class="callout">
+    <div class="callout-title">A stationary process that is <em>not</em> ergodic</div>
+    Let each realization be a constant, $x(t) = c$, with $c$ drawn once from a
+    zero-mean Gaussian. The ensemble statistics are time-independent
+    ($\mu = 0$, $R_x(\tau) = \sigma_c^2$ for all $\tau$), so the process is
+    stationary. But the time average of any single record is just its own
+    $c \neq 0$: no amount of watching one movie tells you the ensemble mean,
+    because each movie is stuck in one "state" forever. Real-world versions of
+    this: unit-to-unit offsets, a resistor's fixed mismatch, any frozen-in
+    disorder. Averaging longer does not help — only measuring more devices
+    does.
+  </div>
+
+  <p>
+    Watch the difference happen. Below, eight parallel universes run the same
+    experiment; the right panel tracks each universe's <em>running time
+    average</em> $\frac{1}{T}\int_0^T x\,dt$ as the record grows. For the
+    ergodic process all eight funnels collapse onto the ensemble mean —
+    any single movie would have told you the truth. Switch to the
+    non-ergodic process (the same noise riding on a frozen, once-per-universe
+    offset): every time average still converges beautifully… each to its
+    <em>own private answer</em>. Convergence is not the issue — convergence
+    to the <em>ensemble</em> answer is.
+  </p>
+
+  <figure class="demo">
+    <figcaption>Ergodic vs non-ergodic: does one movie tell you the truth?</figcaption>
+    <p class="demo-note">Left: eight realizations (one highlighted). Right:
+      each realization's running time average vs averaging time, with the
+      ensemble mean dashed. Press play to grow the records and watch the
+      averages settle; then switch process type. For the frozen-offset
+      process, waiting longer only makes each universe more confident of a
+      different number.</p>
+    <div class="controls" id="ctl-ergo"></div>
+    <div class="plots two-col">
+      <div id="plot-ergo-traces"></div>
+      <div id="plot-ergo-means"></div>
+    </div>
+  </figure>
+
+  <h2>Drift versus noise</h2>
+  <p>
+    One more distinction the lab forces on you. A <strong>deterministic
+    trend</strong> — the thermal ramp as your box warms up, mechanical creep,
+    a battery discharging — is not noise at all: rerun the experiment and the
+    same ramp comes back. It should be modelled and subtracted, not averaged
+    over. <strong>Slow non-stationary noise</strong> — random-walk-like
+    wandering — looks superficially similar in any one record but is genuinely
+    random: rerun and it wanders differently.
+  </p>
+  <p>
+    The uncomfortable truth is that in a <em>finite</em> record you often
+    cannot tell them apart. A single realization of very-low-frequency noise
+    (the "flicker", $1/f$-type noise of chapter 5) is nearly indistinguishable
+    from a smooth drift: both look like "it slowly went up". The discriminating
+    tools are statistical and need either many records or clever statistics on
+    one: the slope of the power spectral density at low frequency (chapter 5)
+    and the Allan deviation's behaviour at long averaging times (chapter 7).
+  </p>
+
+  <div class="callout lab">
+    <div class="callout-title">Lab note: is my laser drifting or is it flicker?</div>
+    You log your laser's frequency for an hour and it moved 200&nbsp;kHz,
+    slowly and smoothly. Temperature drift? Or $1/f$ frequency noise that would
+    average away… eventually? A single hour cannot say. What works: correlate
+    against the suspected cause (log the room temperature too — a
+    deterministic drift has a physical driver you can find); repeat the run and
+    see whether the "drift" reproduces in sign and shape; and compute the Allan
+    deviation — a linear drift makes $\sigma_y(\tau)$ rise as $\tau$, flicker
+    floors flat, random walk rises as $\sqrt{\tau}$. Until you have done one of
+    these, resist writing either "drift" or "noise" in the logbook; write
+    "slow".
+  </div>
+
+  <h2>The same thing in code</h2>
+  <p>
+    The two loops below generate every plot on this page. The first makes one
+    realization of the OU (low-pass-filtered) process; the second builds
+    ensemble statistics by brute force — exactly the definition of
+    $\langle\cdot\rangle$, no cleverness required.
+  </p>
+<pre><code>// one realization of an Ornstein–Uhlenbeck process, unit variance
+const a = Math.exp(-dt / tauC), b = Math.sqrt(1 - a * a);
+y[0] = Noise.randn(rand);                       // start in steady state
+for (let i = 1; i &lt; N; i++) y[i] = a * y[i - 1] + b * Noise.randn(rand);
+
+// ensemble mean and sigma at each time, from M fresh realizations
+const sum = new Float64Array(N), sq = new Float64Array(N);
+for (let m = 0; m &lt; M; m++) {
+  const x = makeRealization(rand);              // a new movie each pass
+  for (let i = 0; i &lt; N; i++) { sum[i] += x[i]; sq[i] += x[i] * x[i]; }
+}
+const mean  = sum.map(s => s / M);
+const sigma = sq.map((s, i) => Math.sqrt(s / M - mean[i] * mean[i]));
+</code></pre>
+
+  <div class="callout warn">
+    <div class="callout-title">Simulating noise: the kick scales as &#8730;&#916;t</div>
+    The commonest bug in home-made noise simulations follows directly from
+    the &#8730;&#916;t rule. If you integrate
+    $\dot x = -x/\tau_c + \xi(t)$ with an Euler step, the deterministic part
+    advances by $\Delta t$ but the noise kick must be
+    $\sigma\sqrt{\Delta t}\cdot\texttt{randn()}$ — <em>square root</em>, not
+    linear. Scale the kick by $\Delta t$ and your simulated noise silently
+    vanishes as you refine the timestep (and halving $\Delta t$ halves the
+    diffusion instead of preserving it). The $\sqrt{1-a^2}$ in the OU
+    one-liner above is the exact-discretization version of the same
+    square root.
+  </div>
+
+  <h2>Exercises</h2>
+
+  <div class="exercise">
+    <div class="ex-label">Exercise 3.1 — variance of a random walk</div>
+    <p>A walker takes $N$ independent steps, each $\pm s$ with equal
+    probability. Show that the variance of the final position is $N s^2$, and
+    explain why the fan in the demo has a $\sqrt{N}$ (equivalently
+    $\sqrt{t}$) envelope rather than a linear one.</p>
+    <details><summary>Solution</summary>
+      <p>The position is $x_N = \sum_{k=1}^{N} \epsilon_k$ with
+      $\epsilon_k = \pm s$, $\langle \epsilon_k \rangle = 0$ and
+      $\langle \epsilon_k^2 \rangle = s^2$. Then
+      $\mathrm{Var}[x_N] = \sum_k \langle\epsilon_k^2\rangle +
+      \sum_{j\neq k}\langle \epsilon_j\rangle\langle\epsilon_k\rangle
+      = N s^2$: independence kills the cross terms, so <em>variances</em> add,
+      not amplitudes. The typical excursion is the standard deviation
+      $s\sqrt{N}$ — the fan is the square root of a linearly growing variance.
+      With steps of variance $\sigma^2\Delta t$ every $\Delta t$, this is
+      $\mathrm{Var}[x(t)] = \sigma^2 t$ and envelope $\sigma\sqrt{t}$.</p>
+    </details>
+  </div>
+
+  <div class="exercise">
+    <div class="ex-label">Exercise 3.2 — autocorrelation of the random-phase sine</div>
+    <p>For $x(t) = A\cos(2\pi\nu_0 t + \varphi)$ with $\varphi$ uniform on
+    $[0, 2\pi)$, compute $R_x(\tau) = \langle x(t)\,x(t+\tau) \rangle$ by doing
+    the integral over $\varphi$.</p>
+    <details><summary>Solution</summary>
+      <p>Use $\cos\alpha\cos\beta = \tfrac12[\cos(\alpha-\beta) +
+      \cos(\alpha+\beta)]$ with $\alpha = 2\pi\nu_0 t + \varphi$,
+      $\beta = 2\pi\nu_0 (t+\tau) + \varphi$:
+      $$ x(t)x(t+\tau) = \frac{A^2}{2}\Big[\cos(2\pi\nu_0\tau)
+         + \cos\!\big(2\pi\nu_0(2t+\tau) + 2\varphi\big)\Big]. $$
+      Averaging over $\varphi$: the first term has no $\varphi$ and survives;
+      the second is a cosine averaged over a full period of $2\varphi$,
+      $\frac{1}{2\pi}\int_0^{2\pi}\cos(\cdot + 2\varphi)\,d\varphi = 0$. Hence
+      $R_x(\tau) = \tfrac{A^2}{2}\cos(2\pi\nu_0\tau)$, independent of $t$ —
+      the process is wide-sense stationary, and $R_x(0) = A^2/2$ is the
+      familiar mean-square value of a sine.</p>
+    </details>
+  </div>
+
+  <div class="exercise">
+    <div class="ex-label">Exercise 3.3 — the frozen constant</div>
+    <p>Let $x(t) = c$ for all $t$, with $c \sim \mathcal{N}(0,1)$ drawn once
+    per realization. Is this process stationary? Is it ergodic?</p>
+    <details><summary>Solution</summary>
+      <p><strong>Stationary: yes.</strong> Every realization is constant, so
+      shifting time changes nothing: $\mu(t) = \langle c \rangle = 0$ and
+      $R_x(t_1,t_2) = \langle c^2 \rangle = 1$ for all times — statistics
+      fully shift-invariant. <strong>Ergodic: no.</strong> The time average of
+      one realization is $\frac{1}{T}\int_0^T c\,dt = c$, a random number that
+      does not converge to the ensemble mean $0$ no matter how long $T$ is.
+      One movie explores exactly one point of the ensemble.</p>
+    </details>
+  </div>
+
+  <div class="exercise">
+    <div class="ex-label">Exercise 3.4 — your oscilloscope's "average" mode</div>
+    <p>A scope in averaging mode acquires 64 triggered traces and averages
+    them point by point. Is that a time average or an ensemble average? Under
+    what conditions does it agree with a time average along one long
+    record?</p>
+    <details><summary>Solution</summary>
+      <p>It is an <strong>ensemble average</strong>: each trigger starts a
+      fresh realization of the noise, and the scope averages across the 64
+      realizations at fixed time-after-trigger. That is precisely why it
+      works — the trigger-synchronous signal is the same in every realization
+      and survives, while zero-mean noise averages down as $1/\sqrt{64} = 1/8$
+      in amplitude. It agrees with a time average along one record when the
+      noise is stationary and ergodic <em>and</em> nothing distinguishes one
+      trigger from the next (no trigger-correlated pickup, no drift between
+      acquisitions). If the setup drifts between triggers — non-stationarity —
+      the 64 movies come from different ensembles, and the average blurs the
+      signal instead of cleaning it.</p>
+    </details>
+  </div>
+
+  <div class="exercise">
+    <div class="ex-label">Exercise 3.5 — how long until it wanders off?</div>
+    <p>Your laser is free-running (no lock), and its frequency random-walks
+    with $\sigma = 100$ kHz$/\sqrt{\text{s}}$, i.e.
+    $\mathrm{Var} = \sigma^2 t$. (a) Estimate how long you typically have
+    before it has wandered by 100&nbsp;MHz. (b) A famous subtlety: the walk
+    reaches <em>any</em> level eventually (with probability 1), yet the
+    <em>mean</em> time to first reach a level is infinite. How can both be
+    true, and what does that mean for your answer to (a)?</p>
+    <details><summary>Solution</summary>
+      <p>(a) Set $\sigma\sqrt{t} \sim 100$ MHz: $t \sim (10^8/10^5)^2 =
+      10^6$ s — about two weeks for a <em>typical</em> excursion of that
+      size (in practice drift, not the walk, gets you first). (b) The
+      distribution of first-passage times is extremely heavy-tailed: most
+      realizations cross early, but the rare ones that happen to start off
+      in the wrong direction can take arbitrarily long, and those long tails
+      diverge when you compute the mean. So "typical time" (the median,
+      roughly the estimate in (a)) is meaningful; "average time" is not.
+      Whenever a quantity has a heavy-tailed distribution, quote a quantile,
+      not a mean — the same lesson as quoting flicker noise per decade
+      rather than as one RMS number.</p>
+    </details>
+  </div>
+
+  <nav class="pager">
+    <a class="prev" href="02-modulation.html"><span class="dir">Previous · Chapter 2</span>
+      Wiggling the knobs: modulation</a>
+    <a class="next" href="04-psd.html"><span class="dir">Next · Chapter 4</span>
+      The power spectral density</a>
+  </nav>
+</main>
+
+<script src="../js/lib/fft.js"></script>
+<script src="../js/lib/noise.js"></script>
+<script src="../js/lib/plot.js"></script>
+<script src="../js/lib/ui.js"></script>
+<script>
+'use strict';
+
+/* ---------- demo 1: the ensemble ---------- */
+(function () {
+  const N = 400, T = 4, dt = T / N;
+  const t = Noise.linspace(0, T, N);
+  const M = 200;          // realizations for the statistics panel
+  const NSHOW = 12;       // realizations drawn on the left
+
+  const pTr = new Plot('#plot-ens-traces', {
+    xlabel: 'time (s)', ylabel: 'x(t)', height: 280,
+    xlim: [0, T], hover: false
+  });
+  const pSt = new Plot('#plot-ens-stats', {
+    xlabel: 'time (s)', ylabel: 'ensemble mean ± σ', height: 280,
+    xlim: [0, T], xunit: 's'
+  });
+
+  const ctl = '#ctl-ensemble';
+  let seed = 20;
+  const type = UI.select(ctl, {
+    label: 'process',
+    options: [
+      { value: 'white', label: 'white noise' },
+      { value: 'lp',    label: 'low-pass filtered noise' },
+      { value: 'walk',  label: 'random walk' },
+      { value: 'sine',  label: 'sine, random phase' }
+    ],
+    value: 'white', onChange: draw
+  });
+  UI.button(ctl, { label: 'new sample ↻', onClick: () => { seed += 1; draw(); } });
+
+  function makeReal(kind, rand) {
+    const x = new Float64Array(N);
+    if (kind === 'white') {
+      for (let i = 0; i < N; i++) x[i] = Noise.randn(rand);
+    } else if (kind === 'lp') {
+      const tauC = 0.25;
+      const a = Math.exp(-dt / tauC), b = Math.sqrt(1 - a * a);
+      x[0] = Noise.randn(rand);
+      for (let i = 1; i < N; i++) x[i] = a * x[i - 1] + b * Noise.randn(rand);
+    } else if (kind === 'walk') {
+      let s = 0;
+      const step = Math.sqrt(dt);        // sigma = 1 per sqrt(s)
+      for (let i = 1; i < N; i++) { s += step * Noise.randn(rand); x[i] = s; }
+    } else {                             // sine with random phase
+      const A = 1.5, nu0 = 1, phi = 2 * Math.PI * rand();
+      for (let i = 0; i < N; i++) x[i] = A * Math.cos(2 * Math.PI * nu0 * t[i] + phi);
+    }
+    return x;
+  }
+
+  function draw() {
+    const rand = Noise.rng(seed);
+    const kind = type.value;
+    const sum = new Float64Array(N), sq = new Float64Array(N);
+    const shown = [];
+    for (let m = 0; m < M; m++) {
+      const x = makeReal(kind, rand);
+      if (m < NSHOW) shown.push(x);
+      for (let i = 0; i < N; i++) { sum[i] += x[i]; sq[i] += x[i] * x[i]; }
+    }
+    const mean = new Float64Array(N), hi = new Float64Array(N),
+          lo = new Float64Array(N);
+    for (let i = 0; i < N; i++) {
+      mean[i] = sum[i] / M;
+      const v = Math.max(0, sq[i] / M - mean[i] * mean[i]);
+      const s = Math.sqrt(v);
+      hi[i] = mean[i] + s; lo[i] = mean[i] - s;
+    }
+
+    pTr.clear();
+    for (let m = 1; m < NSHOW; m++) {
+      pTr.line(t, shown[m], m === 1 ?
+        { label: 'eleven more', color: '#898781', width: 1 } :
+        { color: '#898781', width: 1 });
+    }
+    pTr.line(t, shown[0], { label: 'the run you got', width: 2 });
+    pTr.draw();
+
+    pSt.clear();
+    pSt.line(t, hi, { label: '⟨x⟩ ± σ', width: 1.2, dash: [6, 4],
+      color: '#1baf7a' });
+    pSt.line(t, lo, { width: 1.2, dash: [6, 4], color: '#1baf7a',
+      hover: false });
+    pSt.line(t, mean, { label: 'ensemble mean ⟨x(t)⟩' });
+    pSt.draw();
+  }
+  draw();
+})();
+
+/* ---------- demo 2: memory (OU autocorrelation) ---------- */
+(function () {
+  const dt = 0.002, N = 20000;           // 40 s record for the estimate
+  const NPLOT = 2000;                    // show the first 4 s
+  const KMAX = 500;                      // lags out to 1 s
+
+  const pT = new Plot('#plot-mem-t', {
+    xlabel: 'time (s)', ylabel: 'y(t)', height: 280,
+    xlim: [0, NPLOT * dt], ylim: [-4, 4], xunit: 's'
+  });
+  const pR = new Plot('#plot-mem-r', {
+    xlabel: 'lag τ (s)', ylabel: 'R(τ) / R(0)', height: 280,
+    xlim: [0, KMAX * dt], ylim: [-0.3, 1.05], xunit: 's'
+  });
+
+  const ctl = '#ctl-memory';
+  let seed = 7;
+  const fmtR = v => v >= 100 ? Math.round(v).toString() : v.toPrecision(2);
+  const Rk = UI.slider(ctl, { label: 'resistance R', min: 20, max: 500,
+    log: true, value: 100, unit: 'kΩ', fmt: fmtR, onInput: draw });
+  const Cu = UI.slider(ctl, { label: 'capacitance C', min: 0.5, max: 2,
+    log: true, value: 1, unit: 'µF', fmt: v => v.toPrecision(2),
+    onInput: draw });
+  UI.button(ctl, { label: 'new sample ↻', onClick: () => { seed += 1; draw(); } });
+  const tcRo = UI.readout(ctl, { label: 'time constant τc = RC' });
+  const bw = UI.readout(ctl, { label: 'bandwidth 1/2πRC' });
+
+  const tPlot = Noise.linspace(0, (NPLOT - 1) * dt, NPLOT);
+  const tau = Noise.linspace(0, (KMAX - 1) * dt, KMAX);
+
+  function draw() {
+    const rand = Noise.rng(seed);
+    const tc = Rk.value * 1e3 * Cu.value * 1e-6;   // τc = RC, in seconds
+    document.getElementById('rc-r-label').textContent =
+      'R = ' + fmtR(Rk.value) + ' kΩ';
+    document.getElementById('rc-c-label').textContent =
+      'C = ' + Cu.value.toPrecision(2) + ' µF';
+    const a = Math.exp(-dt / tc), b = Math.sqrt(1 - a * a);
+    const y = new Float64Array(N);
+    y[0] = Noise.randn(rand);
+    for (let i = 1; i < N; i++) y[i] = a * y[i - 1] + b * Noise.randn(rand);
+
+    // estimate R(k) = <y[i] y[i+k]> along the record
+    const R = new Float64Array(KMAX);
+    for (let k = 0; k < KMAX; k++) {
+      let s = 0;
+      for (let i = 0; i < N - k; i++) s += y[i] * y[i + k];
+      R[k] = s / (N - k);
+    }
+    const Rn = R.map(v => v / R[0]);
+    const theory = tau.map(x => Math.exp(-x / tc));
+
+    pT.clear();
+    pT.line(tPlot, y.subarray(0, NPLOT), {});
+    pT.draw();
+
+    pR.clear();
+    pR.guideY(0, {});
+    pR.line(tau, theory, { label: 'theory  e^(−τ/τc)', dash: [6, 4] });
+    pR.line(tau, Rn, { label: 'measured R(τ)/R(0)' });
+    pR.draw();
+
+    tcRo.set(tc < 0.1 ? (tc * 1e3).toFixed(0) + ' ms' : tc.toFixed(2) + ' s');
+    bw.set((1 / (2 * Math.PI * tc)).toPrecision(2) + ' Hz');
+  }
+  draw();
+})();
+
+/* ---------- demo: autocorrelation of the random-phase sine ---------- */
+(function () {
+  const dt = 0.002, N = 20000;           // 40 s record, as in the RC demo
+  const NPLOT = 2000;                    // show the first 4 s
+  const KMAX = 1000;                     // lags out to 2 s
+
+  const pT = new Plot('#plot-rps-t', {
+    xlabel: 'time (s)', ylabel: 'x(t)', height: 260,
+    xlim: [0, NPLOT * dt], ylim: [-1.3, 1.3], xunit: 's', hover: false
+  });
+  const pR = new Plot('#plot-rps-r', {
+    xlabel: 'lag τ (s)', ylabel: 'R(τ) / R(0)', height: 260,
+    xlim: [0, KMAX * dt], ylim: [-1.25, 1.25], xunit: 's'
+  });
+
+  const ctl = '#ctl-rps';
+  let seed = 13;
+  const nu0 = UI.slider(ctl, { label: 'frequency ν₀', min: 0.5, max: 3,
+    step: 0.05, value: 1.5, unit: 'Hz', fmt: v => v.toFixed(2),
+    onInput: draw });
+  UI.button(ctl, { label: 'new phases ↻', onClick: () => { seed++; draw(); } });
+
+  const tPlot = Noise.linspace(0, (NPLOT - 1) * dt, NPLOT);
+  const tau = Noise.linspace(0, (KMAX - 1) * dt, KMAX);
+
+  function draw() {
+    const rand = Noise.rng(seed);
+    const f0 = nu0.value;
+    // a few realizations for the left panel + one full record for R(tau)
+    pT.clear();
+    for (let m = 0; m < 4; m++) {
+      const ph = 2 * Math.PI * rand();
+      const xs = tPlot.map(t => Math.cos(2 * Math.PI * f0 * t + ph));
+      if (m < 3) pT.line(tPlot, xs, { color: '#898781', width: 1, hover: false });
+      else pT.line(tPlot, xs, { width: 1.5 });
+    }
+    pT.draw();
+
+    const ph = 2 * Math.PI * rand();
+    const x = new Float64Array(N);
+    for (let i = 0; i < N; i++) {
+      x[i] = Math.cos(2 * Math.PI * f0 * i * dt + ph);
+    }
+    const R = new Float64Array(KMAX);
+    for (let k = 0; k < KMAX; k++) {
+      let s = 0;
+      for (let i = 0; i < N - k; i++) s += x[i] * x[i + k];
+      R[k] = s / (N - k);
+    }
+    const Rn = R.map(v => v / R[0]);
+    pR.clear();
+    pR.guideY(0, {});
+    pR.line(tau, tau.map(t => Math.cos(2 * Math.PI * f0 * t)),
+      { label: 'theory  cos(2πν₀τ)', dash: [6, 4] });
+    pR.line(tau, Rn, { label: 'measured R(τ)/R(0)' });
+    pR.draw();
+  }
+  draw();
+})();
+
+/* ---------- demo: ergodic vs non-ergodic time averages ---------- */
+(function () {
+  const M = 8, fs = 50, T = 40, N = fs * T;
+  const pTr = new Plot('#plot-ergo-traces', {
+    xlabel: 'time (s)', ylabel: 'x(t)', height: 280,
+    xlim: [0, T], ylim: [-5, 5], hover: false
+  });
+  const pMe = new Plot('#plot-ergo-means', {
+    xlabel: 'averaging time T (s)', ylabel: 'running time average', height: 280,
+    xlog: true, xlim: [0.2, T], ylim: [-3, 3], xunit: 's'
+  });
+  const ctl = '#ctl-ergo';
+  let seed = 21;
+  const kind = UI.select(ctl, { label: 'process', options: [
+    { value: 'ergo', label: 'ergodic (filtered noise)' },
+    { value: 'frozen', label: 'non-ergodic (frozen offset + same noise)' }
+  ], value: 'ergo', onChange: () => { make(); reveal = 1; draw(); } });
+  UI.button(ctl, { label: 'new sample ↻',
+    onClick: () => { seed++; make(); reveal = 1; draw(); } });
+
+  let traces = [], means = [], tArr, reveal = 1;
+
+  function make() {
+    const rand = Noise.rng(seed);
+    const frozen = kind.value === 'frozen';
+    traces = []; means = [];
+    tArr = new Float64Array(N);
+    for (let i = 0; i < N; i++) tArr[i] = (i + 1) / fs;
+    for (let m = 0; m < M; m++) {
+      const c = frozen ? 1.5 * Noise.randn(rand) : 0;
+      // OU process, tau_c = 0.3 s, unit variance (same as the memory demo)
+      const a = Math.exp(-1 / (fs * 0.3)), b = Math.sqrt(1 - a * a);
+      const x = new Float64Array(N);
+      let y = Noise.randn(rand);
+      let sum = 0;
+      const mean = new Float64Array(N);
+      for (let i = 0; i < N; i++) {
+        y = a * y + b * Noise.randn(rand);
+        x[i] = c + y;
+        sum += x[i];
+        mean[i] = sum / (i + 1);
+      }
+      traces.push(x);
+      means.push(mean);
+    }
+  }
+
+  function draw() {
+    const n = Math.max(2, Math.round(reveal * N));
+    const t = tArr.subarray(0, n);
+    pTr.clear();
+    for (let m = 1; m < M; m++) {
+      pTr.line(t, traces[m].subarray(0, n),
+        { color: '#898781', width: 1, hover: false });
+    }
+    pTr.line(t, traces[0].subarray(0, n), { width: 1.5 });
+    pTr.draw();
+
+    pMe.clear();
+    pMe.guideY(0, { label: 'ensemble mean' });
+    for (let m = 1; m < M; m++) {
+      pMe.line(t, means[m].subarray(0, n),
+        { color: '#898781', width: 1, hover: false });
+    }
+    pMe.line(t, means[0].subarray(0, n),
+      { label: 'the movie you actually recorded', width: 2 });
+    pMe.draw();
+  }
+
+  UI.playButton(ctl, { onFrame: (tt) => {
+    reveal = Math.min(1, 0.02 + tt / 10);   // grow the records over ~10 s
+    draw();
+  } });
+  make();
+  draw();
+})();
+
+/* ---------- demo 3: random-walk fan ---------- */
+(function () {
+  const N = 400, T = 4, dt = T / N;
+  const t = Noise.linspace(0, T, N);
+  const M = 400;         // walks used for the variance estimate
+  const NSHOW = 100;     // walks drawn in the fan
+
+  const pF = new Plot('#plot-walk-fan', {
+    xlabel: 'time (s)', ylabel: 'x(t)', height: 280,
+    xlim: [0, T], ylim: [-6.5, 6.5], hover: false
+  });
+  const pV = new Plot('#plot-walk-var', {
+    xlabel: 'time (s)', ylabel: 'Var[x(t)]', height: 280,
+    // pinned so the theory line sits still when a new sample is drawn;
+    // headroom covers the ~±10% scatter of a 400-walk variance estimate
+    xlim: [0, T], ylim: [0, 5.5], xunit: 's'
+  });
+
+  const ctl = '#ctl-walk';
+  let seed = 99;
+  UI.button(ctl, { label: 'new sample ↻', onClick: () => { seed += 1; draw(); } });
+
+  const env = t.map(x => Math.sqrt(x));
+
+  function draw() {
+    const rand = Noise.rng(seed);
+    const sq = new Float64Array(N);
+    const shown = [];
+    const step = Math.sqrt(dt);          // sigma = 1 per sqrt(s)
+    for (let m = 0; m < M; m++) {
+      const x = new Float64Array(N);
+      let s = 0;
+      for (let i = 1; i < N; i++) { s += step * Noise.randn(rand); x[i] = s; }
+      if (m < NSHOW) shown.push(x);
+      for (let i = 0; i < N; i++) sq[i] += x[i] * x[i];
+    }
+    const varMeas = new Float64Array(N);
+    for (let i = 0; i < N; i++) varMeas[i] = sq[i] / M;
+
+    pF.clear();
+    for (let m = 0; m < NSHOW; m++) {
+      pF.line(t, shown[m], m === 0 ?
+        { label: '100 random walks', color: '#898781', width: 1 } :
+        { color: '#898781', width: 1 });
+    }
+    pF.line(t, env, { label: '±σ√t envelope', width: 2, dash: [6, 4] });
+    pF.line(t, env.map(v => -v), { width: 2, dash: [6, 4],
+      color: '#2a78d6', hover: false });
+    pF.draw();
+
+    pV.clear();
+    pV.line(t, t.map(x => x), { label: 'theory  σ²t', dash: [6, 4] });
+    pV.line(t, varMeas, { label: 'measured (400 walks)' });
+    pV.draw();
+  }
+  draw();
+})();
+</script>
+</body>
+</html>

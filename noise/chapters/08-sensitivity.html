@@ -1,0 +1,1249 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>8 · Sensitivity: what Hz/√Hz means — Making Sense of Noise</title>
+<link rel="stylesheet" href="../css/style.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"
+  onload="renderMathInElement(document.body, {delimiters:[
+    {left:'$$', right:'$$', display:true},
+    {left:'$', right:'$', display:false}]});"></script>
+</head>
+<body>
+
+<nav class="site-nav">
+  <div class="nav-inner">
+    <a class="home" href="../index.html">Making Sense of Noise</a>
+    <div class="chapters">
+      <a href="01-pure-tone.html" title="The pure tone">1</a>
+      <a href="02-modulation.html" title="Modulation">2</a>
+      <a href="03-random-processes.html" title="Random processes">3</a>
+      <a href="04-psd.html" title="Power spectral density">4</a>
+      <a href="05-noise-colors.html" title="Colors of noise">5</a>
+      <a href="06-oscillator-noise.html" title="Amplitude, phase & frequency noise">6</a>
+      <a href="07-allan.html" title="Allan deviation">7</a>
+      <a href="08-sensitivity.html" class="current" title="Sensitivity">8</a>
+      <a href="09-ligo.html" title="LIGO case study">9</a>
+      <a href="10-pll.html" title="Phase-locked loops">10</a>
+    </div>
+  </div>
+</nav>
+
+<main>
+  <p class="chapter-kicker">Chapter 8</p>
+  <h1>Sensitivity: what Hz/&radic;Hz means</h1>
+  <p class="lede">
+    Every sensor datasheet and every metrology paper quotes a sensitivity in
+    the strange unit "something per root hertz". This chapter makes that
+    number concrete: it is the amplitude spectral density of the instrument's
+    noise referred to the input, and it tells you exactly how your measurement
+    uncertainty shrinks as you integrate longer — and when it stops shrinking.
+  </p>
+
+  <h2>Noise referred to the input</h2>
+  <p>
+    A sensor is a machine that turns the quantity you care about — a magnetic
+    field, a force, a laser's frequency offset — into something you can
+    record, usually a voltage. Write the input as $u$ and the output as $V$;
+    for small signals the instrument is linear with gain $G$, and it adds its
+    own noise on the way out:
+  </p>
+  <p>
+    $$ V(t) \;=\; G\,u(t) \;+\; V_{\mathrm{noise}}(t). $$
+  </p>
+  <p>
+    The output noise $V_{\mathrm{noise}}$ has some power spectral density
+    $S_V(f)$ in $\mathrm{V^2/Hz}$, exactly as in
+    <a href="04-psd.html">chapter&nbsp;4</a>. But volts are an implementation
+    detail — what you want to know is <em>how big an input would produce the
+    same wiggle</em>. So divide by the gain: the <strong>equivalent input
+    noise</strong> has PSD
+  </p>
+  <p>
+    $$ S_u(f) \;=\; \frac{S_V(f)}{G^2}, \qquad
+       \text{ASD} = \sqrt{S_u(f)}
+       \;\;\text{in units of } u/\sqrt{\mathrm{Hz}} . $$
+  </p>
+  <p>
+    That single curve — the amplitude spectral density of the noise referred
+    to the input — <em>is</em> "the sensitivity". It is a property of the
+    whole instrument, gain and noise together, expressed in the units of the
+    thing being measured. Some real-world values:
+  </p>
+
+  <table>
+    <thead>
+      <tr><th>Instrument</th><th>Input quantity</th><th>Typical sensitivity (input-referred ASD)</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>fluxgate magnetometer</td><td>magnetic field</td><td>5 pT/&radic;Hz</td></tr>
+      <tr><td>LIGO (best band, ~200 Hz)</td><td>strain (dimensionless!)</td><td>~10<sup>&minus;23</sup> 1/&radic;Hz</td></tr>
+      <tr><td>broadband seismometer</td><td>ground acceleration</td><td>~10<sup>&minus;9</sup> m&thinsp;s<sup>&minus;2</sup>/&radic;Hz</td></tr>
+      <tr><td>photodiode at 100 &micro;A (shot-noise limit)</td><td>photocurrent</td><td>5.7 pA/&radic;Hz</td></tr>
+      <tr><td>laser-lock error signal</td><td>laser frequency offset</td><td>1 Hz/&radic;Hz</td></tr>
+    </tbody>
+  </table>
+
+  <p>
+    Two of these deserve a second look. LIGO's strain is dimensionless, so its
+    sensitivity has the delightfully bare unit $1/\sqrt{\mathrm{Hz}}$. And the
+    last row is a <em>frequency discriminator</em>: an instrument (a cavity, an
+    atomic line) whose input is itself a frequency, so its sensitivity is
+    hertz of input per root hertz of Fourier frequency —
+    $\mathrm{Hz}/\sqrt{\mathrm{Hz}}$, the unit in this chapter's title. The two
+    hertz are different animals: the numerator is the signal you measure, the
+    denominator is the bandwidth you measure it in.
+  </p>
+
+  <div class="callout warn">
+    <div class="callout-title">A sensitivity is a density</div>
+    Just as in <a href="04-psd.html">chapter&nbsp;4</a>, a number in
+    $u/\sqrt{\mathrm{Hz}}$ is meaningless on its own — it only becomes an
+    uncertainty once you multiply by the square root of a bandwidth. "This
+    magnetometer measures 5&nbsp;pT" is not a statement; "5&nbsp;pT/&radic;Hz"
+    plus "I averaged for 100&nbsp;s" is. The whole point of the unit is to
+    postpone the choice of bandwidth to the user. The rest of this chapter is
+    about making that multiplication precise.
+  </div>
+
+  <h2>Noise figure: how RF engineers quote the same thing</h2>
+  <p>
+    RF engineers have been quoting input-referred noise since the 1940s,
+    under a different name and in decibels (the dBm and the dB arithmetic
+    here are the ones built in chapters&nbsp;4 and 5 — dBm is power relative
+    to 1&nbsp;mW; adding decibels multiplies powers). Their reference point
+    is the universal thermal floor of
+    <a href="05-noise-colors.html">chapter&nbsp;5</a>:
+    a matched source at temperature $T$ delivers an available noise power
+    density of $k_B T$ per hertz, which at the standard
+    $T_0 = 290\ \mathrm{K}$ is $4.0\times10^{-21}\ \mathrm{W/Hz} =
+    -174\ \mathrm{dBm/Hz}$. Now drive any network — amplifier, cable,
+    mixer — from a source at $T_0$. Its output noise density has two parts:
+    the amplified source noise, and whatever the network adds of its own.
+    The <strong>noise factor</strong> $F$ is the ratio of the total to the
+    source part alone; dividing top and bottom by the gain, it is equally
+    the factor by which the network degrades signal-to-noise:
+  </p>
+  <p>
+    $$ F \;=\; \frac{\text{total output noise density}}
+                    {\text{part due to the source alone}}
+       \;=\; \frac{\mathrm{SNR_{in}}}{\mathrm{SNR_{out}}}, $$
+  </p>
+  <p>
+    both taken at a single ("spot") frequency, with matched impedances, and
+    with the source pinned by convention at 290&nbsp;K. In decibels this is
+    the <strong>noise figure</strong>,
+    $\mathrm{NF} = 10\log_{10} F$. A noiseless
+    amplifier has $F = 1$ ($\mathrm{NF} = 0$&nbsp;dB): it amplifies signal
+    and source noise alike and the SNR is untouched. A passive attenuator
+    with power loss $L$ has $F = L$: the signal comes out $L$ times weaker,
+    but the attenuator's own resistors are at 290&nbsp;K too, so a full
+    $k_B T_0$ still comes out the back — the SNR drops by exactly $L$.
+    Three decibels of cable loss <em>is</em> three decibels of noise figure.
+    Radio astronomers carry the same content as a temperature: referred to
+    the input, the network's own noise is worth an extra source temperature
+    $T_N = 290\,(F - 1)$&nbsp;K, so a 0.5-dB-NF receiver is
+    "a 35&nbsp;K receiver".
+  </p>
+  <p>
+    Here is why this section belongs in this chapter. An amplifier chain
+    with noise factor $F$ sitting on the thermal floor has an equivalent
+    input noise density of $F \cdot k_B T_0$ W/Hz — in decibels,
+    $-174 + \mathrm{NF}$ dBm/Hz. That is precisely the
+    <strong>referred-to-input noise density of section&nbsp;1</strong>, for
+    the special case where the input quantity is RF power: noise figure is
+    the input-referred (squared) ASD, quoted in dB relative to the thermal
+    floor. A "sensitivity of $5\ \mathrm{pT}/\sqrt{\mathrm{Hz}}$" and a
+    "noise figure of 6&nbsp;dB" are the same kind of statement in two
+    dialects — one absolute, one relative to what a warm resistor would do.
+    (If you noticed that chapter&nbsp;6's additive <em>phase-noise</em> floor
+    read $-177 + F_{\mathrm{dB}} - C_{\mathrm{dBm}}$ rather than $-174$:
+    the extra 3&nbsp;dB is not a disagreement — it is the half of the added
+    noise that reads as amplitude rather than phase. Same $F k_B T$, two
+    bookkeepings.)
+  </p>
+  <p>
+    The dialect earns its keep when instruments are chained. For stages with
+    noise factors $F_1, F_2, F_3$ and available gains $G_1, G_2$ (linear,
+    not dB), referring every stage's added noise back to the chain input
+    divides it by all the gain in front of it — the <strong>Friis
+    cascade formula</strong>:
+  </p>
+  <p>
+    $$ F_{\mathrm{total}} \;=\; F_1 \;+\; \frac{F_2 - 1}{G_1}
+       \;+\; \frac{F_3 - 1}{G_1 G_2} \;+\; \cdots $$
+  </p>
+  <p>
+    The consequence is the first commandment of receiver design:
+    <strong>the first stage dominates</strong>. Thirty decibels of low-noise
+    gain up front makes everything behind it a thousand times less
+    important; the same LNA placed <em>after</em> a lossy cable inherits the
+    cable's loss as straight noise figure. Try it:
+  </p>
+
+  <figure class="demo">
+    <figcaption>The Friis cascade: why the LNA goes first</figcaption>
+    <p class="demo-note">The chain is drawn below: each stage's added noise,
+      referred back to the chain input as $(F_i-1)/\prod_{j&lt;i} G_j$ in
+      units of $k_B T_0$, appears under its box and as a bar on the log
+      plot — the total noise factor is 1 (the source) plus the three bars.
+      Toggle the presets and watch the total jump from 1.0&nbsp;dB to
+      4.0&nbsp;dB when the 3-dB cable goes in front of the LNA. For a
+      passive attenuator at room temperature, set $\mathrm{NF} = -G$ (a
+      3&nbsp;dB pad has a 3&nbsp;dB noise figure); the sliders are
+      independent, so that bookkeeping is yours. Right plot: an example time
+      trace of the same signal at each point in the chain, referred to the
+      input (divided by the gain in front, so the sine stays put and only
+      the noise grows). With the LNA first, the later stages leave almost no
+      visible mark; put the cable first and the damage is immediate.</p>
+    <svg viewBox="0 0 560 158" style="max-width:560px;display:block;margin:2px auto 6px;">
+      <defs>
+        <marker id="fr-arr" markerWidth="8" markerHeight="8" refX="5.5"
+          refY="3" orient="auto"><path d="M0 0 L6 3 L0 6 Z"
+          fill="var(--axis)"/></marker>
+      </defs>
+      <g fill="none" stroke="var(--axis)" stroke-width="1.6">
+        <circle cx="38" cy="70" r="14"/>
+        <path d="M52 70 H86" marker-end="url(#fr-arr)"/>
+        <rect x="90" y="44" width="100" height="52"/>
+        <path d="M190 70 H211" marker-end="url(#fr-arr)"/>
+        <rect x="215" y="44" width="100" height="52"/>
+        <path d="M315 70 H336" marker-end="url(#fr-arr)"/>
+        <rect x="340" y="44" width="100" height="52"/>
+        <path d="M440 70 H492" marker-end="url(#fr-arr)"/>
+      </g>
+      <g font-family="system-ui, sans-serif" font-size="12" fill="var(--ink-2)">
+        <text x="38" y="75" text-anchor="middle" font-size="15">~</text>
+        <text x="38" y="106" text-anchor="middle" font-size="11">source</text>
+        <text x="38" y="119" text-anchor="middle" font-size="11">kT₀</text>
+        <text x="140" y="35" text-anchor="middle" font-size="11">stage 1</text>
+        <text id="fr-g1" x="140" y="65" text-anchor="middle">G 30.0 dB</text>
+        <text id="fr-n1" x="140" y="83" text-anchor="middle">NF 1.0 dB</text>
+        <text id="fr-c1" x="140" y="115" text-anchor="middle">+0.26 kT₀</text>
+        <text x="265" y="35" text-anchor="middle" font-size="11">stage 2</text>
+        <text id="fr-g2" x="265" y="65" text-anchor="middle">G −3.0 dB</text>
+        <text id="fr-n2" x="265" y="83" text-anchor="middle">NF 3.0 dB</text>
+        <text id="fr-c2" x="265" y="115" text-anchor="middle">+0.001 kT₀</text>
+        <text x="390" y="35" text-anchor="middle" font-size="11">stage 3</text>
+        <text id="fr-g3" x="390" y="65" text-anchor="middle">G −7.0 dB</text>
+        <text id="fr-n3" x="390" y="83" text-anchor="middle">NF 8.0 dB</text>
+        <text id="fr-c3" x="390" y="115" text-anchor="middle">+0.01 kT₀</text>
+        <text x="496" y="63" font-size="11">output</text>
+        <text id="fr-out" x="496" y="78" font-size="11">NF 1.0 dB</text>
+        <text x="280" y="147" text-anchor="middle" font-size="11">added
+          noise, referred to the chain input (divide by the gain in
+          front)</text>
+      </g>
+    </svg>
+    <div class="controls" id="ctl-friis"></div>
+    <div class="plots two-col">
+      <div id="plot-friis"></div>
+      <div id="plot-friis-t"></div>
+    </div>
+  </figure>
+
+  <div class="callout lab">
+    <div class="callout-title">Lab note: the link-budget line</div>
+    Every radio, radar and satellite link is designed around one line of
+    decibel arithmetic — the minimum detectable signal:
+    $$ P_{\mathrm{min}} \;=\; -174\ \mathrm{dBm/Hz} \;+\; \mathrm{NF}
+       \;+\; 10\log_{10} B \;+\; \mathrm{SNR_{req}} . $$
+    A receiver with $\mathrm{NF} = 6$&nbsp;dB, a $B = 1$&nbsp;kHz detection
+    bandwidth and a required SNR of 10&nbsp;dB reaches
+    $-174 + 6 + 30 + 10 = -128$&nbsp;dBm. Read the terms in this chapter's
+    language and the line is an old friend: $-174 + \mathrm{NF}$ is the
+    input-referred noise density, adding $10\log_{10} B$ multiplies by the
+    bandwidth ($\sigma = \mathrm{ASD}\cdot\sqrt{B}$, squared and taken in
+    dB), and $\mathrm{SNR_{req}}$ is how many of those sigmas you insist
+    on. The link budget is the sensitivity formula in logarithmic clothing.
+  </div>
+
+  <h2>Averaging a constant signal</h2>
+  <p>
+    The simplest possible measurement: the input is a constant $u_0$ (a DC
+    magnetic field, say), buried in white input-referred noise with one-sided
+    PSD $S_u$ (flat, in $u^2/\mathrm{Hz}$). You record for a time $T$ and take
+    the average,
+  </p>
+  <p>
+    $$ \bar{u}_T \;=\; \frac{1}{T}\int_0^T u_0 + n(t)\, \mathrm{d}t . $$
+  </p>
+  <p>
+    How uncertain is $\bar u_T$? Averaging over $T$ is a low-pass filter, and
+    the filter's <em>equivalent noise bandwidth</em> (the same ENBW idea
+    chapter&nbsp;4's window callout used for the Hann window) is
+    $\Delta f_{\mathrm{ENBW}} = 1/(2T)$: the boxcar average passes noise power
+    as if it were a brick-wall filter from DC to $1/(2T)$. So the variance of
+    the average is the flat PSD times that bandwidth,
+  </p>
+  <p>
+    $$ \sigma^2(T) \;=\; S_u \cdot \frac{1}{2T},
+       \qquad\Longrightarrow\qquad
+       \boxed{\;\sigma(T) \;=\; \frac{\sqrt{S_u}}{\sqrt{2T}}\;}
+    $$
+  </p>
+  <p>
+    — <strong>divide the per-root-hertz number by $\sqrt{2T}$</strong>. If the
+    filter argument feels slippery, count samples instead: digitize at rate
+    $f_s$, so each sample has variance $S_u f_s/2$ (the white-noise relation
+    from chapter&nbsp;4) and $T$ seconds give $N = T f_s$ independent samples.
+    The variance of the mean of $N$ independent samples is
+    $\bigl(S_u f_s/2\bigr)/N = S_u/(2T)$ — the sample rate drops out, as it
+    must. Either way: a 5&nbsp;pT/&radic;Hz magnetometer averaged for
+    100&nbsp;s knows the field to
+    $5/\sqrt{200} \approx 0.35$&nbsp;pT.
+  </p>
+  <p>
+    Watch this happen. Below, one noisy record's running average converges
+    into a funnel of predicted width $\pm\sqrt{S_u}/\sqrt{2t}$ — and on the
+    right, one hundred independent $T$-second measurements scatter with
+    exactly the predicted standard deviation.
+  </p>
+
+  <figure class="demo">
+    <figcaption>The &radic;2T funnel: uncertainty vs integration time</figcaption>
+    <p class="demo-note">Left: the running average of one noisy record (white
+      noise of the chosen sensitivity around the true field $B_0$), with the
+      predicted $\pm\sqrt{S_u}/\sqrt{2t}$ envelope as dashed curves. Right:
+      100 independent $T$-second averages. Drag $T$ and compare the measured
+      scatter with the prediction; press ↻ for a fresh realization.</p>
+    <div class="controls" id="ctl-avg"></div>
+    <div class="plots two-col">
+      <div id="plot-avg-run"></div>
+      <div id="plot-avg-reps"></div>
+    </div>
+  </figure>
+
+  <p>
+    The running average hugs the funnel: it is a random walk in disguise
+    (chapter&nbsp;5), but one whose step size shrinks as $1/t$, so it
+    converges — slowly. The $\sqrt{T}$ in the denominator is brutal
+    arithmetic: <em>every extra digit of precision costs a factor of 100 in
+    integration time.</em> That is why sensitivity, not patience, is the
+    figure of merit.
+  </p>
+
+  <p>Here is the essential code behind the left panel:</p>
+<pre><code>// one noisy record and its running mean, plus the predicted funnel
+const sigma = ASD * Math.sqrt(fs / 2);      // sample std for one-sided S_u = ASD²
+let sum = 0;
+for (let i = 0; i &lt; N; i++) {
+  sum += u0 + sigma * Noise.randn(rand);
+  const t = (i + 1) / fs;
+  mean[i]   = sum / (i + 1);                // running average after time t
+  funnel[i] = ASD / Math.sqrt(2 * t);       // predicted 1-sigma envelope
+}</code></pre>
+
+  <h3>The same law, where your eye can check it: frame averaging</h3>
+  <p>
+    Every pixel of a camera is running the experiment above in parallel.
+    One frame = signal + read noise of RMS $\sigma$ per pixel; average $N$
+    frames and each pixel's noise falls to $\sigma/\sqrt{N}$, so a feature of
+    contrast $c$ becomes visible once $c \gtrsim$ a few $\times\,
+    \sigma/\sqrt{N}$. Drag $N$ and watch the faint disks and the fine grating
+    surface out of the snow, slowly — $\sqrt{N}$ is brutal arithmetic in two
+    dimensions too: each factor of 10 in visibility costs a factor of 100 in
+    exposure.
+  </p>
+
+  <figure class="demo">
+    <figcaption>Averaging $N$ camera frames: noise falls as $1/\sqrt{N}$</figcaption>
+    <p class="demo-note">Left: a single frame of a test pattern (three disks
+      of decreasing contrast, a grating, faint text) in per-pixel read noise
+      of RMS $\sigma$. Right: the average of $N$ such frames (simulated by
+      its exact statistical equivalent, noise of RMS $\sigma/\sqrt{N}$). The
+      readout gives the faintest disk's contrast-to-noise ratio.</p>
+    <div class="controls" id="ctl-frames"></div>
+    <div class="plots two-col">
+      <canvas id="frame-single"></canvas>
+      <canvas id="frame-avg"></canvas>
+    </div>
+  </figure>
+
+  <p>
+    Two lab morals hide in this toy. First, the visibility threshold is a
+    <em>contrast-to-noise</em> statement, not a brightness one — exactly the
+    referred-to-input logic from the top of this chapter, per pixel. Second,
+    averaging only defeats noise that is <em>independent frame to frame</em>:
+    fixed-pattern nonuniformity, dust shadows or interference fringes sit at
+    the same place in every frame and survive any $N$ (chapter&nbsp;5's 2-D
+    section shows how such structure announces itself in the spatial
+    spectrum) — the imaging cousin of the flicker floor in the last section
+    of this chapter.
+  </p>
+
+  <h2>Finding a small AC signal</h2>
+  <p>
+    Now let the signal be a tiny sine at frequency $f_0$ instead of a
+    constant. In the time trace it is hopelessly buried. But noise is spread
+    over all frequencies while the signal lives at one, so the fix is the
+    same averaging trick wearing different clothes: a <strong>lock-in
+    amplifier</strong> multiplies the record by a reference
+    $\cos(2\pi f_0 t)$ — which shifts the signal down to DC, exactly the
+    mixing of <a href="02-modulation.html">chapter&nbsp;2</a> — and then
+    averages for $T$. The signal survives the averaging; the noise only
+    contributes what falls inside a detection bandwidth
+    $\Delta f \approx 1/T$ around $f_0$. Noise <em>power</em> in the
+    detection band shrinks like $S_u(f_0)\,\Delta f \propto 1/T$, so the
+    amplitude signal-to-noise ratio grows as $\sqrt{T}$ — the same
+    $\sqrt{T}$ as before, now centered on $f_0$ instead of DC.
+  </p>
+  <p>
+    You can see the whole story on a spectrum. The FFT of a $T$-second record
+    has bins of width $1/T$: as $T$ grows, the sine's power stays concentrated
+    in one narrowing bin, so its peak PSD climbs like $T$ while the white
+    floor stands still.
+  </p>
+
+  <figure class="demo">
+    <figcaption>An invisible sine pops out of the spectrum</figcaption>
+    <p class="demo-note">A sine at 16 Hz, buried in white noise of
+      1&nbsp;&micro;V/&radic;Hz. Left: one second of the record with the bare
+      signal drawn to scale — invisible. Right: the PSD of the full $T$-second
+      record. Lengthen $T$ and watch the peak rise out of the floor as the
+      analysis bandwidth $1/T$ shrinks.</p>
+    <div class="controls" id="ctl-ac"></div>
+    <div class="plots two-col">
+      <div id="plot-ac-t"></div>
+      <div id="plot-ac-f"></div>
+    </div>
+  </figure>
+
+  <p>
+    The moral: <strong>narrowband detection = putting your signal at a quiet
+    frequency and then shrinking the bandwidth around it.</strong> The first
+    half of that sentence matters as much as the second, because real noise
+    floors are not flat.
+  </p>
+
+  <div class="callout lab">
+    <div class="callout-title">Lab note: why you chop</div>
+    Every real instrument has a $1/f$ region at low frequency
+    (chapter&nbsp;5): amplifier flicker, thermal drifts, slow etalons. A DC
+    measurement sits in the worst part of the spectrum. So you
+    <em>modulate</em>: chop the light, dither the field, wiggle the probe at
+    some $f_{\mathrm{mod}}$ well above the $1/f$ corner, and lock in at
+    $f_{\mathrm{mod}}$. The signal now competes with the noise floor
+    <em>at</em> $f_{\mathrm{mod}}$, not at DC. Chopping doesn't reduce the
+    noise — it moves your signal to where the noise already is small.
+  </div>
+
+  <figure class="demo">
+    <figcaption>Choosing the modulation frequency</figcaption>
+    <p class="demo-note">Input-referred noise with a white floor of
+      10&nbsp;&micro;V/&radic;Hz and a $1/f$ knee at $f_c$: colored curve is a
+      measured (Welch) ASD, gray dashed is the model
+      $\sqrt{S_w(1+f_c/f)}$. Slide the modulation frequency and watch what a
+      1&nbsp;&micro;V signal costs you: below the corner the required
+      integration explodes.</p>
+    <div class="controls" id="ctl-chop"></div>
+    <div class="plots"><div id="plot-chop"></div></div>
+  </figure>
+
+  <p>
+    Once you are above the corner, going higher buys nothing — the floor is
+    flat — and eventually costs you (finite detector bandwidth, smaller
+    modulation depth). The optimum is simply <em>comfortably above
+    $f_c$</em>, and the payoff is read straight off the sensitivity curve:
+    detecting the same 1&nbsp;&micro;V signal at 10&nbsp;Hz instead of
+    3&nbsp;kHz can cost a factor of 100 in noise ASD, hence
+    $100^2 = 10^4$ in integration time.
+  </p>
+
+  <h2>Back to clocks: sensitivity <em>is</em> the Allan deviation</h2>
+  <p>
+    Chapters <a href="06-oscillator-noise.html">6</a> and
+    <a href="07-allan.html">7</a> now snap together. A clock interrogation —
+    or a laser locked to a cavity — is a sensor whose input unit is hertz:
+    it converts the oscillator's frequency offset $\delta\nu(t)$ into a
+    readable error signal. Suppose its input-referred noise floor is white,
+    with ASD $\sqrt{S_{\delta\nu}}$ in $\mathrm{Hz}/\sqrt{\mathrm{Hz}}$. Then
+    by the boxed formula, averaging for $T$ pins the frequency to
+  </p>
+  <p>
+    $$ \sigma_\nu(T) \;=\; \sqrt{\frac{S_{\delta\nu}}{2T}} . $$
+  </p>
+  <p>
+    Divide both sides by the carrier $\nu_0$ to make it fractional. With
+    $y = \delta\nu/\nu_0$ and $h_0 = S_y = S_{\delta\nu}/\nu_0^2$ this reads
+  </p>
+  <p>
+    $$ \sigma_y(\tau) \;=\; \sqrt{\frac{h_0}{2\tau}} , $$
+  </p>
+  <p>
+    which is <em>exactly</em> the white-frequency-noise Allan deviation of
+    chapter&nbsp;7 — same coefficient, same $\tau^{-1/2}$. This is not a
+    coincidence to be checked; it is the same statement twice. In its
+    white-FM regime, <strong>the Allan deviation is a sensitivity spec</strong>:
+    quoting "$\sigma_y(\tau) = 3\times10^{-13}/\sqrt{\tau}$" and quoting
+    "white frequency noise of $\sqrt{2}\times 3\times10^{-13}\,\nu_0$
+    Hz/&radic;Hz" are the same sentence in two dialects.
+  </p>
+
+  <table>
+    <thead>
+      <tr><th>Frequency sensitivity</th><th>Integration time</th><th>Frequency uncertainty ASD/&radic;(2T)</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>1 Hz/&radic;Hz</td><td>1 s</td><td>0.71 Hz</td></tr>
+      <tr><td>1 Hz/&radic;Hz</td><td>100 s</td><td>0.071 Hz</td></tr>
+      <tr><td>1 Hz/&radic;Hz</td><td>10<sup>4</sup> s</td><td>7.1 mHz</td></tr>
+    </tbody>
+  </table>
+
+  <p>
+    And the chain runs on into any quantity you can transduce into a
+    frequency. A worked example, end to end: an atomic magnetometer watches a
+    spin-precession frequency with gyromagnetic ratio
+    $\gamma = 7\ \mathrm{Hz/nT}$ (a number of the right flavor for real
+    alkali or nitrogen-vacancy sensors). Its frequency readout has a white
+    noise floor of $3.5\ \mathrm{Hz}/\sqrt{\mathrm{Hz}}$. Then:
+  </p>
+  <p>
+    $$ \underbrace{3.5\ \tfrac{\mathrm{Hz}}{\sqrt{\mathrm{Hz}}}}_{\text{frequency sensitivity}}
+       \;\xrightarrow{\ \div\,\gamma\ }\;
+       \underbrace{0.5\ \tfrac{\mathrm{nT}}{\sqrt{\mathrm{Hz}}}}_{\text{field sensitivity}}
+       \;\xrightarrow{\ \div\sqrt{2T},\ T=25\,\mathrm{s}\ }\;
+       \underbrace{0.07\ \mathrm{nT}}_{\text{uncertainty}} $$
+  </p>
+  <p>
+    (If you had used the $1/\sqrt{T}$ convention below, you would have said
+    0.1&nbsp;nT for the same instrument — see the warning.) Try your own
+    numbers:
+  </p>
+
+  <figure class="demo">
+    <figcaption>Sensitivity &rarr; uncertainty converter</figcaption>
+    <p class="demo-note">Set a sensitivity (in any unit X per &radic;Hz) and
+      an integration time; the crosshair reads the expected uncertainty in X
+      off the $1/\sqrt{2T}$ line, with the other convention's $1/\sqrt{T}$
+      line (a constant factor $\sqrt2$ above) for comparison. Averaging ten
+      times longer buys $\sqrt{10} \approx 3.2\times$ — one decade down the
+      line for every decade across.</p>
+    <div class="controls" id="ctl-conv"></div>
+    <div class="plots"><div id="plot-conv"></div></div>
+  </figure>
+
+  <div class="callout warn">
+    <div class="callout-title">The &radic;2 convention trap</div>
+    We defined $\sigma(T) = \sqrt{S_u}/\sqrt{2T}$, using the true equivalent
+    noise bandwidth $1/(2T)$ of a $T$-second average. Many datasheets and
+    papers instead write $\sigma(T) = \sqrt{S_u}/\sqrt{T}$, treating $T$
+    seconds as "bandwidth $1/T$". Both are self-consistent conventions;
+    they differ by $\sqrt{2}$, and factor-$\sqrt{2}$ disagreements between a
+    datasheet and your measurement are so common that this should be the
+    <em>first</em> thing you check. (Two-sided vs one-sided PSDs, the same
+    culprit as in chapter&nbsp;4, produces the identical symptom.) When you
+    quote a sensitivity, say which convention you use.
+  </div>
+
+  <h2>When averaging stops helping</h2>
+  <p>
+    Everything so far assumed the input-referred noise is white where you
+    detect. Over long times it never is. The two classic spoilers, both old
+    friends from <a href="07-allan.html">chapter&nbsp;7</a>:
+  </p>
+  <ul>
+    <li><strong>Flicker.</strong> If $S_u(f)$ turns up as $1/f$ below some
+      corner, the noise power entering the ever-narrower averaging band stops
+      decreasing — $\sigma(T)$ flattens onto a plateau ("flicker floor") no
+      matter how long you wait.</li>
+    <li><strong>Drift.</strong> A slow ramp $d\cdot t$ in the input isn't
+      noise at all, but the $T$-average of a ramp is off by $d\,T/2$: the
+      error now <em>grows</em> with integration time.</li>
+  </ul>
+  <p>
+    Put the three together and the uncertainty-versus-$T$ curve has the
+    classic V shape: white noise coming down as $T^{-1/2}$, drift going up as
+    $T$, a flicker plateau wedged between — and an <strong>optimal
+    integration time</strong> where they cross. Averaging past it makes your
+    measurement worse.
+  </p>
+
+  <figure class="demo">
+    <figcaption>Uncertainty vs integration time, by Monte-Carlo</figcaption>
+    <p class="demo-note">64 simulated records of magnetometer noise — white
+      (10 pT/&radic;Hz) + flicker + linear drift — each averaged for time $T$;
+      the curve is the RMS error of those 64 averages. Dashed guides:
+      $\mathrm{ASD}/\sqrt{2T}$ and $d\,T/2$. Raise the drift and watch the
+      optimum move; raise the flicker corner and watch the plateau form.</p>
+    <div class="controls" id="ctl-mc"></div>
+    <div class="plots"><div id="plot-mc"></div></div>
+  </figure>
+
+  <p>
+    This plot is the Allan-deviation story of chapter&nbsp;7 told in sensor
+    units: replace "pT" by "fractional frequency" and the V shape is exactly
+    why a clock's datasheet quotes both a $\tau^{-1/2}$ coefficient
+    <em>and</em> a flicker floor <em>and</em> a drift number. A sensitivity in
+    $u/\sqrt{\mathrm{Hz}}$ is the honest spec only in the white regime; the
+    full honest spec is this whole curve.
+  </p>
+
+  <h2>Exercises</h2>
+
+  <div class="exercise">
+    <div class="ex-label">Exercise 8.1 — datasheet arithmetic</div>
+    <p>A fluxgate magnetometer is specified at 5&nbsp;pT/&radic;Hz (white).
+    What field uncertainty do you expect after averaging for 100&nbsp;s?
+    Check your answer against the funnel demo.</p>
+    <details><summary>Solution</summary>
+      <p>$\sigma = \sqrt{S_u/2T} = 5\ \mathrm{pT}/\sqrt{2\cdot100} =
+      5/\sqrt{200} \approx 0.35$&nbsp;pT. (With the $1/\sqrt{T}$ convention
+      you would say 0.5&nbsp;pT — the &radic;2 trap in action.)</p>
+    </details>
+  </div>
+
+  <div class="exercise">
+    <div class="ex-label">Exercise 8.2 — shot-noise-limited photodiode</div>
+    <p>A photodiode draws $I = 100\ \mu\mathrm{A}$ of photocurrent. Shot
+    noise gives a white one-sided current PSD $S_I = 2eI$. What is the
+    current sensitivity in pA/&radic;Hz, and what <em>relative</em> power
+    uncertainty do you reach after 1&nbsp;s of averaging?</p>
+    <details><summary>Solution</summary>
+      <p>$S_I = 2 \times 1.602\times10^{-19} \times 10^{-4} =
+      3.2\times10^{-23}\ \mathrm{A^2/Hz}$, so
+      $\sqrt{S_I} \approx 5.7\ \mathrm{pA}/\sqrt{\mathrm{Hz}}$. After 1&nbsp;s:
+      $\sigma_I = 5.7\,\mathrm{pA}/\sqrt{2} \approx 4.0\ \mathrm{pA}$, i.e. a
+      relative uncertainty $4.0\times10^{-12}/10^{-4} = 4\times10^{-8}$.
+      Forty parts per billion in one second — shot noise is a very good
+      noise floor, which is why intensity-stabilization servos chase it.</p>
+    </details>
+  </div>
+
+  <div class="exercise">
+    <div class="ex-label">Exercise 8.3 — why in-loop numbers lie</div>
+    <p>A laser locked to a cavity shows an in-loop error signal of
+    0.01&nbsp;Hz/&radic;Hz, but an independent comparison against a second
+    laser shows 1&nbsp;Hz/&radic;Hz. Which number describes the laser, and
+    how can they disagree by a factor of 100?</p>
+    <details><summary>Solution</summary>
+      <p>The out-of-loop number. A servo's whole job is to drive its own
+      error signal to zero <em>at the point where it senses</em> — so the
+      in-loop signal is small by construction, not by virtue of the laser
+      being quiet. Any noise added after the sensing point (fiber phase
+      noise, path length to the experiment), and any noise <em>in</em> the
+      sensing itself (cavity vibration, residual amplitude modulation,
+      photodetection noise), is faithfully written onto the light while the
+      error signal stays serenely at zero — the loop steers the laser to
+      cancel what the sensor sees, including the sensor's own lies. Only a
+      measurement through an independent path can reveal it.</p>
+    </details>
+  </div>
+
+  <div class="exercise">
+    <div class="ex-label">Exercise 8.4 — plan a measurement</div>
+    <p>Your detection chain has an input-referred noise ASD flat at
+    10&nbsp;&micro;V/&radic;Hz above 1&nbsp;kHz, rising as $1/f$ in PSD (so
+    $1/\sqrt{f}$ in ASD) below that corner. You must detect a 1&nbsp;&micro;V
+    signal. Choose a chopping frequency and estimate the integration time for
+    a signal-to-noise ratio of 5. What would the same measurement cost at
+    10&nbsp;Hz?</p>
+    <details><summary>Solution</summary>
+      <p>Chop above the corner — say 3–10&nbsp;kHz — where the ASD is the
+      flat 10&nbsp;&micro;V/&radic;Hz. SNR of 5 means
+      $\sigma = 0.2\ \mu\mathrm{V}$, so
+      $T = S_u/(2\sigma^2) = (10/0.2)^2/2 = 1250$&nbsp;s, about 21 minutes.
+      At 10&nbsp;Hz the ASD is
+      $10\sqrt{1000/10} = 100\ \mu\mathrm{V}/\sqrt{\mathrm{Hz}}$: a hundred
+      times the noise, hence $10^4$ times the integration time
+      (&approx;145 days) — and even that is optimistic, because in the $1/f$
+      region the $1/\sqrt{2T}$ law itself fails and $\sigma(T)$ plateaus, as
+      in the last demo. Below the corner the measurement is simply not
+      available; chopping is not an optimization but a necessity.</p>
+    </details>
+  </div>
+
+  <div class="exercise">
+    <div class="ex-label">Exercise 8.5 — the dish and the cable</div>
+    <p>A satellite ground station has a dish, a 20&nbsp;m coaxial run to the
+    equipment rack (loss 0.2&nbsp;dB/m, so 4&nbsp;dB total), an LNA with
+    30&nbsp;dB gain and 0.8&nbsp;dB noise figure, and a rack receiver with
+    $\mathrm{NF} = 10$&nbsp;dB. Compare the system noise figure with the LNA
+    mounted at the dish (LNA &rarr; cable &rarr; receiver) versus in the
+    rack (cable &rarr; LNA &rarr; receiver).</p>
+    <details><summary>Solution</summary>
+      <p>Convert to linear: LNA $F = 10^{0.08} = 1.202$, $G = 1000$; cable
+      $F = L = 10^{0.4} = 2.512$, $G = 1/L = 0.398$; receiver $F = 10$.
+      LNA at the dish:
+      $F = 1.202 + (2.512-1)/1000 + (10-1)/(1000 \times 0.398) =
+      1.202 + 0.002 + 0.023 = 1.226$, i.e.
+      $\mathrm{NF} = 0.89$&nbsp;dB ($T_N \approx 66$&nbsp;K). LNA in the
+      rack: $F = 2.512 + (1.202-1)/0.398 + (10-1)/(0.398 \times 1000) =
+      2.512 + 0.508 + 0.023 = 3.043$, i.e. $\mathrm{NF} = 4.83$&nbsp;dB
+      ($T_N \approx 592$&nbsp;K) — nine times the system noise temperature,
+      from moving one box. Notice the anatomy of the loss: the cable's own
+      4&nbsp;dB lands directly on the total, <em>and</em> it strips 4&nbsp;dB
+      of protection from everything behind it. Twenty meters of climbing a
+      tower with the LNA is the cheapest 4&nbsp;dB in radio engineering.</p>
+    </details>
+  </div>
+
+  <nav class="pager">
+    <a class="prev" href="07-allan.html"><span class="dir">Previous · Chapter 7</span>
+      Allan deviation and clock stability</a>
+    <a class="next" href="09-ligo.html"><span class="dir">Next · Chapter 9</span>
+      Case study: LIGO and noise budgets</a>
+  </nav>
+</main>
+
+<script src="../js/lib/fft.js"></script>
+<script src="../js/lib/noise.js"></script>
+<script src="../js/lib/img2d.js"></script>
+<script src="../js/lib/plot.js"></script>
+<script src="../js/lib/ui.js"></script>
+<script>
+'use strict';
+
+/* Colored-noise synthesis with a *calibrated* one-sided PSD target S(f):
+   filter unit-variance white noise (PSD 2/fs) in the frequency domain with
+   |H(f)|^2 = S(f) * fs / 2.  Used by the chopping and Monte-Carlo demos. */
+function shapedNoise(N, fs, Sfun, rand) {
+  const re = new Float64Array(N), im = new Float64Array(N);
+  for (let i = 0; i < N; i++) re[i] = Noise.randn(rand);
+  FFT.fft(re, im);
+  const half = N / 2;
+  for (let k = 0; k <= half; k++) {
+    const f = k * fs / N;
+    const H = k === 0 ? 0 : Math.sqrt(Sfun(f) * fs / 2);
+    re[k] *= H; im[k] *= H;
+    if (k > 0 && k < half) { re[N - k] *= H; im[N - k] *= H; }
+  }
+  FFT.ifft(re, im);
+  return re;
+}
+
+/* ---------- demo 0: the Friis cascade ---------- */
+(function () {
+  const plot = new Plot('#plot-friis', {
+    xlabel: 'stage', ylabel: 'added noise referred to input (× kT₀)',
+    height: 300, ylog: true, xlim: [0, 4]
+  });
+  const pT = new Plot('#plot-friis-t', {
+    xlabel: 'time (arb.)', ylabel: 'input-referred signal (offset)',
+    height: 300, xlim: [0, 1], hover: false
+  });
+  let seed = 5;
+  const ctl = '#ctl-friis';
+  const PRESETS = {
+    lna:   [[30, 1], [-3, 3], [-7, 8]],   // LNA -> cable -> mixer
+    cable: [[-3, 3], [30, 1], [-7, 8]]    // cable -> LNA -> mixer
+  };
+  const gains = [], figs = [];
+  for (let i = 0; i < 3; i++) {
+    gains.push(UI.slider(ctl, { label: 'stage ' + (i + 1) + ' gain G' + (i + 1),
+      min: -10, max: 40, step: 0.5, value: PRESETS.lna[i][0], unit: 'dB',
+      fmt: v => v.toFixed(1), onInput: draw }));
+    figs.push(UI.slider(ctl, { label: 'stage ' + (i + 1) + ' NF' + (i + 1),
+      min: 0.5, max: 15, step: 0.1, value: PRESETS.lna[i][1], unit: 'dB',
+      fmt: v => v.toFixed(1), onInput: draw }));
+  }
+  UI.button(ctl, { label: 'preset: LNA first', onClick: () => preset('lna') });
+  UI.button(ctl, { label: 'preset: cable first', onClick: () => preset('cable') });
+  UI.button(ctl, { label: 'new sample ↻', onClick: () => { seed++; draw(); } });
+  const roNF = UI.bigReadout(ctl, { label: 'total noise figure', unit: 'dB',
+    min: 0, max: 16, fmt: v => v.toFixed(2) });
+  const roG  = UI.readout(ctl, { label: 'total gain' });
+  const roEq = UI.readout(ctl, { label: 'equivalent input noise −174 + NF' });
+
+  function preset(name) {
+    for (let i = 0; i < 3; i++) {
+      gains[i].value = PRESETS[name][i][0];
+      figs[i].value  = PRESETS[name][i][1];
+    }
+    draw();
+  }
+  const lin = dB => Math.pow(10, dB / 10);
+
+  const txt = id => document.getElementById(id);
+  function draw() {
+    // Friis: F_total = 1 + sum_i (F_i - 1) / (gain in front of stage i)
+    let Ftot = 1, Gcum = 1, GdB = 0;
+    const xs = [1, 2, 3], ys = [];
+    for (let i = 0; i < 3; i++) {
+      const c = (lin(figs[i].value) - 1) / Gcum;
+      ys.push(c);
+      Ftot += c;
+      Gcum *= lin(gains[i].value);
+      GdB += gains[i].value;
+    }
+    const NF = 10 * Math.log10(Ftot);
+
+    // live labels on the chain diagram
+    for (let i = 0; i < 3; i++) {
+      txt('fr-g' + (i + 1)).textContent =
+        'G ' + gains[i].value.toFixed(1) + ' dB';
+      txt('fr-n' + (i + 1)).textContent =
+        'NF ' + figs[i].value.toFixed(1) + ' dB';
+      txt('fr-c' + (i + 1)).textContent =
+        '+' + Plot.fmtNum(ys[i], 2) + ' kT₀';
+    }
+    txt('fr-out').textContent = 'NF ' + NF.toFixed(1) + ' dB';
+
+    plot.clear();
+    // keep the kT0 reference line in view whatever the sliders say
+    const ylo = Math.min.apply(null, ys) / 3;
+    plot.o.ylim = [ylo, Math.max(Math.max.apply(null, ys), 1) * 3];
+    plot.guideY(1, { label: 'the source’s own kT₀', color: '#898781',
+      dash: [6, 4] });
+    // bars (stems) so the contributions read as heights, not lone dots
+    for (let i = 0; i < 3; i++) {
+      plot.line([xs[i], xs[i]], [ylo, ys[i]],
+        { color: Plot.palette[0], width: 7 });
+    }
+    plot.points(xs, ys, { label: '(Fᵢ − 1) ÷ gain in front', r: 6 });
+    plot.draw();
+
+    // example traces at each chain point, referred to the input: the sine
+    // never moves; stage i adds ys[i] of (input-referred) noise variance
+    const Nt = 600, A = 3;
+    const rand = Noise.rng(seed);
+    const tt = new Float64Array(Nt);
+    for (let i = 0; i < Nt; i++) tt[i] = i / (Nt - 1);
+    const cum = new Float64Array(Nt);          // accumulated noise, var = 1
+    for (let i = 0; i < Nt; i++) cum[i] = Noise.randn(rand);
+    const traces = [];
+    const snap = () => {
+      const y = new Float64Array(Nt);
+      for (let i = 0; i < Nt; i++) {
+        y[i] = A * Math.sin(2 * Math.PI * 6 * tt[i]) + cum[i];
+      }
+      return y;
+    };
+    traces.push(snap());
+    for (let s = 0; s < 3; s++) {
+      const sd = Math.sqrt(ys[s]);
+      for (let i = 0; i < Nt; i++) cum[i] += sd * Noise.randn(rand);
+      traces.push(snap());
+    }
+    // spacing follows the sliders deterministically (worst-case fuzz)
+    const sp = Math.max(14, 2.2 * (A + 2.5 * Math.sqrt(Ftot)));
+    pT.o.ylim = [-2.1 * sp, 2.1 * sp];
+    pT.clear();
+    const names = ['source', 'after stage 1', 'after stage 2',
+      'after stage 3'];
+    for (let s = 0; s < 4; s++) {
+      const off = (1.5 - s) * sp;
+      const y = new Float64Array(Nt);
+      for (let i = 0; i < Nt; i++) y[i] = traces[s][i] + off;
+      pT.line(tt, y, { label: names[s] });
+    }
+    pT.draw();
+
+    roNF.set(NF);
+    roG.set(GdB.toFixed(1) + ' dB');
+    roEq.set((-174 + NF).toFixed(1) + ' dBm/Hz');
+  }
+  draw();
+})();
+
+/* ---------- demo 1: the sqrt(2T) funnel ---------- */
+(function () {
+  const pRun = new Plot('#plot-avg-run', {
+    xlabel: 'integration time t (s)', ylabel: 'running average (pT)',
+    height: 300, xlog: true, xlim: [0.25, 64], xunit: 's', yunit: 'pT'
+  });
+  const pReps = new Plot('#plot-avg-reps', {
+    xlabel: 'trial #', ylabel: 'T-average (pT)', height: 300, yunit: 'pT'
+  });
+  const ctl = '#ctl-avg';
+  const B0  = UI.slider(ctl, { label: 'true field B₀', min: -50, max: 50,
+    step: 1, value: 20, unit: 'pT', fmt: v => v.toFixed(0), onInput: rescale });
+  const ASD = UI.slider(ctl, { label: 'noise ASD √Sᵤ', min: 1, max: 100,
+    log: true, value: 10, unit: 'pT/√Hz', fmt: v => v.toPrecision(2),
+    onInput: rescale });
+  const Tint = UI.slider(ctl, { label: 'integration time T', min: 0.25,
+    max: 64, log: true, value: 8, unit: 's', fmt: v => v.toPrecision(2),
+    onInput: remeasure });
+  let seed = 81;
+  UI.button(ctl, { label: 'new sample ↻', onClick: () => { seed++; reseed(); } });
+  const roPred = UI.readout(ctl, { label: 'predicted σ = ASD/√(2T)' });
+  const roMeas = UI.readout(ctl, { label: 'measured std of 100 averages' });
+
+  const fs = 64, Tmax = 64, N = fs * Tmax, REPS = 100;
+  const i0 = Math.round(0.25 * fs) - 1;            // start plot at t = 0.25 s
+  // cached raw (unit-variance, zero-mean) material
+  let rawCum;              // cumulative sums of one record
+  const rawMeans = new Float64Array(REPS);         // means of unit-var noise
+
+  function reseed() {
+    const rand = Noise.rng(seed);
+    rawCum = new Float64Array(N);
+    let s = 0;
+    for (let i = 0; i < N; i++) { s += Noise.randn(rand); rawCum[i] = s; }
+    remeasure();
+  }
+  function remeasure() {                            // T or seed changed
+    const rand = Noise.rng(seed + 7919);
+    const M = Math.max(1, Math.round(Tint.value * fs));
+    for (let r = 0; r < REPS; r++) {
+      let s = 0;
+      for (let i = 0; i < M; i++) s += Noise.randn(rand);
+      rawMeans[r] = s / M;
+    }
+    rescale();
+  }
+  function rescale() {                              // any control changed
+    const b0 = B0.value, asd = ASD.value, T = Tint.value;
+    const sig = asd * Math.sqrt(fs / 2);            // per-sample std
+    const n = N - i0;
+    const t = new Float64Array(n), m = new Float64Array(n);
+    const up = new Float64Array(n), dn = new Float64Array(n);
+    for (let j = 0; j < n; j++) {
+      const i = i0 + j;
+      t[j] = (i + 1) / fs;
+      m[j] = b0 + sig * rawCum[i] / (i + 1);
+      const w = asd / Math.sqrt(2 * t[j]);
+      up[j] = b0 + w; dn[j] = b0 - w;
+    }
+    pRun.clear();
+    pRun.o.ylim = [b0 - 5 * asd, b0 + 5 * asd];
+    pRun.guideY(b0, { label: 'true B₀' });
+    pRun.guideX(T, { label: 'T' });
+    pRun.line(t, up, { label: 'B₀ ± ASD/√(2t)', color: '#898781',
+      width: 1.5, dash: [6, 4] });
+    pRun.line(t, dn, { color: '#898781', width: 1.5, dash: [6, 4] });
+    pRun.line(t, m, { label: 'running average' });
+    pRun.draw();
+
+    const sigT = asd / Math.sqrt(2 * T);
+    const idx = new Float64Array(REPS), est = new Float64Array(REPS);
+    let mu = 0;
+    for (let r = 0; r < REPS; r++) {
+      idx[r] = r + 1;
+      est[r] = b0 + sig * rawMeans[r];
+      mu += est[r];
+    }
+    mu /= REPS;
+    let v = 0;
+    for (let r = 0; r < REPS; r++) v += (est[r] - mu) * (est[r] - mu);
+    const std = Math.sqrt(v / (REPS - 1));
+    pReps.clear();
+    // Pin the axis to the WORST case (the slider's minimum T) so dragging T
+    // visibly collapses the scatter toward B₀ — if the axis tracked σ(T),
+    // the cloud would always fill the panel and nothing would appear to move.
+    const sigT0 = asd / Math.sqrt(2 * 0.25);
+    pReps.o.ylim = [b0 - 4 * sigT0, b0 + 4 * sigT0];
+    pReps.guideY(b0, {});   // unlabeled: collides with the ± label at large T
+    pReps.guideY(b0 + sigT, { label: '±ASD/√(2T)', color: '#898781',
+      dash: [6, 4] });
+    pReps.guideY(b0 - sigT, { color: '#898781', dash: [6, 4] });
+    pReps.points(idx, est, { label: 'independent T-averages', r: 2.5 });
+    pReps.draw();
+
+    roPred.set(sigT.toPrecision(2) + ' pT');
+    roMeas.set(std.toPrecision(2) + ' pT');
+  }
+  reseed();
+})();
+
+/* ---------- demo 2: a sine pops out of the PSD ---------- */
+(function () {
+  const pT = new Plot('#plot-ac-t', {
+    xlabel: 'time (s)', ylabel: 'record (µV)', height: 300,
+    xlim: [0, 1], xunit: 's', yunit: 'µV'
+  });
+  const pF = new Plot('#plot-ac-f', {
+    xlabel: 'frequency (Hz)', ylabel: 'PSD (µV²/Hz)', height: 300,
+    xlog: true, ylog: true, xunit: 'Hz'
+  });
+  const ctl = '#ctl-ac';
+  const fs = 128, f0 = 16, S0 = 1;                 // noise: 1 µV/√Hz
+  const pow = UI.slider(ctl, { label: 'record length T', min: 0, max: 9,
+    step: 1, value: 5, fmt: v => Math.pow(2, v) + ' s', onInput: draw });
+  const amp = UI.slider(ctl, { label: 'signal amplitude a', min: 0.05, max: 2,
+    log: true, value: 0.5, unit: 'µV', fmt: v => v.toPrecision(2),
+    onInput: draw });
+  let seed = 42;
+  UI.button(ctl, { label: 'new sample ↻', onClick: () => { seed++; draw(); } });
+  const roBw = UI.readout(ctl, { label: 'analysis bandwidth 1/T' });
+  const roSnr = UI.readout(ctl, { label: 'PSD at f₀ / floor (meas | pred)' });
+
+  function draw() {
+    const T = Math.pow(2, pow.value), N = fs * T, a = amp.value;
+    const rand = Noise.rng(seed);
+    const sig = Math.sqrt(S0 * fs / 2);
+    const x = new Float64Array(N);
+    for (let i = 0; i < N; i++) {
+      x[i] = a * Math.sin(2 * Math.PI * f0 * i / fs) + sig * Noise.randn(rand);
+    }
+    // time panel: first second, with the bare signal to scale
+    const n1 = Math.min(N, fs);
+    const t = new Float64Array(n1), pure = new Float64Array(n1);
+    for (let i = 0; i < n1; i++) {
+      t[i] = i / fs;
+      pure[i] = a * Math.sin(2 * Math.PI * f0 * i / fs);
+    }
+    pT.clear();
+    pT.line(t, x.slice(0, n1), { label: 'signal + noise' });
+    pT.line(t, pure, { label: 'bare signal (to scale)', width: 1.5 });
+    pT.draw();
+
+    const { f, psd } = FFT.periodogram(x, fs, { window: 'hann' });
+    const k0 = f0 * T;                              // f0 is always bin-centred
+    // noise floor: median of bins away from the peak (÷ln2: median→mean)
+    const away = [];
+    for (let k = 1; k < f.length; k++) {
+      if (Math.abs(f[k] - f0) > 2) away.push(psd[k]);
+    }
+    away.sort((p, q) => p - q);
+    const floor = away[Math.floor(away.length / 2)] / Math.LN2;
+    pF.clear();
+    pF.guideX(f0, { label: 'f₀' });
+    pF.guideY(S0, { label: 'noise PSD S₀', color: '#898781', dash: [6, 4] });
+    pF.line(f.subarray(1), psd.subarray(1), { label: 'periodogram of full record' });
+    pF.draw();
+
+    roBw.set((1 / T).toPrecision(2) + ' Hz');
+    const pred = 1 + a * a * T / (3 * S0);          // Hann ENBW = 1.5/T
+    roSnr.set((psd[k0] / floor).toPrecision(2) + ' | ' + pred.toPrecision(2));
+  }
+  draw();
+})();
+
+/* ---------- demo 3: choosing the chopping frequency ---------- */
+(function () {
+  const plot = new Plot('#plot-chop', {
+    xlabel: 'frequency (Hz)', ylabel: 'noise ASD (µV/√Hz)', height: 320,
+    xlog: true, ylog: true, xlim: [0.5, 2048], xunit: 'Hz', yunit: 'µV/√Hz'
+  });
+  const ctl = '#ctl-chop';
+  const ASDW = 10, aSig = 1;                        // floor µV/√Hz, signal µV
+  const fc = UI.slider(ctl, { label: '1/f corner f_c', min: 1, max: 1000,
+    log: true, value: 100, unit: 'Hz', fmt: v => v.toPrecision(2),
+    onInput: () => { dirty = true; draw(); } });
+  const fmod = UI.slider(ctl, { label: 'modulation frequency f_mod', min: 0.5,
+    max: 2000, log: true, value: 10, unit: 'Hz', fmt: v => v.toPrecision(2),
+    onInput: draw });
+  const Tint = UI.slider(ctl, { label: 'integration time T', min: 1,
+    max: 10000, log: true, value: 100, unit: 's', fmt: v => v.toPrecision(2),
+    onInput: draw });
+  let seed = 3, dirty = true;
+  UI.button(ctl, { label: 'new sample ↻', onClick: () => { seed++; dirty = true; draw(); } });
+  const roAsd = UI.readout(ctl, { label: 'ASD at f_mod' });
+  const roSnr = UI.readout(ctl, { label: 'SNR of a 1 µV signal after T' });
+
+  const fs = 4096, N = 1 << 16;
+  const Sfun = f => ASDW * ASDW * (1 + fc.value / f);
+  let fW, asdW;                                     // cached Welch estimate
+
+  function synth() {
+    const rand = Noise.rng(seed);
+    const x = shapedNoise(N, fs, Sfun, rand);
+    const { f, psd } = FFT.welch(x, fs, { nseg: 8192 });
+    fW = f.subarray(1);
+    asdW = new Float64Array(fW.length);
+    for (let k = 0; k < fW.length; k++) asdW[k] = Math.sqrt(psd[k + 1]);
+    dirty = false;
+  }
+  function draw() {
+    if (dirty) synth();
+    const nA = 200, fA = new Float64Array(nA), mA = new Float64Array(nA);
+    for (let k = 0; k < nA; k++) {
+      fA[k] = 0.5 * Math.pow(2048 / 0.5, k / (nA - 1));
+      mA[k] = Math.sqrt(Sfun(fA[k]));
+    }
+    // 1/sqrt(f) slope guide, offset above the curve, below the corner
+    const nG = 40, fG = new Float64Array(nG), yG = new Float64Array(nG);
+    for (let k = 0; k < nG; k++) {
+      fG[k] = 0.5 * Math.pow(Math.max(2, fc.value / 3) / 0.5, k / (nG - 1));
+      yG[k] = 2.5 * ASDW * Math.sqrt(fc.value / fG[k]);
+    }
+    const asdAt = Math.sqrt(Sfun(fmod.value));
+    plot.clear();
+    plot.guideX(fmod.value, { label: 'f_mod' });
+    plot.guideY(ASDW, { label: 'white floor', color: '#898781', dash: [6, 4] });
+    plot.line(fW, asdW, { label: 'measured ASD (Welch)' });
+    plot.line(fA, mA, { label: 'model √(S_w(1 + f_c/f))', color: '#898781',
+      width: 1.5, dash: [6, 4] });
+    plot.line(fG, yG, { label: '∝ 1/√f', color: '#898781', width: 1 });
+    plot.points([fmod.value], [asdAt], { label: 'your operating point', r: 5 });
+    plot.draw();
+    const sigma = asdAt / Math.sqrt(2 * Tint.value);
+    roAsd.set(asdAt.toPrecision(2) + ' µV/√Hz');
+    roSnr.set((aSig / sigma).toPrecision(2) +
+      '  (σ = ' + sigma.toPrecision(2) + ' µV)');
+  }
+  draw();
+})();
+
+/* ---------- demo 4: sensitivity -> uncertainty converter ---------- */
+(function () {
+  const plot = new Plot('#plot-conv', {
+    xlabel: 'integration time T (s)', ylabel: 'expected uncertainty σ (X)',
+    height: 300, xlog: true, ylog: true, xlim: [0.01, 1e6], xunit: 's'
+  });
+  const ctl = '#ctl-conv';
+  const asd = UI.slider(ctl, { label: 'sensitivity', min: 0.01, max: 1000,
+    log: true, value: 5, unit: 'X/√Hz', fmt: v => Plot.fmtNum(v, 3),
+    onInput: draw });
+  const T = UI.slider(ctl, { label: 'integration time T', min: 0.01,
+    max: 1e6, log: true, value: 100, unit: 's', fmt: v => Plot.fmtNum(v, 3),
+    onInput: draw });
+  const roA = UI.bigReadout(ctl, { label: 'σ = ASD/√(2T)  (this course)',
+    unit: 'X', min: 1e-5, max: 1e4, log: true });
+  const roB = UI.readout(ctl, { label: 'σ = ASD/√T  (other convention)' });
+
+  const nT = 200, Ts = new Float64Array(nT);
+  for (let i = 0; i < nT; i++) {
+    Ts[i] = Math.pow(10, -2 + (i / (nT - 1)) * 8);
+  }
+  function draw() {
+    const A = asd.value, t = T.value, sig = A / Math.sqrt(2 * t);
+    // axes follow the sensitivity slider deterministically
+    plot.o.ylim = [A * 5e-4, A * 12];
+    plot.clear();
+    plot.line(Ts, Ts.map(v => A / Math.sqrt(v)),
+      { label: 'σ = ASD/√T (other convention)', color: '#898781',
+        width: 1.2, dash: [6, 4] });
+    plot.line(Ts, Ts.map(v => A / Math.sqrt(2 * v)),
+      { label: 'σ = ASD/√(2T) (this course)' });
+    plot.guideX(t, { dash: [3, 4] });
+    plot.guideY(sig, { dash: [3, 4] });
+    plot.points([t], [sig], { label: 'your (T, σ)', color: '#eda100', r: 5 });
+    plot.draw();
+    roA.set(sig);
+    roB.set(Plot.fmtNum(A / Math.sqrt(t), 3) + ' X');
+  }
+  draw();
+})();
+
+/* ---------- demo 5: Monte-Carlo uncertainty vs T ---------- */
+(function () {
+  const plot = new Plot('#plot-mc', {
+    xlabel: 'integration time T (s)', ylabel: 'RMS error of T-average (pT)',
+    height: 320, xlog: true, ylog: true, xlim: [1, 512],
+    xunit: 's', yunit: 'pT'
+  });
+  const ctl = '#ctl-mc';
+  const W = 10;                                     // white ASD, pT/√Hz
+  const fcs = UI.slider(ctl, { label: 'flicker corner f_c', min: 1e-4, max: 1,
+    log: true, value: 0.01, unit: 'Hz', fmt: v => Plot.fmtNum(v, 2),
+    onInput: draw });
+  const drift = UI.slider(ctl, { label: 'drift rate d', min: 0, max: 0.2,
+    step: 0.005, value: 0.05, unit: 'pT/s', fmt: v => v.toFixed(3),
+    onInput: draw });
+  let seed = 5;
+  UI.button(ctl, { label: 'new ensemble ↻', onClick: () => { seed++; draw(); } });
+  const roBest = UI.readout(ctl, { label: 'best achievable uncertainty' });
+
+  const fs = 4, dur = 512, N = fs * dur, REPS = 64;
+  const Ts = [];
+  for (let x = 1; x < 512; x *= 1.6) Ts.push(Math.round(x * fs) / fs);
+  Ts.push(512);
+
+  function draw() {
+    const rand = Noise.rng(seed);
+    const fc = fcs.value, d = drift.value;
+    const sw = W * Math.sqrt(fs / 2);
+    const errs = new Float64Array(Ts.length);
+    for (let r = 0; r < REPS; r++) {
+      const fl = shapedNoise(N, fs, f => W * W * fc / f, rand);
+      const c = new Float64Array(N + 1);
+      for (let i = 0; i < N; i++) {
+        const x = sw * Noise.randn(rand) + fl[i] + d * (i / fs);
+        c[i + 1] = c[i] + x;
+      }
+      for (let j = 0; j < Ts.length; j++) {
+        const M = Math.round(Ts[j] * fs);
+        const m = c[M] / M;                         // error: true value is 0
+        errs[j] += m * m;
+      }
+    }
+    const mc = new Float64Array(Ts.length);
+    let best = Infinity, bestT = Ts[0];
+    for (let j = 0; j < Ts.length; j++) {
+      mc[j] = Math.sqrt(errs[j] / REPS);
+      if (mc[j] < best) { best = mc[j]; bestT = Ts[j]; }
+    }
+    const white = Ts.map(T => W / Math.sqrt(2 * T));
+    plot.clear();
+    plot.line(Ts, white, { label: 'white: ASD/√(2T)', color: '#898781',
+      width: 1.5, dash: [6, 4] });
+    if (d > 0) {
+      plot.line(Ts, Ts.map(T => d * T / 2), { label: 'drift: d·T/2',
+        color: '#898781', width: 1.5, dash: [2, 3] });
+    }
+    plot.line(Ts, mc, { label: 'Monte-Carlo (64 records)' });
+    plot.points([bestT], [best], { label: 'optimum', r: 5, color: '#898781' });
+    plot.draw();
+    roBest.set(best.toPrecision(2) + ' pT at T ≈ ' + bestT.toPrecision(3) + ' s');
+  }
+  draw();
+})();
+
+/* ---------- demo: frame averaging (2-D funnel) ---------- */
+(function () {
+  const N2 = 192;
+  const single = document.getElementById('frame-single');
+  const avg = document.getElementById('frame-avg');
+  const ctl = '#ctl-frames';
+  let seed = 55;
+  const sig = UI.slider(ctl, { label: 'read noise σ', min: 0.05, max: 1.5,
+    log: true, value: 0.4, fmt: v => v.toPrecision(2), onInput: draw });
+  const nFr = UI.slider(ctl, { label: 'frames averaged N', min: 1, max: 256,
+    log: true, value: 1, fmt: v => Math.round(v) + '', onInput: draw });
+  UI.button(ctl, { label: 'new sample ↻', onClick: () => { seed++; draw(); } });
+  const snr = UI.readout(ctl, { label: 'faintest disk: contrast / (σ/√N)' });
+
+  // test pattern drawn once via an offscreen canvas (disks of falling
+  // contrast, a chirped grating, faint text), read back as luminance 0..1
+  const FAINT = 0.08;               // faintest disk's contrast
+  function makePattern() {
+    const c = document.createElement('canvas');
+    c.width = c.height = N2;
+    const g = c.getContext('2d');
+    const lum = v => {
+      const b = Math.round(255 * v);
+      return 'rgb(' + b + ',' + b + ',' + b + ')';
+    };
+    g.fillStyle = lum(0.35); g.fillRect(0, 0, N2, N2);
+    const disks = [[0.22, 0.30, 0.14, 0.75], [0.55, 0.24, 0.11, 0.50],
+                   [0.82, 0.33, 0.08, 0.35 + FAINT]];
+    for (const [x, y, r, v] of disks) {
+      g.fillStyle = lum(v);
+      g.beginPath();
+      g.arc(x * N2, y * N2, r * N2, 0, 2 * Math.PI);
+      g.fill();
+    }
+    // chirped vertical grating across the lower third, contrast 0.12
+    for (let x = 0; x < N2; x++) {
+      const u = x / N2;
+      const v = 0.35 + 0.12 * Math.sin(2 * Math.PI * (2 * u + 14 * u * u));
+      g.fillStyle = lum(v);
+      g.fillRect(x, Math.round(0.62 * N2), 1, Math.round(0.24 * N2));
+    }
+    g.fillStyle = lum(0.35 + 0.10);
+    g.font = '600 20px system-ui, sans-serif';
+    g.fillText('noise', 0.06 * N2, 0.55 * N2);
+    const d = g.getImageData(0, 0, N2, N2).data;
+    const f = new Float64Array(N2 * N2);
+    for (let i = 0; i < N2 * N2; i++) f[i] = d[4 * i] / 255;
+    return f;
+  }
+  const pattern = makePattern();
+
+  function noisy(field, s, rand) {
+    const out = new Float64Array(N2 * N2);
+    for (let i = 0; i < N2 * N2; i++) out[i] = field[i] + s * Noise.randn(rand);
+    return out;
+  }
+
+  function draw() {
+    const s = sig.value, N = Math.round(nFr.value);
+    // fixed display range: the pattern's own 0..1, so noise clips visibly
+    Img2D.render(single, noisy(pattern, s, Noise.rng(seed)), N2,
+      { lo: 0, hi: 1 });
+    // averaging N independent frames == one frame with noise sigma/sqrt(N)
+    Img2D.render(avg, noisy(pattern, s / Math.sqrt(N), Noise.rng(seed + 1)), N2,
+      { lo: 0, hi: 1 });
+    snr.set((FAINT / (s / Math.sqrt(N))).toFixed(1));
+  }
+  draw();
+})();
+</script>
+</body>
+</html>

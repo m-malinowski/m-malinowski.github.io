@@ -1,0 +1,1046 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>5 · The colors of noise — Making Sense of Noise</title>
+<link rel="stylesheet" href="../css/style.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"
+  onload="renderMathInElement(document.body, {delimiters:[
+    {left:'$$', right:'$$', display:true},
+    {left:'$', right:'$', display:false}]});"></script>
+</head>
+<body>
+
+<nav class="site-nav">
+  <div class="nav-inner">
+    <a class="home" href="../index.html">Making Sense of Noise</a>
+    <div class="chapters">
+      <a href="01-pure-tone.html" title="The pure tone">1</a>
+      <a href="02-modulation.html" title="Modulation">2</a>
+      <a href="03-random-processes.html" title="Random processes">3</a>
+      <a href="04-psd.html" title="Power spectral density">4</a>
+      <a href="05-noise-colors.html" class="current" title="Colors of noise">5</a>
+      <a href="06-oscillator-noise.html" title="Amplitude, phase & frequency noise">6</a>
+      <a href="07-allan.html" title="Allan deviation">7</a>
+      <a href="08-sensitivity.html" title="Sensitivity">8</a>
+      <a href="09-ligo.html" title="LIGO case study">9</a>
+      <a href="10-pll.html" title="Phase-locked loops">10</a>
+    </div>
+  </div>
+</nav>
+
+<main>
+  <p class="chapter-kicker">Chapter 5</p>
+  <h1>The colors of noise</h1>
+  <p class="lede">
+    Point a spectrum analyzer at almost anything in a lab — a photodiode, a
+    resistor, a laser's frequency, a magnetometer left running overnight — and
+    the noise floor you see is, over decades of frequency, a straight line on
+    a log&ndash;log plot: a power law $S(f) \propto f^{-\alpha}$. The single
+    exponent $\alpha$ is a personality. It fixes what the noise looks like in
+    time, whether averaging longer helps, and whether "the RMS" even means
+    anything. Learn to read slopes and you can diagnose an experiment from one
+    plot.
+  </p>
+
+  <h2>One exponent, a whole personality</h2>
+  <p>
+    Chapter 4 gave us the power spectral density: a one-sided function
+    $S(f)$, in units of (signal)²&nbsp;per&nbsp;Hz, whose integral over
+    frequency is the variance of the signal. Real measured spectra are rarely
+    exotic. Overwhelmingly often they are described, over the band you can
+    see, by
+  </p>
+  <p>
+    $$ S(f) \;=\; \frac{h_\alpha}{f^{\alpha}}, $$
+  </p>
+  <p>
+    with $h_\alpha$ a constant setting the level and $\alpha$ setting the
+    slope. By an old audio-engineering analogy with light, the family members
+    have colors: $\alpha=0$ is <strong>white</strong> (equal power at all
+    frequencies, like white light), $\alpha=1$ is <strong>pink</strong> or
+    <strong>flicker</strong> noise (tilted toward the red/low-frequency end),
+    and $\alpha=2$ is <strong>brown</strong> or <strong>red</strong> noise
+    (named less for the color than for Brownian motion — it is a random
+    walk).
+  </p>
+  <p>
+    Before any formulas, get a feel for what $\alpha$ <em>does</em>. The
+    machine below synthesizes noise with an exact $f^{-\alpha}$ spectrum.
+    Sweep the slider slowly from 0 to 2 and watch the time trace change
+    character: from memoryless fuzz, to wandering-but-tethered, to a drunkard
+    who never comes home. The underlying random numbers are kept fixed while
+    you drag, so the change of character you see is purely the exponent, not
+    sample-to-sample luck.
+  </p>
+
+  <figure class="demo">
+    <figcaption>The noise machine: $S(f) \propto f^{-\alpha}$</figcaption>
+    <p class="demo-note">Drag $\alpha$ and watch the same underlying random
+      sample change personality: $\alpha=0$ white, $\alpha=1$ pink/flicker,
+      $\alpha=2$ brown/random-walk. Right: the measured PSD with a dashed
+      $f^{-\alpha}$ reference. The record is normalized to unit RMS, so only
+      the <em>shape</em> changes.</p>
+    <div class="controls" id="ctl-machine"></div>
+    <div class="plots two-col">
+      <div id="plot-machine-t"></div>
+      <div id="plot-machine-f"></div>
+    </div>
+  </figure>
+
+  <p>
+    Notice the two extremes. At $\alpha=0$ every sample is a fresh start:
+    zoom in anywhere and the trace has no memory of what came before. At
+    $\alpha=2$ the trace is nothing <em>but</em> memory: each value is the
+    previous one plus a small kick, so excursions build up and the trace
+    spends long stretches far from zero. Pink noise, in between, is the
+    strangest of the three — it wanders on <em>every</em> timescale at once,
+    a point we will make precise below.
+  </p>
+
+  <h2>White noise ($\alpha = 0$): no memory</h2>
+  <p>
+    A flat PSD means equal power in every 1-Hz slice of frequency. In the
+    time domain the correlation function is (ideally) a delta function:
+    knowing the value now tells you nothing about the value one sample later.
+    White noise is what chapter&nbsp;3's independent-samples process looks
+    like through a spectrum analyzer.
+  </p>
+  <p>
+    Why is white noise everywhere? Because it is what the central limit
+    theorem does <em>in time</em>: any signal that is the sum of very many
+    fast, independent microscopic kicks — thermal agitation of electrons,
+    discrete charges crossing a junction, photons arriving at a photodiode —
+    looks, on any timescale much longer than a single kick, like Gaussian
+    noise with no memory. Three workhorse examples, with numbers worth
+    memorizing:
+  </p>
+
+  <table>
+    <thead>
+      <tr><th>Mechanism</th><th>One-sided PSD</th><th>Typical level (ASD)</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>Johnson–Nyquist (any resistor $R$ at temperature $T$)</td>
+        <td>$S_V = 4 k_B T R$</td>
+        <td>$0.91\ \mathrm{nV}/\sqrt{\mathrm{Hz}}$ for $50\ \Omega$ at 300&nbsp;K</td>
+      </tr>
+      <tr>
+        <td>Shot noise (a current of discrete charges)</td>
+        <td>$S_I = 2 e I$</td>
+        <td>$18\ \mathrm{pA}/\sqrt{\mathrm{Hz}}$ at $I = 1$&nbsp;mA</td>
+      </tr>
+      <tr>
+        <td>Photon shot noise (optical power $P$ at frequency $\nu$)</td>
+        <td>$S_P = 2 h \nu P$</td>
+        <td>$19\ \mathrm{pW}/\sqrt{\mathrm{Hz}}$ for 1&nbsp;mW at 1064&nbsp;nm</td>
+      </tr>
+    </tbody>
+  </table>
+  <p>
+    Check the first one yourself: $4 k_B T R = 4 \times (1.38\times10^{-23}\,
+    \mathrm{J/K}) \times 300\,\mathrm{K} \times 50\,\Omega = 8.3 \times
+    10^{-19}\ \mathrm{V^2/Hz}$, whose square root is $0.91\ \mathrm{nV}/
+    \sqrt{\mathrm{Hz}}$. Every low-noise amplifier data sheet is implicitly
+    competing against this number.
+  </p>
+  <p>
+    There is a neater way to state the thermal result — one that makes the
+    $R$ disappear. $4 k_B T R$ is the resistor's <em>open-circuit</em>
+    voltage noise, and it grows with $R$; but a large $R$ is also a feeble
+    power source. Ask instead for the maximum power the resistor can
+    <em>deliver</em>: connect it to a matched load (another resistor $R$),
+    which sees half the voltage and so receives $V^2/(4R) = k_B T$ watts per
+    hertz. The resistance cancels:
+  </p>
+  <p>
+    $$ N_0 \;=\; k_B T \ \text{ watts per Hz, independent of } R. $$
+  </p>
+  <p>
+    Every warm object drives a matched circuit with the same universal noise
+    density. Note what kind of density this is: <em>real</em> watts per hertz
+    — power you could dissipate in a load — not the $\mathrm{V^2/Hz}$ of a
+    recorded waveform. That is exactly why $R$ could cancel. There is also a
+    cute equipartition shortcut to the same number: each degree of freedom
+    holds $\tfrac12 k_B T$ of energy, and a circuit offers about two of them
+    per second per hertz of bandwidth (one per quadrature), so thermal
+    equilibrium hands a matched load $k_B T$ of energy per second — $k_B T$
+    watts — per hertz.
+  </p>
+
+  <div class="callout lab">
+    <div class="callout-title">Lab note: −174 <span class="nocase">dBm/Hz</span>, a number worth memorizing</div>
+    At the RF engineers' standard $T_0 = 290\,\mathrm{K}$,
+    $N_0 = k_B T_0 = 4.0\times10^{-21}\ \mathrm{W/Hz}$, which in
+    chapter&nbsp;4's analyzer unit (dBm: decibels relative to 1&nbsp;mW)
+    reads $-174\ \mathrm{dBm/Hz}$ — the thermal floor that every RF
+    measurement bottoms out at. Because $N_0$ is flat, chapter&nbsp;4's area
+    rule (power in a band = density × bandwidth) needs no integral, and
+    decibels turn even that multiplication into addition: a factor of 10 in
+    power is +10&nbsp;dB, so $10^6$&nbsp;Hz of bandwidth adds
+    $10\log_{10}(10^6) = 60$&nbsp;dB. A 1&nbsp;MHz-wide receiver channel
+    therefore collects $-174 + 60 = -114$&nbsp;dBm of thermal power before
+    anything has been amplified. Chapter&nbsp;6 turns this floor into the
+    phase noise of every signal, chapter&nbsp;8 into receiver sensitivity.
+  </div>
+
+  <div class="callout warn">
+    <div class="callout-title">"White" always comes with fine print</div>
+    A PSD that is flat to infinite frequency would integrate to infinite
+    variance — infinite power. Real white noise is white only up to some
+    cutoff: the correlation time of the microscopic kicks
+    ($\sim k_B T/h \approx 6$&nbsp;THz for thermal noise), your amplifier
+    bandwidth, or your anti-aliasing filter, whichever comes first. "White"
+    is a statement about the band you care about, never about all
+    frequencies. The idealization is safe for a simple reason: whatever the
+    noise drives — a circuit, a servo, an ion's motion — is itself a filter
+    with finite bandwidth, so the unphysical far tail of the white model
+    never makes it into any answer.
+  </div>
+
+  <h3>Shot noise: light arrives in lumps</h3>
+  <p>
+    The middle rows of the table deserve more than a row each, because they
+    are the noise floor of essentially every optical experiment. Current and
+    light are not continuous fluids: they arrive as discrete, independent
+    lumps — electrons crossing a junction, photons landing on a photodiode.
+    Independent arrivals at a mean rate $N$ per second follow
+    <em>Poisson</em> statistics: the counting law for events that are
+    independent and memoryless — each arrival neither knows nor cares when
+    the last one came (the telegraph fluctuators below hop at the same kind
+    of random times). Poisson statistics have one defining property:
+    <strong>the variance of a count equals its mean</strong>. Count for one
+    second and you get $N \pm \sqrt{N}$. Because each arrival knows nothing
+    about the others, the fluctuation power is spread evenly over all
+    frequencies: shot noise is white. For a current $I$ of charges $e$ the
+    one-sided PSD is $S_I = 2eI$; for a beam of power $P$ made of photons of
+    energy $h\nu$, the <em>fractional</em> power fluctuation $\delta P/P$
+    has the flat PSD $2h\nu/P$, i.e. an ASD of $\sqrt{2h\nu/P}$ per root
+    hertz.
+  </p>
+  <p>
+    Make that concrete with a lab workhorse: $P = 1$&nbsp;mW at
+    1064&nbsp;nm. Each photon carries $h\nu = 1.87\times10^{-19}$&nbsp;J, so
+    the beam is a stream of $R = P/h\nu = 5.4\times10^{15}$ photons per
+    second. Count them for one second: the fractional fluctuation is
+    $1/\sqrt{R} = 1.4\times10^{-8}$ — fourteen parts per billion, for free,
+    from a beam that fits in your hand. As a spectral density, the
+    shot-limited relative intensity noise (RIN) is
+    $2h\nu/P = 3.7\times10^{-16}\ \mathrm{Hz^{-1}}$, which laser engineers
+    quote logarithmically as $-154$&nbsp;dB/Hz. The photocurrent picture
+    gives the same answer: a photodiode with quantum efficiency
+    $\eta \approx 0.8$ turns the beam into
+    $I = \eta e P/h\nu \approx 0.69$&nbsp;mA, and $S_I = 2eI$ implies a
+    relative current noise $S_I/I^2 = 2e/I = 2h\nu/(\eta P)$ — the shot
+    noise of the <em>detected</em> photon stream $\eta R$. Shot noise looks
+    identical whether you count photons or electrons; the only cost of
+    imperfect detection is the $1/\eta$ from counting fewer arrivals.
+  </p>
+  <p>
+    Note the scaling that runs the economics of precision optics: the signal
+    grows like $P$ but the shot-noise ASD only like $\sqrt{P}$, so the
+    signal-to-noise ratio of a shot-limited measurement grows as
+    $\sqrt{P}$. That is why LIGO circulates hundreds of kilowatts in its
+    arms (chapter&nbsp;9), and why "just turn up the laser" is always the
+    first move — and eventually a losing one: technical intensity noise is
+    fractional, so more power does not dilute it, and at high enough power
+    radiation-pressure back-action starts shaking the very mirrors you are
+    trying to read out.
+  </p>
+  <p>
+    A warning before you budget for this floor: a real laser only reaches it
+    at high Fourier frequencies $f$ — the axis of the intensity-noise PSD
+    $S_{\delta P/P}(f)$, i.e. how <em>fast</em> the detected power is
+    wiggling. (Nothing to do with the optical frequency $\nu$: a slow,
+    1&nbsp;kHz flicker of a 282&nbsp;THz beam lives at $f = 1$&nbsp;kHz on
+    this axis.) Below roughly 1&nbsp;MHz the intensity
+    spectrum is ruled by <em>technical</em> noise — pump fluctuations,
+    acoustics, mode competition — typically 10–40&nbsp;dB above shot at
+    kilohertz frequencies, and solid-state lasers usually add a
+    relaxation-oscillation peak somewhere in the 0.1–1&nbsp;MHz region. The
+    quantum floor is where the spectrum finally flattens, often only at MHz
+    frequencies. This is the moral that chapter&nbsp;8 elevates to a rule —
+    put your signal at a frequency where the floor is quantum, not
+    technical. And the floor itself is not quite the end: squeezed light is
+    the only way below it, and LIGO has run with squeezing since 2019
+    (chapter&nbsp;9).
+  </p>
+
+  <figure class="demo">
+    <figcaption>Photon counting: Poisson arrivals are white noise</figcaption>
+    <p class="demo-note">Photon arrivals at rate $R$, counted in 1&nbsp;ms
+      bins. Left: counts per bin — at low rate you see individual photons; by
+      $R = 10^6\,/\mathrm{s}$ the trace looks Gaussian (the central limit
+      theorem again). Right: the PSD of the fractional fluctuation
+      $\delta P/P$ is flat at the shot level $2/R$ (dashed guide), however
+      hard you drag the slider.</p>
+    <div class="controls" id="ctl-shot"></div>
+    <div class="plots two-col">
+      <div id="plot-shot-t"></div>
+      <div id="plot-shot-f"></div>
+    </div>
+  </figure>
+
+  <h2>Flicker noise ($\alpha = 1$): the same power in every decade</h2>
+  <p>
+    Pink noise has one defining, slightly eerie property. Integrate
+    $S(f) = h/f$ across one decade of frequency, starting anywhere:
+  </p>
+  <p>
+    $$ \int_{f_1}^{10 f_1} \frac{h}{f}\, df \;=\; h \ln 10 \;\approx\; 2.3\,h
+       \qquad \text{independent of } f_1 . $$
+  </p>
+  <p>
+    The decade from 1&nbsp;mHz to 10&nbsp;mHz carries exactly as much power
+    as the decade from 1&nbsp;kHz to 10&nbsp;kHz. There is no characteristic
+    frequency, hence no characteristic time: flicker noise is
+    <strong>scale-free</strong>. Zoom out by any factor, renormalize the
+    vertical scale, and the trace is statistically indistinguishable from
+    what you started with. Try it:
+  </p>
+
+  <figure class="demo">
+    <figcaption>Self-similarity: pink noise has no favorite timescale</figcaption>
+    <p class="demo-note">The time axis is rescaled to the visible window and
+      the trace is renormalized by the measured std of that window, so each
+      zoom level is a fair statistical comparison (the previous view is
+      squeezed into the left part of the new one). Pink noise looks the same
+      all the way from 1× to 16× — fresh wander appears at every scale. Switch to
+      white noise: zoomed out it collapses into a featureless band, because
+      all its structure lives at the fastest timescale.</p>
+    <div class="controls" id="ctl-zoom"></div>
+    <div class="plots"><div id="plot-zoom"></div></div>
+  </figure>
+
+  <p>
+    Flicker noise is embarrassingly universal: the low-frequency end of every
+    transistor and resistor, the frequency of every quartz and laser
+    oscillator, the sensitivity drift of SQUIDs and photodetectors, heartbeat
+    intervals, and the volatility of the stock market all show $1/f$-like
+    spectra over many decades. The honest statement is that there is
+    <em>no single universal microscopic origin</em>. What there is instead is
+    a generic recipe: a superposition of many independent relaxation
+    processes — two-state fluctuators, charge traps, defects — each with its
+    own rate, with the rates spread roughly uniformly on a log scale,
+    produces a $1/f$ spectrum over the corresponding decades. In the
+    classic example — a MOSFET — the fluctuators are charge traps
+    in the gate oxide; the trapping time depends exponentially on the trap's
+    depth, so a flat distribution of depths gives the required flat
+    distribution of log-rates, and $1/f$ noise over many decades follows.
+    Different devices, different fluctuators, same arithmetic — which is why
+    the same slope appears everywhere.
+  </p>
+  <p>
+    This recipe is worth seeing, because its ingredient is the simplest random
+    process after white noise: <strong>random telegraph noise</strong>, a
+    signal that just hops between two values at Poisson-random times (a
+    "jump process" — the same family as the discrete arrivals behind shot
+    noise). A single fluctuator with total switching rate $\gamma$ forgets
+    its state exponentially, $R(\tau) = a^2 e^{-\gamma|\tau|}$, so its PSD is
+    a <strong>Lorentzian</strong>:
+  </p>
+  <p>
+    $$ S(f) \;=\; \frac{4 a^2 \gamma}{\gamma^2 + (2\pi f)^2}
+       \;\;=\;\; \begin{cases} \text{flat (white)}, & f \ll \gamma/2\pi \\[2pt]
+       \propto 1/f^2, & f \gg \gamma/2\pi . \end{cases} $$
+  </p>
+  <p>
+    No single fluctuator is ever $1/f$ — it is white below its corner and
+    $1/f^2$ above. But now take many independent fluctuators and simply
+    <em>add their time traces</em>, $x(t) = x_1(t) + x_2(t) + \cdots$.
+    Independent noises add in power (chapter&nbsp;3's rule), so the summed
+    PSD is just the sum of the individual Lorentzians — and if the switching
+    rates are spread evenly in $\log\gamma$, each Lorentzian hands over to
+    the next as it rolls off, and the crossovers pile into a $1/f$
+    staircase. Watch it happen:
+  </p>
+
+  <figure class="demo">
+    <figcaption>A microscopic recipe for 1/f: telegraph fluctuators</figcaption>
+    <p class="demo-note">One two-state fluctuator gives a Lorentzian PSD
+      (analytic curve overlaid). A handful with log-spread rates gives a
+      lumpy quasi-1/f — exactly what small transistors and qubits near a few
+      strong two-level systems show. Thirty-two fill in a clean 1/f over the
+      spread of their corners (dashed guide); note the sum's time trace is
+      already almost Gaussian — the central limit theorem at work.</p>
+    <div class="controls" id="ctl-rts"></div>
+    <div class="plots two-col">
+      <div id="plot-rts-t"></div>
+      <div id="plot-rts-f"></div>
+    </div>
+  </figure>
+
+  <h2>Random walk ($\alpha = 2$): white noise, integrated</h2>
+  <p>
+    Brown noise is not a new microscopic mechanism at all: it is what you get
+    when something <em>integrates</em> white noise. If a velocity $v(t)$ is
+    white, the position $x(t) = \int_0^t v\,dt'$ is a random walk. In
+    chapter&nbsp;3 we found its defining feature directly: the variance grows
+    linearly with time, $\mathrm{Var}[x(t)] \propto t$, without bound. Such a
+    process is <strong>non-stationary</strong> — it does not, strictly
+    speaking, have a PSD at all, but any finite-length measurement of it
+    yields a clean $1/f^2$ spectrum over the measured band, and that is how
+    it shows up in practice. Each factor of $1/f$ in the PSD is one
+    integration in time (a derivative, conversely, multiplies the PSD by
+    $(2\pi f)^2$).
+  </p>
+  <p>
+    In the lab, look for random walks wherever an integral hides: the
+    position of a mirror driven by white force noise, the accumulated angle
+    of a gyroscope with white rate noise, and — the case that owns
+    chapter&nbsp;6 — the <em>phase</em> of an oscillator whose
+    <em>frequency</em> noise is white. Frequency is the derivative of phase,
+    so white frequency noise means random-walk phase. Keep that sentence; it
+    is the skeleton key to phase noise.
+  </p>
+
+  <h2>Does averaging help? The punchline</h2>
+  <p>
+    Here is the question that makes $\alpha$ matter in practice. You measure
+    a noisy quantity for a time $T$. Common sense says: measure longer, know
+    it better. Does the spread of your record actually settle down as $T$
+    grows? The variance of what you observe is the integral of the PSD over
+    the frequencies your record can see — roughly $1/T$ up to your sampling
+    bandwidth:
+  </p>
+  <p>
+    $$ \sigma^2(T) \;\approx\; \int_{1/T}^{f_{\mathrm{hi}}} \frac{h_\alpha}{f^{\alpha}}\, df . $$
+  </p>
+  <p>
+    For white noise the integral converges at the low end: watching longer
+    adds essentially nothing, and the sample std settles to a constant. For
+    $\alpha \ge 1$ the integral <em>diverges</em> as the lower limit
+    $1/T \to 0$: every doubling of the observation time lets in new,
+    ever-lower frequencies carrying real power. For pink noise the growth is
+    logarithmic in the variance — the std creeps up like
+    $\sqrt{\ln T}$ — and for a random walk
+    $\sigma^2 \propto T$, so the std grows as $\sqrt{T}$. The demo below
+    measures exactly this: one long record of each color, and the sample
+    std of its first $T$ samples as $T$ grows (averaged over 30 independent
+    realizations so the curves are smooth).
+  </p>
+
+  <figure class="demo">
+    <figcaption>Sample std of a record vs how long you record</figcaption>
+    <p class="demo-note">Left: one realization of each color (offset for
+      clarity) — white stays a band of constant width, pink wanders on every
+      timescale, brown walks away. Right, log–log: the measured std of the
+      first $T$ samples of a long record, ensemble-averaged over 30
+      realizations of each color. White converges to a constant; pink keeps
+      creeping up ($\sim\!\sqrt{\ln T}$, slow but relentless); brown grows as
+      $\sqrt{T}$ (dashed guide). Each full record is normalized to unit RMS,
+      which is why all three meet near 1 at the far right.</p>
+    <div class="controls" id="ctl-avg"></div>
+    <div class="plots two-col">
+      <div id="plot-avg-t"></div>
+      <div id="plot-avg"></div>
+    </div>
+  </figure>
+
+  <div class="callout warn">
+    <div class="callout-title">Why "the RMS of the flicker noise" is not a number</div>
+    For $\alpha \ge 1$ the variance of the process depends on how long you
+    look — it is a property of the <em>measurement</em>, not of the noise
+    alone. Quoting an RMS for flicker or random-walk noise without stating
+    the bandwidth (or the observation time and any high-pass/drift removal)
+    is meaningless, and comparing two such numbers from different instruments
+    is worse than meaningless. This is precisely the disease the
+    <strong>Allan deviation</strong> of chapter&nbsp;7 was invented to cure:
+    it characterizes non-converging noise by a statistic that <em>does</em>
+    converge at each averaging time.
+  </div>
+
+  <h2>Reading slopes like a pro</h2>
+  <p>
+    On log–log axes, $S(f) = h f^{-\alpha}$ is the straight line
+    $\log S = \log h - \alpha \log f$: the slope is exactly $-\alpha$. Spectrum
+    analyzers speak decibels, where a factor of 10 in power is 10&nbsp;dB and
+    a factor of 2 in frequency is an octave, so each unit of $\alpha$ is
+    worth 10&nbsp;dB per decade, or 3&nbsp;dB per octave:
+  </p>
+
+  <table>
+    <thead>
+      <tr><th>PSD shape</th><th>Slope per decade</th><th>Per octave</th><th>Name</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>$f^{0}$</td><td>0 dB</td><td>0 dB</td><td>white</td></tr>
+      <tr><td>$1/f$</td><td>−10 dB</td><td>−3 dB</td><td>pink / flicker</td></tr>
+      <tr><td>$1/f^{2}$</td><td>−20 dB</td><td>−6 dB</td><td>brown / random walk</td></tr>
+      <tr><td>$1/f^{3}$</td><td>−30 dB</td><td>−9 dB</td><td>flicker frequency noise (chapter 7)</td></tr>
+    </tbody>
+  </table>
+  <p>
+    Real spectra are sums of these: a laser's frequency noise might read
+    $1/f$ below 1&nbsp;Hz (flicker), flat from 1&nbsp;Hz to 100&nbsp;kHz
+    (white), with spikes on top (the 50&nbsp;Hz comb, fans, your vacuum
+    pump). Reading off the corner frequencies where one slope hands over to
+    the next is 90% of noise diagnosis. Sweep the noise machine again with
+    this table in mind — you can now name every value of the slider.
+  </p>
+
+  <div class="callout warn">
+    <div class="callout-title">ASD vs PSD: the factor-of-two slope trap</div>
+    Amplitude spectral density is the square root of PSD, so every slope
+    exponent halves: a $1/f$ PSD is a $1/\sqrt{f}$ ASD, and a $1/f^2$ PSD is
+    a $1/f$ ASD. A plot labeled $\mathrm{nV}/\sqrt{\mathrm{Hz}}$ falling as
+    $f^{-1/2}$ and a plot labeled $\mathrm{V^2/Hz}$ falling as $f^{-1}$ show
+    the <em>same flicker noise</em>. Before you read a slope, read the
+    y-axis units — mistaking one for the other misidentifies the noise color
+    by a factor of two in $\alpha$.
+  </div>
+
+  <h2>How the machine works: shaping a spectrum</h2>
+  <p>
+    Every colored trace on this page is made by one trick, straight from
+    <code>Noise.powerLaw</code> in this site's library: take white noise,
+    Fourier transform it, tilt the spectrum, transform back.
+  </p>
+<pre><code>// Noise.powerLaw(n, alpha, rand) — the essential lines
+const re = whiteGaussian(n), im = zeros(n);
+FFT.fft(re, im);                    // -> flat spectrum, random phases
+re[0] = 0; im[0] = 0;               // drop DC (no mean for alpha >= 1)
+for (let k = 1; k &lt;= n / 2; k++) {
+  const g = Math.pow(k, -alpha / 2);   // amplitude gain  f^(-alpha/2)
+  re[k] *= g;  im[k] *= g;             // (mirror bins too, to keep x real)
+}
+FFT.ifft(re, im);                   // back to time: PSD ∝ f^(-alpha)
+</code></pre>
+  <p>
+    Why is the exponent $\alpha/2$ and not $\alpha$? Because the loop
+    multiplies the <em>amplitude</em> of each Fourier bin, and the PSD is the
+    amplitude <em>squared</em>. An amplitude filter $|H(f)| = f^{-\alpha/2}$
+    shapes the power as $|H(f)|^2 = f^{-\alpha}$ — the same halving of
+    exponents as in the ASD-vs-PSD callout above, now used as a tool instead
+    of suffered as a trap.
+  </p>
+
+  <h2>Noise in two dimensions: pictures instead of traces</h2>
+  <p>
+    Nothing in this chapter cares that the axis was <em>time</em>. A camera's
+    dark frame, a mirror's surface roughness, terrain, the temperature field
+    across a vacuum chamber — these are noisy <em>fields</em> $x(\mathbf r)$,
+    and the same machinery applies with time traded for position: a
+    two-dimensional Fourier transform, a PSD $S(\mathbf k)$ over spatial
+    frequency (cycles per image), and — for isotropic noise — a radially
+    averaged spectrum $S(k)$ that is a curve you can read slopes off exactly
+    like every other plot on this page.
+  </p>
+  <p>
+    Power laws are just as ubiquitous here, and your eye already knows them.
+    Sweep the exponent below: $\alpha = 0$ is television static (every pixel
+    independent — all structure at the finest scale); by $\alpha \approx 2$
+    the field is scale-free, structure at every size, and looks like clouds
+    or terrain seen from above (this exact trick generates procedural
+    landscapes in computer graphics); by $\alpha \approx 4$ only the largest
+    blobs survive and the field is smooth. The eye turns out to be a decent
+    spectrum analyzer.
+  </p>
+
+  <figure class="demo">
+    <figcaption>The 2-D noise machine: $S(k) \propto k^{-\alpha}$</figcaption>
+    <p class="demo-note">Left: a $256\times256$ noise field, same underlying
+      random numbers while you drag (only the spectral tilt changes). Right:
+      its radially averaged power spectrum with a dashed $k^{-\alpha}$
+      reference. TV static → clouds → smooth hills, one knob.</p>
+    <div class="controls" id="ctl-tex"></div>
+    <div class="plots two-col">
+      <canvas id="tex-canvas"></canvas>
+      <div id="plot-tex-psd"></div>
+    </div>
+  </figure>
+
+  <p>
+    The self-similarity section's punchline also survives the trip to 2-D:
+    at $\alpha \approx 2$ (the two-dimensional analogue of "equal power per
+    octave") a zoomed-in patch of the field is statistically
+    indistinguishable from the whole — which is precisely why clouds and
+    coastlines have no obvious size. And the diagnostic habit transfers
+    whole: if a camera's dark frames show a radial PSD rising toward small
+    $k$, the "noise" has structure — fixed-pattern nonuniformity, thermal
+    gradients, interference fringes — and averaging frames will not remove
+    all of it. Chapter&nbsp;8 shows the frame-averaging version of that
+    story.
+  </p>
+
+  <h2>Exercises</h2>
+
+  <div class="exercise">
+    <div class="ex-label">Exercise 5.1 — total power of a flicker floor</div>
+    <p>A voltage signal has flicker noise $S_V(f) = h/f$ with
+    $h = 10^{-12}\ \mathrm{V^2}$ (i.e. $S_V(1\,\mathrm{Hz}) =
+    10^{-12}\ \mathrm{V^2/Hz}$). How much RMS voltage does it contribute
+    between 1&nbsp;Hz and 10&nbsp;kHz?</p>
+    <details><summary>Solution</summary>
+      <p>$\sigma^2 = \int_{1}^{10^4} (h/f)\, df = h \ln(10^4) = 4\ln 10
+      \times 10^{-12} \approx 9.2 \times 10^{-12}\ \mathrm{V^2}$, so
+      $\sigma \approx 3.0\ \mu\mathrm{V}$ RMS. Note the answer only grew by
+      $\sqrt{4 \times 2.3\,h}/\sqrt{2.3\,h} = 2$ compared to the first decade
+      alone — four decades of bandwidth, twice the RMS.</p>
+    </details>
+  </div>
+
+  <div class="exercise">
+    <div class="ex-label">Exercise 5.2 — Johnson noise of a big resistor</div>
+    <p>Your transimpedance amplifier uses a $1\ \mathrm{M\Omega}$ feedback
+    resistor at 300&nbsp;K. What is its Johnson-noise voltage ASD in
+    $\mathrm{nV}/\sqrt{\mathrm{Hz}}$?</p>
+    <details><summary>Solution</summary>
+      <p>$S_V = 4 k_B T R = 4 \times 1.38\times10^{-23} \times 300 \times
+      10^{6} \approx 1.66 \times 10^{-14}\ \mathrm{V^2/Hz}$, so
+      $\sqrt{S_V} \approx 129\ \mathrm{nV}/\sqrt{\mathrm{Hz}}$. Handy scaling:
+      $0.91\ \mathrm{nV}/\sqrt{\mathrm{Hz}}$ at $50\ \Omega$ times
+      $\sqrt{10^6/50} \approx 141$.</p>
+    </details>
+  </div>
+
+  <div class="exercise">
+    <div class="ex-label">Exercise 5.3 — name that slope</div>
+    <p>A colleague shows you an amplitude spectral density (units
+    $\mathrm{V}/\sqrt{\mathrm{Hz}}$) that falls as $f^{-1/2}$. What is
+    $\alpha$ in the PSD, and what color of noise is this?</p>
+    <details><summary>Solution</summary>
+      <p>The PSD is the ASD squared: $S(f) \propto (f^{-1/2})^2 = f^{-1}$,
+      so $\alpha = 1$ — flicker (pink) noise. If you had read the slope
+      straight off the ASD plot you would have called it
+      "$\alpha = 1/2$ noise", which is not a thing. Units first, slopes
+      second.</p>
+    </details>
+  </div>
+
+  <div class="exercise">
+    <div class="ex-label">Exercise 5.4 — from position noise to velocity noise</div>
+    <p>Your servo log shows the position noise of a stage: flat below
+    0.1&nbsp;Hz and falling as $1/f^2$ above. Sketch (or argue) the shape of
+    the underlying <em>velocity</em> noise spectrum. What physical story does
+    it tell?</p>
+    <details><summary>Solution</summary>
+      <p>Velocity is the time derivative of position, so
+      $S_v(f) = (2\pi f)^2 S_x(f)$: multiply the position spectrum by $f^2$.
+      Below 0.1&nbsp;Hz the flat position noise becomes velocity noise rising
+      as $f^2$; above 0.1&nbsp;Hz the $1/f^2$ position noise becomes
+      <em>flat</em> velocity noise. The story: white velocity (or force)
+      noise integrates into a position random walk at high frequency, while
+      below its $\sim$0.1&nbsp;Hz bandwidth the servo pins the position to a
+      bounded, flat spectrum (suppressing slow velocity fluctuations as
+      $f^2$). Same trick in reverse next chapter: phase noise vs frequency
+      noise.</p>
+    </details>
+  </div>
+
+  <div class="exercise">
+    <div class="ex-label">Exercise 5.5 — shot-noise limit of a weak beam</div>
+    <p>You measure the relative intensity of a 10&nbsp;&micro;W beam at
+    780&nbsp;nm with a perfect ($\eta = 1$) detector, integrating for
+    1&nbsp;s. What is the shot-limited RIN floor, and what is the best
+    possible fractional uncertainty of your measurement?</p>
+    <details><summary>Solution</summary>
+      <p>Each photon carries $h\nu = 2.55\times10^{-19}$&nbsp;J, so the
+      detected rate is $R = P/h\nu \approx 3.9\times10^{13}\ \mathrm{s^{-1}}$
+      and the RIN floor is $2h\nu/P = 5.1\times10^{-14}\ \mathrm{Hz^{-1}}$
+      ($-133$&nbsp;dB/Hz). A $T$-second average has equivalent noise
+      bandwidth $1/(2T)$ — here 0.5&nbsp;Hz, in the
+      $\sigma(T) = \mathrm{ASD}/\sqrt{2T}$ convention that chapter&nbsp;8
+      builds on — so $\sigma = \sqrt{5.1\times10^{-14} \times 0.5} =
+      1.6\times10^{-7}$. Sanity check: that is exactly $1/\sqrt{RT}$, the
+      counting statistics of the $3.9\times10^{13}$ photons you actually
+      caught. A tenth of a part per million from ten microwatts — and yet
+      LIGO needs eight more orders of magnitude.</p>
+    </details>
+  </div>
+
+  <nav class="pager">
+    <a class="prev" href="04-psd.html"><span class="dir">Previous · Chapter 4</span>
+      The power spectral density</a>
+    <a class="next" href="06-oscillator-noise.html"><span class="dir">Next · Chapter 6</span>
+      Noisy oscillators: amplitude, phase &amp; frequency noise</a>
+  </nav>
+</main>
+
+<script src="../js/lib/fft.js"></script>
+<script src="../js/lib/noise.js"></script>
+<script src="../js/lib/img2d.js"></script>
+<script src="../js/lib/plot.js"></script>
+<script src="../js/lib/ui.js"></script>
+<script>
+'use strict';
+
+/* ---------- demo 1: the noise machine ---------- */
+(function () {
+  const pT = new Plot('#plot-machine-t', {
+    xlabel: 'time (s)', ylabel: 'x(t) (unit RMS)', height: 280,
+    // pinned to cover the whole α sweep: the record is unit-RMS, so ±6σ
+    // holds white spikes and brown excursions alike — the axes stay put
+    // and only the character of the trace changes
+    xlim: [0, 4.096], ylim: [-6, 6], xunit: 's'
+  });
+  const pF = new Plot('#plot-machine-f', {
+    xlabel: 'frequency (Hz)', ylabel: 'PSD (arb. / Hz)', height: 280,
+    // pinned likewise: white sits at 2/fs = 2×10⁻³, α = 2 spans ~2…2×10⁻⁶
+    xlog: true, ylog: true, ylim: [1e-6, 5], xunit: 'Hz'
+  });
+  const ctl = '#ctl-machine';
+  let seed = 11;
+  const alpha = UI.slider(ctl, { label: 'exponent α', min: 0, max: 2,
+    step: 0.1, value: 1, fmt: v => v.toFixed(1), onInput: draw });
+  const name = UI.readout(ctl, { label: 'color' });
+  UI.button(ctl, { label: 'new sample ↻',
+    onClick: () => { seed += 1; draw(); } });
+
+  const N = 16384, fs = 1000, nShow = 4096;
+  const t = new Float64Array(nShow);
+  for (let i = 0; i < nShow; i++) t[i] = i / fs;
+
+  function colorName(a) {
+    if (a < 0.25) return 'white (α ≈ 0)';
+    if (a < 0.75) return 'between white and pink';
+    if (a < 1.25) return 'pink / flicker (α ≈ 1)';
+    if (a < 1.75) return 'between pink and brown';
+    return 'brown / random walk (α ≈ 2)';
+  }
+
+  // reserve the width of the longest color name so the row never jumps
+  name.set(colorName(2));
+
+  function draw() {
+    const a = alpha.value;
+    // same seed while α moves: the character change is the exponent, not luck
+    const rand = Noise.rng(seed);
+    const x = Noise.powerLaw(N, a, rand);
+
+    pT.clear();
+    pT.line(t, x.subarray(0, nShow), {});
+    pT.draw();
+
+    const { f, psd } = FFT.welch(x, fs, { nseg: 2048 });
+    const fq = f.subarray(1), pq = psd.subarray(1);
+    // dashed f^-α reference anchored to the data at the geometric-mid frequency
+    const fmid = Math.sqrt(fq[0] * fq[fq.length - 1]);
+    let k = 0;
+    while (k < fq.length - 1 && fq[k] < fmid) k++;
+    const C = pq[k] * Math.pow(fq[k], a);
+    const fr = [fq[0], fq[fq.length - 1]];
+    const yr = fr.map(v => C * Math.pow(v, -a));
+
+    pF.clear();
+    pF.line(fq, pq, { label: 'measured PSD (Welch)' });
+    pF.line(fr, yr, { label: 'f^−' + a.toFixed(1) + ' reference',
+      color: '#898781', width: 1, dash: [6, 4] });
+    pF.draw();
+    name.set(colorName(a));
+  }
+  draw();
+})();
+
+/* ---------- demo 1b: photon shot noise ---------- */
+(function () {
+  const pT = new Plot('#plot-shot-t', {
+    xlabel: 'time (s)', ylabel: 'photons per 1 ms bin', height: 280,
+    xlim: [0, 0.5], xunit: 's'
+  });
+  const pF = new Plot('#plot-shot-f', {
+    xlabel: 'frequency (Hz)', ylabel: 'PSD of δP/P (1/Hz)', height: 280,
+    xlog: true, ylog: true, xunit: 'Hz'
+  });
+  const ctl = '#ctl-shot';
+  let seed = 23;
+  const rate = UI.slider(ctl, { label: 'photon rate R', min: 100, max: 1e6,
+    log: true, value: 1000, unit: '/s', fmt: v => Plot.fmtNum(v, 2),
+    onInput: draw });
+  const ro = UI.readout(ctl, { label: 'shot level 2/R' });
+  UI.button(ctl, { label: 'new sample ↻', onClick: () => { seed++; draw(); } });
+
+  const fs = 1000, N = 4096;              // 1 ms bins, 4.1 s of counting
+  function poisson(lam, rand) {
+    if (lam < 30) {                       // exact (Knuth) for small rates
+      const L = Math.exp(-lam);
+      let k = 0, p = 1;
+      do { k++; p *= rand(); } while (p > L);
+      return k - 1;
+    }
+    // Gaussian approximation for lam >= 30 — the CLT doing our work for us
+    return Math.max(0, Math.round(lam + Math.sqrt(lam) * Noise.randn(rand)));
+  }
+
+  function draw() {
+    const R = rate.value, lam = R / fs;   // mean photons per bin
+    // axes follow the slider deterministically (mean ± 5σ counts; decades
+    // centred on the 2/R guide) so the sample never re-picks the scale
+    pT.o.ylim = [Math.max(0, lam - 5 * Math.sqrt(lam)),
+                 lam + Math.max(3, 5 * Math.sqrt(lam))];
+    const dec = Math.round(Math.log10(2 / R));
+    pF.o.ylim = [Math.pow(10, dec - 2), Math.pow(10, dec + 1)];
+    const rand = Noise.rng(seed);
+    const counts = new Float64Array(N), frac = new Float64Array(N);
+    for (let i = 0; i < N; i++) {
+      counts[i] = poisson(lam, rand);
+      frac[i] = counts[i] / lam - 1;      // fractional fluctuation δP/P
+    }
+
+    const nShow = fs / 2;
+    const t = new Float64Array(nShow);
+    for (let i = 0; i < nShow; i++) t[i] = i / fs;
+    pT.clear();
+    pT.line(t, counts.subarray(0, nShow), {});
+    pT.draw();
+
+    // Poisson: var(count) = lam per bin, so var(δP/P) = 1/lam = fs/R and the
+    // one-sided PSD of the (white) fractional fluctuation is 2·var/fs = 2/R.
+    const { f, psd } = FFT.welch(frac, fs, { nseg: 1024 });
+    pF.clear();
+    pF.guideY(2 / R, { label: 'shot level 2/R', color: '#898781',
+      dash: [6, 4] });
+    pF.line(f.subarray(1), psd.subarray(1), { label: 'measured PSD (Welch)' });
+    pF.draw();
+    ro.set(Plot.fmtNum(2 / R, 2) + ' /Hz');
+  }
+  draw();
+})();
+
+/* ---------- demo 2: self-similarity of pink noise ---------- */
+(function () {
+  const plot = new Plot('#plot-zoom', {
+    xlabel: 'time (in units of the visible window)',
+    ylabel: 'x / std of window', height: 300,
+    xlim: [0, 1], ylim: [-4.5, 4.5], hover: false
+  });
+  const ctl = '#ctl-zoom';
+  let seed = 42;
+  let cache = {};
+  const kind = UI.select(ctl, { label: 'noise', options: [
+    { value: '1', label: 'pink (1/f)' },
+    { value: '0', label: 'white' }
+  ], value: '1', onChange: draw });
+  const zoom = UI.slider(ctl, { label: 'zoom out', min: 0, max: 2, step: 0.01,
+    value: 0, fmt: v => {
+      const z = Math.pow(4, v);
+      return (z < 10 ? z.toFixed(1) : Math.round(z)) + '×';
+    }, onInput: draw });
+  const win = UI.readout(ctl, { label: 'visible samples' });
+  UI.button(ctl, { label: 'new sample ↻',
+    onClick: () => { seed += 1; cache = {}; draw(); } });
+
+  const N = 16384, base = 1024;
+  function series(a) {
+    if (!cache[a]) cache[a] = Noise.powerLaw(N, a, Noise.rng(seed));
+    return cache[a];
+  }
+
+  function draw() {
+    const a = parseFloat(kind.value);
+    const n = Math.min(N, Math.round(base * Math.pow(4, zoom.value)));
+    const x = series(a).subarray(0, n);
+    const m = Noise.mean(x), s = Noise.std(x) || 1;
+    const t = new Float64Array(n), y = new Float64Array(n);
+    for (let i = 0; i < n; i++) {
+      t[i] = i / n;
+      y[i] = (x[i] - m) / s;
+    }
+    plot.clear();
+    plot.line(t, y, {});
+    plot.draw();
+    win.set(n + ' of ' + N);
+  }
+  draw();
+})();
+
+/* ---------- demo 2b: telegraph fluctuators build 1/f ---------- */
+(function () {
+  const pT = new Plot('#plot-rts-t', {
+    xlabel: 'time (s)', ylabel: 'x(t)', height: 280,
+    xlim: [0, 4], hover: false
+  });
+  const pF = new Plot('#plot-rts-f', {
+    xlabel: 'frequency (Hz)', ylabel: 'PSD (1/Hz)', height: 280,
+    xlog: true, ylog: true, xunit: 'Hz'
+  });
+  const ctl = '#ctl-rts';
+  let seed = 77;
+  const count = UI.select(ctl, { label: 'fluctuators', options: [
+    { value: '1', label: '1 (Lorentzian)' },
+    { value: '4', label: '4 (lumpy quasi-1/f)' },
+    { value: '32', label: '32 (clean 1/f)' }
+  ], value: '1', onChange: draw });
+  UI.button(ctl, { label: 'new sample ↻', onClick: () => { seed++; draw(); } });
+
+  const fs = 1000, N = 1 << 15;         // 32.8 s
+  const G_LO = 0.3, G_HI = 300;         // switching-rate spread (s⁻¹)
+
+  // one telegraph fluctuator: state ±1, total rate gamma (flip rate gamma/2
+  // per direction), so R(tau) = e^{-gamma·tau}
+  function telegraph(gamma, rand, out, amp) {
+    let s = rand() < 0.5 ? -1 : 1;
+    const p = (gamma / 2) / fs;
+    for (let i = 0; i < N; i++) {
+      if (rand() < p) s = -s;
+      out[i] += amp * s;
+    }
+  }
+
+  function draw() {
+    const M = parseInt(count.value, 10);
+    const rand = Noise.rng(seed);
+    const x = new Float64Array(N);
+    const amp = 1 / Math.sqrt(M);
+    for (let m = 0; m < M; m++) {
+      const gamma = M === 1 ? 30
+        : G_LO * Math.pow(G_HI / G_LO, m / (M - 1));
+      telegraph(gamma, rand, x, amp);
+    }
+
+    const nShow = 4 * fs;
+    const t = new Float64Array(nShow);
+    for (let i = 0; i < nShow; i++) t[i] = i / fs;
+    pT.clear();
+    pT.o.ylim = M === 1 ? [-1.4, 1.4] : [-3.2, 3.2];
+    pT.line(t, x.subarray(0, nShow), {});
+    pT.draw();
+
+    const { f, psd } = FFT.welch(x, fs, { nseg: 4096, overlap: 0.5 });
+    const fq = f.subarray(1), pq = psd.subarray(1);
+    pF.clear();
+    pF.o.ylim = [3e-7, 0.3];
+    pF.line(fq, pq, { label: 'measured PSD' });
+    if (M === 1) {
+      // analytic Lorentzian for the single fluctuator, gamma = 30 s⁻¹
+      const yL = new Float64Array(fq.length);
+      for (let k = 0; k < fq.length; k++) {
+        yL[k] = 4 * 30 / (30 * 30 + Math.pow(2 * Math.PI * fq[k], 2));
+      }
+      pF.line(fq, yL, { label: '4γ/(γ² + (2πf)²)', color: '#898781',
+        width: 1.5, dash: [6, 4] });
+      pF.guideX(30 / (2 * Math.PI), { label: 'corner γ/2π' });
+    } else {
+      // 1/f guide anchored to the measured PSD at mid-band
+      const fmid = Math.sqrt(G_LO * G_HI) / (2 * Math.PI);
+      let k = 0;
+      while (k < fq.length - 1 && fq[k] < fmid) k++;
+      const C = pq[k] * fq[k];
+      const fr = [G_LO / (2 * Math.PI), G_HI / (2 * Math.PI)];
+      pF.line(fr, fr.map(v => C / v), { label: '1/f guide',
+        color: '#898781', width: 1.5, dash: [6, 4] });
+    }
+    pF.draw();
+  }
+  draw();
+})();
+
+/* ---------- demo 3: does averaging help? std vs record length ---------- */
+(function () {
+  const pT = new Plot('#plot-avg-t', {
+    xlabel: 'sample index', ylabel: 'x(t), offset for clarity', height: 320,
+    xlim: [0, 32768], ylim: [-10.5, 10.5]
+  });
+  const plot = new Plot('#plot-avg', {
+    xlabel: 'record length T (samples)', ylabel: 'sample std of the record',
+    height: 320, xlog: true, ylog: true
+  });
+  const ctl = '#ctl-avg';
+  const note = UI.readout(ctl, { label: 'ensemble' });
+  let seed = 7;
+  UI.button(ctl, { label: 'resample ↻',
+    onClick: () => { seed += 1000; draw(); } });
+
+  const N = 32768, nReal = 30;
+  const Ts = [];
+  for (let T = 32; T <= N; T *= 2) Ts.push(T);
+
+  // Mean (over realizations) of the sample std of the first T points of a
+  // full-length record. Absolute scale fixed once: powerLaw normalizes the
+  // FULL 2^15-sample record to unit RMS; sub-records are NOT renormalized.
+  function stdCurve(a, seed0) {
+    const acc = new Float64Array(Ts.length);
+    for (let r = 0; r < nReal; r++) {
+      const x = Noise.powerLaw(N, a, Noise.rng(seed0 + r));
+      let s = 0, s2 = 0, j = 0;
+      for (let i = 0; i < N; i++) {
+        s += x[i]; s2 += x[i] * x[i];
+        if (i + 1 === Ts[j]) {
+          const m = s / (i + 1);
+          acc[j] += Math.sqrt(Math.max(s2 / (i + 1) - m * m, 0));
+          j++;
+        }
+      }
+    }
+    for (let j = 0; j < Ts.length; j++) acc[j] /= nReal;
+    return acc;
+  }
+
+  function draw() {
+    // one realization of each color — the r = 0 member of each ensemble
+    // below, so the traces are literally the records being measured
+    const step = 8, nPl = N / step, tt = new Float64Array(nPl);
+    for (let i = 0; i < nPl; i++) tt[i] = i * step;
+    const dec = (x, off) => {
+      const y = new Float64Array(nPl);
+      for (let i = 0; i < nPl; i++) y[i] = x[i * step] + off;
+      return y;
+    };
+    pT.clear();
+    pT.line(tt, dec(Noise.powerLaw(N, 0, Noise.rng(seed)), 6.5),
+      { label: 'white (α = 0)' });
+    pT.line(tt, dec(Noise.powerLaw(N, 1, Noise.rng(seed + 101)), 0),
+      { label: 'pink (α = 1)' });
+    pT.line(tt, dec(Noise.powerLaw(N, 2, Noise.rng(seed + 202)), -6.5),
+      { label: 'brown (α = 2)' });
+    pT.draw();
+
+    const w = stdCurve(0, seed);
+    const p = stdCurve(1, seed + 101);
+    const b = stdCurve(2, seed + 202);
+    // sqrt(T) guide anchored to the brown curve at the shortest record
+    const C = b[0] / Math.sqrt(Ts[0]);
+    const guide = Ts.map(T => C * Math.sqrt(T));
+    plot.clear();
+    plot.line(Ts, guide, { label: '√T guide', color: '#898781',
+      width: 1, dash: [6, 4] });
+    plot.line(Ts, w, { label: 'white (α = 0)' });
+    plot.line(Ts, p, { label: 'pink (α = 1)' });
+    plot.line(Ts, b, { label: 'brown (α = 2)' });
+    plot.draw();
+    note.set(nReal + ' realizations × 2¹⁵ samples');
+  }
+  draw();
+})();
+
+/* ---------- demo: 2-D noise machine ---------- */
+(function () {
+  const N2 = 256;
+  const canvas = document.getElementById('tex-canvas');
+  const pPsd = new Plot('#plot-tex-psd', {
+    xlabel: 'spatial frequency k (cycles / image)', ylabel: 'radial PSD (arb.)',
+    height: 300, xlog: true, ylog: true
+  });
+  const ctl = '#ctl-tex';
+  let seed = 31;
+  const alpha = UI.slider(ctl, { label: 'exponent α', min: 0, max: 4,
+    step: 0.1, value: 2, fmt: v => v.toFixed(1), onInput: draw });
+  UI.button(ctl, { label: 'new sample ↻', onClick: () => { seed++; draw(); } });
+
+  function draw() {
+    const a = alpha.value;
+    const field = Img2D.powerLaw2D(N2, a, Noise.rng(seed));
+    Img2D.render(canvas, field, N2);
+    const { k, psd } = Img2D.radialPSD(field, N2);
+    // dashed k^-alpha reference anchored at the geometric-mid wavenumber
+    const kmid = Math.sqrt(k[0] * k[k.length - 1]);
+    let j = 0;
+    while (j < k.length - 1 && k[j] < kmid) j++;
+    const C = psd[j] * Math.pow(k[j], a);
+    const kr = [k[0], k[k.length - 1]];
+    pPsd.clear();
+    pPsd.line(k, psd, { label: 'radially averaged PSD' });
+    pPsd.line(kr, kr.map(v => C * Math.pow(v, -a)),
+      { label: 'k^−' + a.toFixed(1) + ' reference', color: '#898781',
+        width: 1.5, dash: [6, 4] });
+    pPsd.draw();
+  }
+  draw();
+})();
+</script>
+</body>
+</html>

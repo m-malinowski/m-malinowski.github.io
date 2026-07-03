@@ -1,0 +1,1457 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>6 · Noisy oscillators: amplitude, phase &amp; frequency noise — Making Sense of Noise</title>
+<link rel="stylesheet" href="../css/style.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"
+  onload="renderMathInElement(document.body, {delimiters:[
+    {left:'$$', right:'$$', display:true},
+    {left:'$', right:'$', display:false}]});"></script>
+</head>
+<body>
+
+<nav class="site-nav">
+  <div class="nav-inner">
+    <a class="home" href="../index.html">Making Sense of Noise</a>
+    <div class="chapters">
+      <a href="01-pure-tone.html" title="The pure tone">1</a>
+      <a href="02-modulation.html" title="Modulation">2</a>
+      <a href="03-random-processes.html" title="Random processes">3</a>
+      <a href="04-psd.html" title="Power spectral density">4</a>
+      <a href="05-noise-colors.html" title="Colors of noise">5</a>
+      <a href="06-oscillator-noise.html" class="current" title="Amplitude, phase & frequency noise">6</a>
+      <a href="07-allan.html" title="Allan deviation">7</a>
+      <a href="08-sensitivity.html" title="Sensitivity">8</a>
+      <a href="09-ligo.html" title="LIGO case study">9</a>
+      <a href="10-pll.html" title="Phase-locked loops">10</a>
+    </div>
+  </div>
+</nav>
+
+<main>
+  <p class="chapter-kicker">Chapter 6</p>
+  <h1>Noisy oscillators: amplitude, phase &amp; frequency noise</h1>
+  <p class="lede">
+    This is the chapter the whole course has been building toward. Back to the
+    master equation:
+    $V(t) = [A_0 + \delta\!A(t)]\cos\!\big(2\pi\nu_0 t + \varphi(t)\big)$.
+    In chapter 2 we wiggled $\delta\!A$ and $\varphi$ deliberately, with clean
+    sinusoidal modulation. A real oscillator wiggles them randomly — and
+    everything we need is already on the table: just apply chapter&nbsp;4's
+    power spectral densities to the two wiggle terms.
+  </p>
+
+  <h2>The cast of characters</h2>
+  <p>
+    Four random processes describe one noisy oscillator, and each has its own
+    PSD with its own units. Fix the conventions once (one-sided PSDs, ordinary
+    frequency in Hz throughout, $f$ always the <em>offset</em> frequency of
+    the noise, distinct from the carrier $\nu_0$):
+  </p>
+
+  <table>
+    <thead>
+      <tr><th>process</th><th>definition</th><th>PSD</th><th>units of PSD</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>fractional amplitude noise</td><td>$a(t) = \delta\!A(t)/A_0$</td>
+          <td>$S_a(f)$</td><td>$1/\text{Hz}$</td></tr>
+      <tr><td>phase noise</td><td>$\varphi(t)$</td>
+          <td>$S_\varphi(f)$</td><td>$\text{rad}^2/\text{Hz}$</td></tr>
+      <tr><td>frequency noise</td><td>$\delta\nu(t) = \dot\varphi(t)/2\pi$</td>
+          <td>$S_{\delta\nu}(f)$</td><td>$\text{Hz}^2/\text{Hz}$</td></tr>
+      <tr><td>fractional frequency noise</td><td>$y(t) = \delta\nu(t)/\nu_0$</td>
+          <td>$S_y(f) = S_{\delta\nu}(f)/\nu_0^2$</td><td>$1/\text{Hz}$</td></tr>
+    </tbody>
+  </table>
+
+  <p>
+    Amplitude noise mostly minds its own business (it returns in the spectrum
+    analyzer section below). The real action is between $\varphi$ and
+    $\delta\nu$, and it is governed by one identity — <em>the</em> identity of
+    oscillator physics:
+  </p>
+  <p>
+    $$ \boxed{\; S_{\delta\nu}(f) \;=\; f^{2}\, S_\varphi(f) \;} $$
+  </p>
+  <p>
+    The derivation takes three lines. Recall from chapter 1 that frequency is
+    the slope of phase, and from chapter 4 that differentiation multiplies a
+    Fourier amplitude by $i\,2\pi f$:
+  </p>
+  <p>
+    $$
+    \begin{aligned}
+    \delta\nu(t) &= \frac{\dot\varphi(t)}{2\pi}
+      &&\text{(slope of phase)}\\[2pt]
+    \widetilde{\delta\nu}(f) &= \frac{(i\,2\pi f)\,\tilde\varphi(f)}{2\pi}
+      = i f\,\tilde\varphi(f)
+      &&\text{(derivative theorem)}\\[2pt]
+    S_{\delta\nu}(f) &= |if|^2\, S_\varphi(f) = f^2\, S_\varphi(f).
+      &&\text{(square the magnitude)}
+    \end{aligned}
+    $$
+  </p>
+  <p>
+    Note how tidily the $2\pi$'s cancel: differentiation brings a factor
+    $2\pi f$ to the amplitude spectrum, and the $1/2\pi$ in
+    $\delta\nu = \dot\varphi/2\pi$ removes it, leaving a bare $f^2$ in power.
+    Phase noise and frequency noise are <strong>the same wandering with two
+    bookkeepings</strong> — position versus velocity of the phasor's angle. A
+    single physical process therefore has two names, one per bookkeeping.
+    Multiplying by $f^2$ shifts a power law by two rungs, which generates the
+    famous ladder of oscillator noise types:
+  </p>
+
+  <table>
+    <thead>
+      <tr><th>phase PSD shape</th><th>frequency PSD shape</th><th>name</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>$\propto f^{0}$ (flat)</td><td>$\propto f^{2}$</td><td>white phase noise (white PM)</td></tr>
+      <tr><td>$\propto f^{-1}$</td><td>$\propto f^{1}$</td><td>flicker phase noise (flicker PM)</td></tr>
+      <tr><td>$\propto f^{-2}$ (random-walk phase)</td><td>$\propto f^{0}$ (flat)</td><td>white frequency noise (white FM)</td></tr>
+      <tr><td>$\propto f^{-3}$</td><td>$\propto f^{-1}$</td><td>flicker frequency noise (flicker FM)</td></tr>
+      <tr><td>$\propto f^{-4}$</td><td>$\propto f^{-2}$</td><td>random-walk frequency noise (random-walk FM)</td></tr>
+    </tbody>
+  </table>
+
+  <p>
+    Real oscillators show several rungs at once: typically white PM at high
+    offsets, then white FM, then flicker FM and random-walk FM as you move
+    toward the carrier. Every color of chapter 5 appears — just attached to
+    the phase of an oscillator instead of to a voltage.
+  </p>
+
+  <h2>One noise, two spectra</h2>
+  <p>
+    Seeing is believing. Below, one random phase record $\varphi(t)$ is
+    generated (sampled at $f_s = 256$ Hz for 128 s), its numerical derivative
+    gives $\delta\nu(t)$, and both PSDs are estimated with Welch's method from
+    chapter 4. On the $S_{\delta\nu}$ panel two curves are drawn: the
+    <em>direct</em> estimate (Welch of the differenced record) and
+    $f^2 \times$ the <em>measured</em> $S_\varphi$ from the panel to its left.
+    If the boxed identity is right, they must lie on top of each other — for
+    every noise type, at every level.
+  </p>
+
+  <figure class="demo">
+    <figcaption>One wandering phase, two equivalent spectra</figcaption>
+    <p class="demo-note">Pick a noise type and watch all four panels. On the
+      bottom-right panel the dashed curve is $f^2 S_\varphi(f)$ computed from
+      the bottom-left panel — it lands on the directly estimated
+      $S_{\delta\nu}(f)$ for every noise type, over three decades of $f$.
+      (Two estimation artifacts, neither of them physics: the direct estimate
+      droops slightly in the last half-decade before Nyquist — the
+      finite-difference derivative — and the few leftmost bins wobble with
+      chapter-4 leakage.)</p>
+    <div class="controls" id="ctl-onetwo"></div>
+    <div class="plots two-col">
+      <div id="plot-onetwo-phi"></div>
+      <div id="plot-onetwo-dnu"></div>
+    </div>
+    <div class="plots two-col">
+      <div id="plot-onetwo-sphi"></div>
+      <div id="plot-onetwo-sdnu"></div>
+    </div>
+  </figure>
+
+  <p>
+    Stare at white FM for a moment, because it is the canonical case: the
+    frequency record $\delta\nu(t)$ is featureless white noise, yet the phase
+    — its running integral — wanders off like a drunkard, and its spectrum
+    $S_\varphi \propto 1/f^2$ diverges at low $f$ exactly as chapter 5's
+    random walk did. Nothing "went wrong" at low frequencies; integration is
+    just division by $f$ in amplitude, $f^2$ in power.
+  </p>
+
+  <h2>What a spectrum analyzer shows: $\mathcal{L}(f)$</h2>
+  <p>
+    Now connect $S_\varphi$ to what you actually see when you feed the
+    oscillator into a spectrum analyzer: the RF spectrum of $V(t)$ itself,
+    around the carrier at $\nu_0$. Chapter 2 already did the hard work. For
+    <strong>small phase excursions</strong> ($\varphi_{\mathrm{rms}} \ll 1$
+    rad — narrowband PM), a sinusoidal phase wiggle of amplitude $m$ at rate
+    $f_m$ puts a pair of sidebands at $\nu_0 \pm f_m$, each with power
+    $m^2/4$ relative to the carrier. Random phase noise is just chapter 4's
+    sum of independent sinusoids, one per Fourier bin, so each slice of
+    $S_\varphi$ makes its own little sideband pair. Now chain the two facts
+    together. The 1-Hz slice of phase noise at offset $f$ carries variance
+    $S_\varphi(f) \times 1\,\mathrm{Hz}$ (chapter 4: area under a PSD is
+    variance). Treat that slice as a single sinusoidal wiggle of amplitude
+    $m$: a sinusoid's mean square is $m^2/2$, so $m^2/2 = S_\varphi(f)
+    \times 1\,\mathrm{Hz}$, i.e. $m^2 = 2 S_\varphi(f)\,\mathrm{Hz}$. That
+    wiggle puts power $m^2/4$ (relative to the carrier) into <em>each</em>
+    of its two sidebands. So the sideband power in 1 Hz at offset $f$, on
+    <em>one</em> side of the carrier, divided by the carrier power, is
+  </p>
+  <p>
+    $$ \mathcal{L}(f) \;=\; \frac{m^2}{4}\ \text{per Hz}
+       \;=\; \frac{2\,S_\varphi(f)}{4}
+       \;=\; \tfrac{1}{2}\, S_\varphi(f) . $$
+  </p>
+  <p>
+    The $\tfrac12$ is because the noise power splits evenly between the upper
+    and lower sidebands and $\mathcal{L}$ counts only one of them
+    ("single-sideband phase noise"). Datasheets quote it logarithmically, in
+    <strong>dBc/Hz</strong> — decibels relative to the carrier, per hertz:
+  </p>
+  <p>
+    $$ \mathcal{L}_{\mathrm{dB}}(f) = 10 \log_{10}\!\big[\tfrac{1}{2} S_\varphi(f)\big]\ \text{dBc/Hz}. $$
+  </p>
+  <p>
+    Worked conversion, since this trips everyone up once: a synthesizer spec
+    of $\mathcal{L} = -100$ dBc/Hz means $\mathcal{L}(f) = 10^{-10}$ per Hz,
+    so $S_\varphi(f) = 2\mathcal{L}(f) = 2\times 10^{-10}\ \text{rad}^2/\text{Hz}$.
+    Factor of two, no $2\pi$ anywhere.
+  </p>
+
+  <div class="callout warn">
+    <div class="callout-title">$\mathcal{L}(f)$ fine print</div>
+    Historically $\mathcal{L}$ was <em>defined</em> as the measured SSB
+    noise-to-carrier ratio, which equals $S_\varphi/2$ only in the small-angle
+    regime. The modern standard (IEEE 1139) sidesteps the problem by
+    <em>defining</em> $\mathcal{L}(f) \equiv S_\varphi(f)/2$ always, even
+    where the small-angle picture has broken down and the spectrum on the
+    screen no longer looks like carrier-plus-sidebands. When
+    $\varphi_{\mathrm{rms}}$ approaches a radian, trust $S_\varphi$, not the
+    screen — that regime is the next section.
+  </div>
+
+  <figure class="demo">
+    <figcaption>The RF spectrum: carrier spike + noise pedestal — and the AM/PM ambiguity</figcaption>
+    <p class="demo-note">Two oscillators at $\nu_0 = 64$ Hz: one with only
+      white phase noise, one with only white amplitude noise (both
+      band-limited to 48 Hz, so the pedestal spans $\nu_0 \pm 48$ Hz and no
+      sideband folds past the band edges). The dashed guide is the predicted
+      pedestal height $S_\varphi/4$ — half the power in each sideband, so
+      $\mathcal{L} = S_\varphi/2$ relative to the carrier's power of
+      $\tfrac12$. Slide $S_a$ up to equal $S_\varphi$ and watch the two
+      spectra become pixel-identical: a spectrum analyzer cannot tell AM
+      noise from PM noise.</p>
+    <div class="controls" id="ctl-lf"></div>
+    <div class="plots"><div id="plot-lf"></div></div>
+  </figure>
+
+  <p>
+    The punchline of the demo deserves italics: <em>with equal $S_a$ and
+    $S_\varphi$ the pedestals are identical</em>. Both AM and PM noise
+    produce symmetric sidebands of the same power; the difference is only in
+    the sidebands' <em>phase relationship</em> to the carrier (chapter 2: AM
+    sidebands add along the carrier phasor, PM sidebands add at right angles
+    to it), and a power spectrum throws phase information away. To separate
+    them you must be phase-sensitive: demodulate against a reference.
+  </p>
+
+  <div class="callout lab">
+    <div class="callout-title">Lab note — how phase noise is actually measured</div>
+    The workhorse is a <strong>double-balanced mixer used as a phase
+    detector</strong>: multiply the oscillator against a clean reference of
+    the same frequency, hold them in quadrature (90° apart), and the mixer's
+    low-passed output is $V_{\mathrm{out}} \approx K_d\,\varphi(t)$ — phase
+    converted to voltage, ready for an audio-band FFT analyzer; AM is
+    rejected to first order. A <strong>PLL</strong> — a phase-locked loop,
+    the feedback arrangement chapter&nbsp;10 dissects — keeps the pair in
+    quadrature (and its loop bandwidth eats the phase noise below the loop
+    corner — you must correct for it). When the reference is no better than
+    the device under test, <strong>cross-correlation analyzers</strong> use
+    two independent references and two mixers and average the cross-spectrum:
+    the references' own noises are uncorrelated and average away, pulling the
+    instrument floor down by $\sqrt{N_{\mathrm{avg}}}$. Alternatively, digitize
+    and <strong>IQ-demodulate</strong>: from $I + iQ = A e^{i\varphi}$ you
+    read both $\delta\!A(t)$ and $\varphi(t)$ separately.
+  </div>
+
+  <h2>The universal floor: −174 dBm/Hz</h2>
+  <p>
+    How quiet can $\mathcal{L}(f)$ possibly be? Thermodynamics sets a hard
+    floor, and chapter&nbsp;5 already handed us the number: any resistor
+    delivers into a matched load the available noise power density
+    $N_0 = k_B T$, independent of the resistance, which at the RF reference
+    temperature of 290&nbsp;K is $4.0\times 10^{-21}$ W/Hz $=$
+    $-174$&nbsp;dBm/Hz. Every input of every amplifier, mixer and cable in
+    the warm world sits in this bath. What is new in this chapter is what
+    that bath does to a carrier's <em>phase</em>.
+  </p>
+  <p>
+    Now superpose that noise on a carrier. Take a clean carrier of power $C$
+    riding on white noise of density $N_0$, and look at the 1-Hz slice of
+    noise at $\nu_0 + f$. Over short times that slice behaves like a little
+    sinusoid offset by $f$ from the carrier, so it can be drawn as a phasor —
+    a beautiful echo of chapter&nbsp;2's rotating-frame demo. In the frame rotating with the carrier, the noise
+    phasor turns at the offset rate $f$: when it points along the carrier it
+    stretches or shrinks it (amplitude modulation); a quarter turn later it
+    tips the carrier sideways (phase modulation). Averaged over the rotation,
+    <strong>half the superposed noise power reads as amplitude noise and half
+    as phase noise</strong> — the same even AM/PM split that the spectrum
+    analyzer demo above could not resolve, now seen from the phasor side.
+  </p>
+
+  <figure class="demo">
+    <figcaption>The noise phasor: one rotation splits into AM and PM</figcaption>
+    <p class="demo-note">Press play. In the frame rotating with the carrier
+      (gray), the 1-Hz noise slice is a phasor of amplitude $b$ (orange)
+      turning at the offset rate $f$. Its projection <em>along</em> the
+      carrier (blue) stretches and shrinks the amplitude; its projection
+      <em>across</em> the carrier (green) tips the phase. Right: the two
+      projections in time — the same sinusoid a quarter turn apart, each
+      with mean square $b^2/2$ (dashed RMS guides). Half the noise power
+      reads as AM, half as PM, whatever $f$ and $b$ you choose.</p>
+    <div class="controls" id="ctl-npz"></div>
+    <div class="plots two-col">
+      <canvas id="npz-canvas" height="300"></canvas>
+      <div id="plot-npz-t"></div>
+    </div>
+  </figure>
+
+  <p>
+    That factor of one half, plus the definition of $\mathcal{L}$, gives the
+    <strong>additive phase-noise floor</strong>. Send a carrier of power $C$
+    through any chain of amplifiers, cables and mixers with overall noise
+    figure $F$ ($F$ is the amplifier-chain noise figure — the factor by which
+    the chain inflates $k_B T$ — quantified properly in chapter&nbsp;8): the
+    chain adds noise density $Fk_B T$ in each 1-Hz slice near the carrier, half
+    of it is phase noise, and $\mathcal{L}$ counts one sideband:
+    $$ \mathcal{L}_{\text{floor}}(f) \;=\; \frac{F\,k_B T}{2C},
+       \qquad \text{flat in } f. $$
+    In decibels, with $-174$ for $k_B T$ and $-3$ for the half:
+    $$ \mathcal{L}_{\text{floor}} \;=\; -177 + F_{\mathrm{dB}} -
+       C_{\mathrm{dBm}}\ \ \text{dBc/Hz}. $$
+    Worked number: a $+10$ dBm carrier through a chain with $F = 6$ dB floors
+    out at $-177 + 6 - 10 = -181$ dBc/Hz, and no amount of engineering skill
+    can put the far-from-carrier noise below that.
+  </p>
+
+  <div class="callout">
+    <div class="callout-title">Carrier power is phase-noise currency</div>
+    Because $C$ sits in the denominator, far-from-carrier phase noise improves
+    dB for dB with carrier power — one more dB of signal is one less dB of
+    floor. Conversely, a weak signal can <em>never</em> have a quiet phase: a
+    $-60$ dBm signal, however perfect its source, floors out at
+    $-177 + 6 + 60 = -111$ dBc/Hz through the same $F = 6$ dB chain.
+    Distributing a good clock at healthy power is not a luxury; it is what
+    keeps the clock good.
+  </div>
+
+  <h2>Spurs: the lines that aren't noise</h2>
+  <p>
+    Put a real source on a spectrum analyzer and you will see, besides the
+    smooth noise pedestal, discrete <strong>lines</strong> — "spurs", in the
+    trade. The usual suspects: mains harmonics (a ladder at multiples of
+    50 or 60 Hz), switching-supply ripple (tens to hundreds of kHz), vibration
+    and microphonics (fans, vacuum pumps, slammed doors — each mechanical tone
+    phase-modulates the source through its cavity or crystal), and in
+    synthesizers, mixer products and reference breakthrough. Two rules keep
+    the bookkeeping honest.
+  </p>
+  <p>
+    <strong>Rule one: spurs are quoted in dBc, not dBc/Hz.</strong> A spur is
+    a sinusoid — a power <em>ratio</em> to the carrier — while the pedestal is
+    a power <em>density</em>. This is exactly chapter&nbsp;4's line-versus-floor
+    trap on the analyzer screen: narrow the resolution bandwidth and the
+    displayed noise floor drops dB for dB while the spur's height does not
+    move. A number in dBc/Hz for a spur (or dBc for noise) is a category
+    error, and datasheets that mix them up are telling you something about
+    their authors.
+  </p>
+  <p>
+    <strong>Rule two: a small PM spur is chapter&nbsp;2's narrowband PM in
+    disguise.</strong> A pair of phase-modulation sidebands at $\nu_0 \pm f_m$,
+    each at $-X$ dBc, is narrowband PM with modulation index
+    $\beta = 2\times 10^{-X/20}$ (each sideband carries $\beta^2/4$ of the
+    carrier power), i.e. an equivalent RMS phase wobble
+    $$ \varphi_{\mathrm{rms}} \;=\; \frac{\beta}{\sqrt{2}}
+       \;=\; \sqrt{2}\times 10^{-X/20}\ \text{rad} $$
+    Worked numbers: a
+    $-60$ dBc sideband pair is $\varphi_{\mathrm{rms}} = \sqrt2\times10^{-3}
+    \approx 1.4$ mrad of phase wobble. A fan line at $-40$ dBc (pair) on a
+    10 GHz source is 14 mrad — divided by $2\pi\nu_0$ that is
+    $2.3\times10^{-13}$ s $\approx 0.23$ ps of timing wobble, often the single
+    largest entry in the jitter budget of an otherwise excellent synthesizer.
+  </p>
+
+  <div class="callout lab">
+    <div class="callout-title">Lab note — hunting spurs by their behavior</div>
+    Spurs confess under interrogation. The mains ladder is rock-solid in
+    frequency (exact multiples of 50/60 Hz) and survives everything short of a
+    battery supply. Vibration spurs shift or vanish when you touch the table,
+    kill the fan, or put the source on foam — and they multiply up with
+    frequency like all phase modulation. Reference and comparison-frequency
+    spurs in a synthesizer sit at exact multiples of the PLL comparison
+    frequency and move when you change the loop's division ratio
+    (chapter&nbsp;10). Five minutes of poking beats an afternoon of shielding
+    the wrong thing.
+  </div>
+
+  <h2>When the carrier dissolves: linewidth</h2>
+  <p>
+    The sideband picture assumed $\varphi_{\mathrm{rms}} \ll 1$ rad. What if
+    the phase wanders by <em>many</em> radians — as it always eventually does
+    for any FM-type noise, since random-walk phase grows without bound? Then
+    the "carrier plus small sidebands" decomposition fails: the sidebands
+    merge with the carrier and the line acquires a nonzero width of its own,
+    a <strong>linewidth</strong>, independent of how long you measure.
+  </p>
+  <p>
+    The classic solvable case is pure white frequency noise,
+    $S_{\delta\nu}(f) = h_0$ (one-sided, in $\text{Hz}^2/\text{Hz}$). Sketch
+    of the argument: $\varphi$ is then a random walk, so the phase accumulated
+    over a lag $\tau$ is Gaussian with variance
+    $\langle\Delta\varphi^2\rangle = 2\pi^2 h_0 \tau$ (integrate the white
+    driving noise). The field's coherence is
+    $\langle e^{i\Delta\varphi}\rangle = e^{-\langle\Delta\varphi^2\rangle/2}
+    = e^{-\pi^2 h_0 \tau}$ — exponential decay of correlation, and the
+    Fourier transform of an exponential is a Lorentzian. The result:
+  </p>
+  <p>
+    $$ \text{the line is Lorentzian with FWHM}\quad
+       \Delta\nu = \pi\, h_0 . $$
+  </p>
+  <p>
+    A curiously clean formula: the linewidth doesn't depend on any bandwidth
+    or measurement time, just on the white FM level, with a bare $\pi$ in
+    front. Watch it happen:
+  </p>
+
+  <figure class="demo">
+    <figcaption>Phase diffusion turns a spike into a Lorentzian</figcaption>
+    <p class="demo-note">A 64 Hz oscillator with pure white FM at level
+      $h_0$. At small $h_0$ the line is a resolution-limited spike (width set
+      by $1/T_{\mathrm{seg}}$, chapter 1); raise $h_0$ and it fattens into
+      the predicted Lorentzian (dashed), FWHM $=\pi h_0$. Note the wings
+      always agree — they are the small-angle sidebands $S_\varphi/4 = h_0/4f^2$,
+      valid far from the carrier even when the center is not.</p>
+    <div class="controls" id="ctl-lw"></div>
+    <div class="plots"><div id="plot-lw"></div></div>
+  </figure>
+
+  <p>
+    For noise spectra other than white FM, which parts of $S_\varphi(f)$ end
+    up in the linewidth and which in the wings is answered by the
+    <strong>β-separation line</strong> $S_\varphi(f) = 8\ln 2\, f/\pi^2$:
+    roughly, spectral regions where $S_\varphi$ lies <em>above</em> this line
+    contribute to the (Gaussian-ish) core and its width, while regions below
+    it only decorate the wings — a very useful rule of thumb when you have a
+    measured $S_\varphi$ and want a number to quote.
+  </p>
+
+  <div class="callout warn">
+    <div class="callout-title">The "1-<span class="nocase">Hz</span>-linewidth laser" irony</div>
+    $\Delta\nu = \pi h_0$ is a statement about <em>white</em> frequency noise
+    only. Every real laser also has flicker FM
+    ($S_{\delta\nu} \propto 1/f$) and worse at low $f$, and for those the
+    accumulated phase variance grows faster than linearly in $\tau$ — so the
+    apparent linewidth <em>keeps growing with observation time</em> and no
+    single number exists (chapter 5's divergent low-frequency integrals,
+    striking again). A "1 Hz linewidth" claim is really a claim about $h_0$,
+    valid over the quoted measurement time, and honest papers say so. This is
+    a big part of why the clock community abandons linewidth altogether in
+    favor of the Allan deviation — next chapter.
+  </div>
+
+  <h2>From phase noise to jitter</h2>
+  <p>
+    Managers and datasheets want the whole $\mathcal{L}(f)$ curve boiled down
+    to one number. The honest way to do it is to integrate: the total RMS
+    phase excursion contributed by a band $[f_1, f_2]$ of the spectrum is
+    $$ \varphi_{\mathrm{rms}} \;=\; \sqrt{\int_{f_1}^{f_2} S_\varphi(f)\,df}
+       \;=\; \sqrt{2\!\int_{f_1}^{f_2} \mathcal{L}(f)\,df} $$
+    (with $\mathcal{L}$ in linear units, not dB), and dividing radians by
+    $2\pi\nu_0$ converts phase to seconds of <strong>timing jitter</strong> —
+    the time-error bookkeeping of the map below. One warning, straight from
+    chapter&nbsp;5: this integral is almost never band-independent. Under a
+    flat (white-PM) region it grows linearly with the upper cutoff $f_2$;
+    under a $1/f$ region, logarithmically with <em>both</em> cutoffs; under
+    anything steeper it blows up as $f_1$ pushes toward the carrier. A real
+    $\mathcal{L}(f)$ is steep close in and flat far out — divergent at both
+    ends — so a quoted jitter number is <em>meaningless without its
+    integration band</em>. Hence the datasheet
+    conventions — telecom quotes 12 kHz–20 MHz, and a jitter number without a
+    band deserves the same suspicion as a linewidth without a measurement
+    time.
+  </p>
+  <p>
+    Worked example, matching the default preset of the demo below: an
+    oscillator whose $\mathcal{L}$ is flat at $-170$ dBc/Hz across
+    12 kHz–20 MHz has
+    $\varphi_{\mathrm{rms}} = \sqrt{2\times 10^{-17} \times 2.0\times 10^{7}}
+    = 2.0\times 10^{-5}$ rad $= 20\ \mu$rad; at $\nu_0 = 100$ MHz that is
+    $\varphi_{\mathrm{rms}}/2\pi\nu_0 = 3.2\times10^{-14}$ s — about 32 fs of
+    timing jitter.
+  </p>
+
+  <h2>A model oscillator: Leeson's formula</h2>
+  <p>
+    Everything so far <em>describes</em> oscillator noise; nothing yet
+    <em>predicts</em> it. The classic predictive model (D.&nbsp;B. Leeson,
+    1966) is disarmingly simple and earns its keep in every RF design
+    review. An oscillator is just two parts in a ring: an
+    <strong>amplifier</strong> (noise figure $F$, carrier power $C$) whose
+    output is filtered by a <strong>resonator</strong> and fed back to its
+    own input —
+  </p>
+
+  <svg viewBox="0 0 520 200" style="max-width:520px;display:block;margin:6px auto 14px;">
+    <defs>
+      <marker id="lee-arr" markerWidth="8" markerHeight="8" refX="5.5" refY="3"
+        orient="auto"><path d="M0 0 L6 3 L0 6 Z" fill="var(--axis)"/></marker>
+    </defs>
+    <g fill="none" stroke="var(--axis)" stroke-width="1.6">
+      <!-- amplifier triangle -->
+      <path d="M85 60 V110 L145 85 Z"/>
+      <!-- amp output -> resonator -->
+      <path d="M145 85 H192" marker-end="url(#lee-arr)"/>
+      <!-- resonator box with a resonance-peak curve -->
+      <rect x="196" y="58" width="112" height="54"/>
+      <path d="M204 104 C 234 104 240 66 252 66 C 264 66 270 104 300 104"
+        stroke-width="1.3"/>
+      <!-- resonator -> output -->
+      <path d="M308 85 H452" marker-end="url(#lee-arr)"/>
+      <!-- feedback path: tap after the resonator, back to the amp input -->
+      <path d="M368 85 V158 H52 V85 H78" marker-end="url(#lee-arr)"/>
+      <!-- the amplifier's own noise entering at the top -->
+      <path d="M115 26 q -6 8 0 16 q 6 8 0 16 V70" stroke-dasharray="4 3"
+        marker-end="url(#lee-arr)"/>
+    </g>
+    <circle cx="368" cy="85" r="3" fill="var(--axis)"/>
+    <g font-family="system-ui, sans-serif" font-size="12" fill="var(--ink-2)">
+      <text x="103" y="129" text-anchor="middle">amplifier</text>
+      <text x="103" y="143" text-anchor="middle">F, C</text>
+      <text x="252" y="129" text-anchor="middle">resonator</text>
+      <text x="252" y="143" text-anchor="middle">ν₀, Q<tspan
+        baseline-shift="sub" font-size="9">L</tspan></text>
+      <text x="252" y="50" text-anchor="middle" font-size="11">passes only
+        ν₀ ± ν₀/2Q<tspan baseline-shift="sub" font-size="8">L</tspan></text>
+      <text x="460" y="80">output</text>
+      <text x="210" y="177" text-anchor="middle" font-size="11">feedback:
+        whatever survives the resonator is re-amplified</text>
+      <text x="128" y="20" font-size="11">the amplifier adds its flat
+        phase-noise floor F·k<tspan baseline-shift="sub"
+        font-size="8">B</tspan>T/2C</text>
+    </g>
+  </svg>
+
+  <p>
+    The resonator is summarized by one number, its <strong>quality
+    factor</strong> $Q = \nu_0/\Delta\nu$: the resonance frequency divided by
+    the resonance's full width — equivalently, roughly the number of
+    oscillation cycles before the stored energy rings down. In a circuit some
+    energy leaks out through the couplings, so the working number is the
+    lower <em>loaded</em> quality factor $Q_L$, and the resonator only
+    responds within $\nu_0/2Q_L$ of resonance.
+  </p>
+  <p>
+    Now feed the amplifier's additive phase noise — the flat floor
+    $Fk_B T/2C$ of the previous section — into this ring, and ask what comes
+    out. Three regions, from far away moving in toward the carrier:
+  </p>
+  <ul>
+    <li><strong>Beyond the resonator bandwidth</strong> ($f &gt;
+      \nu_0/2Q_L$): the resonator cannot respond this fast, the loop does
+      nothing, and the floor passes straight to the output. Flat — white
+      PM.</li>
+    <li><strong>Inside the resonator bandwidth</strong> ($f &lt;
+      \nu_0/2Q_L$): the loop converts the amplifier's phase fluctuations
+      into <em>frequency</em> fluctuations of the whole oscillator. White
+      phase in becomes white frequency out, and by the boxed identity white
+      FM means $S_\varphi \propto 1/f^2$: the noise rises 20 dB per decade
+      toward the carrier.</li>
+    <li><strong>Below the flicker corner</strong> ($f &lt; f_c$): the
+      transistor's own $1/f$ flicker noise phase-modulates the carrier
+      directly, multiplying whatever is there by a further $1/f$.</li>
+  </ul>
+  <p>
+    Stack the three effects and you have Leeson's formula:
+  </p>
+  <p>
+    $$ \mathcal{L}(f) \;=\; \frac{F\,k_B T}{2C}\,
+       \left[\,1 + \Big(\frac{\nu_0}{2 Q_L f}\Big)^{\!2}\right]
+       \left(1 + \frac{f_c}{f}\right). $$
+  </p>
+  <p>
+    Read from the carrier outward: an $f^{-3}$ region
+    (flicker FM), then $f^{-2}$ (white FM), then the flat additive floor
+    (white PM), with the breakpoints at $f_c$ and at $\nu_0/2Q_L$. When the
+    two breakpoints swap order — as in high-$Q$ crystal oscillators, where
+    $\nu_0/2Q_L$ can be tens of hertz — a $1/f$ flicker-PM shelf appears
+    between them instead; the demo shows it.
+  </p>
+  <p>
+    Two morals. <strong>First</strong>, inside the resonator
+    bandwidth $\mathcal{L} \propto F/Q_L^2$: the figure of merit is $F/Q^2$,
+    so doubling $Q_L$ buys 6 dB where halving $F$ buys only 3 — a factor of
+    two in $Q$ is worth four times more than a factor of two in noise figure.
+    That is why the quietest sources are built around resonators of extreme
+    quality factor — quartz crystals ($Q_L \sim 10^4$–$10^6$), then microwave
+    cavities, and ultimately atomic resonances. <strong>Second</strong>, at
+    fixed $F$, $Q_L$ and $C$ the model scales as $(\nu_0/f)^2$, so
+    $\mathcal{L} \propto \nu_0^2$. But an ideal frequency multiplier
+    $\times N$ multiplies phase — hence $S_\varphi$ and $\mathcal{L}$ — by
+    exactly $N^2$, a cost of $+20\log_{10}N$ dB. The two scalings cancel:
+    <em>frequency multiplication is noise-neutral in this model</em>. A
+    100 MHz oscillator multiplied $\times 100$ to 10 GHz lands on the same
+    curve as a hypothetical 10 GHz oscillator with the same $Q_L$, $F$, $C$.
+    The real reason to build low and multiply is that the best resonators are
+    low-frequency objects: crystals with $Q_L \sim 10^6$ exist at
+    5–120 MHz and nowhere else. Chapter&nbsp;10 leans on this constantly.
+  </p>
+
+  <figure class="demo">
+    <figcaption>Leeson's model: dial an oscillator</figcaption>
+    <p class="demo-note">Pick a preset, then pull the sliders. The dashed
+      vertical guides mark the two breakpoints $f_c$ and $\nu_0/2Q_L$; the
+      dashed horizontal guide is the additive floor $Fk_B T/2C$; the short gray
+      segments label the local slope. The readouts integrate the model over
+      the telecom band 12 kHz–20 MHz. With the "×100" preset the entire OCXO
+      curve rides up rigidly by $+40$ dB — that is what frequency
+      multiplication does to phase noise.</p>
+    <div class="controls" id="ctl-leeson"></div>
+    <div class="plots"><div id="plot-leeson"></div></div>
+  </figure>
+
+  <p>
+    Race the presets against each other. Close to the carrier the multiplied
+    crystal wins by a mile: at 1 kHz offset the OCXO$\,\times 100$ sits some
+    30 dB below the 10 GHz dielectric-resonator oscillator, because no
+    microwave resonator comes near a crystal's $Q_L$. Far from the carrier the
+    DRO wins instead — multiplication dragged the OCXO's noise <em>floor</em>
+    up by the same 40 dB, and the readouts show the DRO with the smaller
+    12 kHz–20 MHz jitter. (Note also that the OCXO's timing jitter is
+    unchanged by multiplication: $\varphi_{\mathrm{rms}}$ grows $\times 100$
+    but so does $\nu_0$.) The best 10 GHz source is therefore neither: it is
+    the DRO phase-locked to the multiplied crystal, quiet crystal close in,
+    quiet DRO far out — precisely the architecture chapter&nbsp;10 builds.
+  </p>
+
+  <h2>The bookkeeping map</h2>
+  <p>
+    Four equivalent descriptions of the same phase wandering, and the
+    conversion factors between their PSDs — this half-page is worth pinning
+    above your desk:
+  </p>
+
+  <table>
+    <thead>
+      <tr><th>process</th><th>units</th><th>PSD, from the phase PSD</th><th>who uses it</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>phase error $\varphi(t)$</td><td>rad</td>
+          <td>$S_\varphi(f)$</td><td>RF engineers, via $\mathcal{L} = S_\varphi/2$</td></tr>
+      <tr><td>frequency error $\delta\nu(t) = \dot\varphi/2\pi$</td><td>Hz</td>
+          <td>$S_{\delta\nu}(f) = f^2\, S_\varphi(f)$</td><td>laser people (linewidth $=\pi h_0$)</td></tr>
+      <tr><td>fractional frequency $y(t) = \delta\nu/\nu_0$</td><td>—</td>
+          <td>$S_y(f) = \dfrac{f^2}{\nu_0^2}\, S_\varphi(f)$</td><td>clock people (input to $\sigma_y(\tau)$)</td></tr>
+      <tr><td>time error $x(t) = \varphi/2\pi\nu_0$</td><td>s</td>
+          <td>$S_x(f) = \dfrac{S_\varphi(f)}{(2\pi\nu_0)^2}$</td><td>timekeeping &amp; navigation</td></tr>
+    </tbody>
+  </table>
+
+  <p>
+    Two sanity checks on the factors. First, $y = \dot x$ (fractional
+    frequency is the slope of the time error), so the derivative theorem
+    demands $S_y = (2\pi f)^2 S_x$ — and indeed
+    $(2\pi f)^2 \cdot S_\varphi/(2\pi\nu_0)^2 = (f^2/\nu_0^2) S_\varphi$.
+    Second, dividing by $\nu_0$ or $2\pi\nu_0$ never changes the <em>shape</em>
+    in $f$; only the $\varphi \leftrightarrow \delta\nu$ hop, a time
+    derivative, tilts the spectrum by $f^2$. In chapter 7, the whole function
+    $S_y(f)$ gets compressed into a single curve, the Allan deviation
+    $\sigma_y(\tau)$ — the natural language for "how good is this clock at
+    averaging time $\tau$".
+  </p>
+
+  <h2>The same thing in code</h2>
+  <p>
+    Synthesizing an oscillator with a prescribed white FM level $h_0$ is four
+    lines — the recipe behind the last demo, and the discrete-time version of
+    "phase integrates frequency" (recall from chapter 4 that discrete white
+    noise of standard deviation $\sigma$ at rate $f_s$ has one-sided PSD
+    $2\sigma^2/f_s$, hence $\sigma = \sqrt{h_0 f_s/2}$):
+  </p>
+<pre><code>// oscillator with one-sided white FM level S_dnu(f) = h0  [Hz^2/Hz]
+const sigma = Math.sqrt(h0 * fs / 2);      // std of delta-nu per sample, in Hz
+let phi = 0;
+for (let i = 0; i &lt; N; i++) {
+  const dnu = sigma * Noise.randn(rand);   // instantaneous frequency error
+  phi += 2 * Math.PI * dnu / fs;           // phase integrates frequency
+  V[i] = Math.cos(2 * Math.PI * nu0 * i / fs + phi);
+}</code></pre>
+
+  <h2>Exercises</h2>
+
+  <div class="exercise">
+    <div class="ex-label">Exercise 6.1 — the full conversion chain</div>
+    <p>A 10 MHz quartz oscillator datasheet quotes
+    $\mathcal{L}(10\,\text{kHz}) = -110$ dBc/Hz. Convert this to (i)
+    $S_\varphi$ at that offset, (ii) $S_{\delta\nu}$ at that offset, and (iii)
+    $S_y$ at that offset.</p>
+    <details><summary>Solution</summary>
+      <p>(i) $\mathcal{L} = 10^{-11}$ per Hz, so
+      $S_\varphi = 2\mathcal{L} = 2\times 10^{-11}\ \text{rad}^2/\text{Hz}$.
+      (ii) $S_{\delta\nu} = f^2 S_\varphi = (10^4)^2 \cdot 2\times 10^{-11}
+      = 2\times 10^{-3}\ \text{Hz}^2/\text{Hz}$.
+      (iii) $S_y = S_{\delta\nu}/\nu_0^2 = 2\times 10^{-3}/(10^7)^2
+      = 2\times 10^{-17}\ /\text{Hz}$. Note how unremarkable-looking numbers
+      in one bookkeeping become extreme in another — always write the units.</p>
+    </details>
+  </div>
+
+  <div class="exercise">
+    <div class="ex-label">Exercise 6.2 — is the small-angle picture valid?</div>
+    <p>An oscillator has flat $S_\varphi = 10^{-10}\ \text{rad}^2/\text{Hz}$
+    from 1 Hz to 100 kHz (and negligible noise outside). What is
+    $\varphi_{\mathrm{rms}}$, and is the narrowband-PM formula
+    $\mathcal{L} = S_\varphi/2$ trustworthy here?</p>
+    <details><summary>Solution</summary>
+      <p>$\varphi_{\mathrm{rms}}^2 = \int S_\varphi\, df
+      = 10^{-10} \times (10^5 - 1) \approx 10^{-5}\ \text{rad}^2$, so
+      $\varphi_{\mathrm{rms}} \approx 3.2$ mrad. That is spectacularly small
+      compared to 1 rad, so yes — the carrier is intact and
+      $\mathcal{L} = S_\varphi/2$ describes the screen perfectly.</p>
+    </details>
+  </div>
+
+  <div class="exercise">
+    <div class="ex-label">Exercise 6.3 — laser linewidth from white FM</div>
+    <p>A diode laser's frequency noise is measured to be white,
+    $S_{\delta\nu}(f) = h_0 = 1\ \text{Hz}^2/\text{Hz}$, over the relevant
+    band. What is its linewidth?</p>
+    <details><summary>Solution</summary>
+      <p>$\Delta\nu = \pi h_0 = \pi \times 1 \approx 3.1$ Hz (FWHM, Lorentzian).
+      A pleasingly literal appearance of $\pi$: 1 unit of white frequency
+      noise makes $\pi$ units of linewidth.</p>
+    </details>
+  </div>
+
+  <div class="exercise">
+    <div class="ex-label">Exercise 6.4 — drift breaks stationarity</div>
+    <p>An oscillator drifts linearly: $\nu(t) = \nu_0 + Dt$ with $D$ in Hz/s
+    (a warming quartz crystal, an aging laser cavity). Find $\varphi(t)$ and
+    explain why no stationary $S_\varphi(f)$ or $S_{\delta\nu}(f)$ describes
+    this signal.</p>
+    <details><summary>Solution</summary>
+      <p>$\varphi(t) = 2\pi\!\int_0^t (\nu(t')-\nu_0)\,dt' = 2\pi\cdot
+      \tfrac{1}{2}Dt^2 = \pi D t^2$. This grows deterministically and without
+      bound — its statistics depend on absolute time, so the process is not
+      stationary and the PSD machinery of chapter 4 does not apply (an FFT of
+      a finite record shows a smeared chirp whose shape depends on the record
+      length, not a well-defined spectrum). Drift needs a different tool: it
+      appears in chapter 7 as the $\sigma_y \propto \tau$ ramp at long
+      averaging times in the Allan deviation.</p>
+    </details>
+  </div>
+
+  <div class="exercise">
+    <div class="ex-label">Exercise 6.5 — reading a beat note</div>
+    <p>You beat two nominally identical lasers on a photodiode and the beat
+    note is Lorentzian with a 2 kHz FWHM. Assuming white FM noise and equal,
+    independent lasers, what is each laser's $h_0$?</p>
+    <details><summary>Solution</summary>
+      <p>For independent Lorentzian lines the beat's linewidth is the
+      <em>sum</em> of the two linewidths (the frequency noises add:
+      $S_{\delta\nu,\mathrm{beat}} = 2h_0$), so each laser has
+      $\Delta\nu = 1$ kHz $= \pi h_0$, giving
+      $h_0 = 1000/\pi \approx 318\ \text{Hz}^2/\text{Hz}$. This is the
+      standard way to measure laser linewidths — a single laser has nothing
+      to beat against, so you build two.</p>
+    </details>
+  </div>
+
+  <div class="exercise">
+    <div class="ex-label">Exercise 6.6 — the additive floor</div>
+    <p>A $-20$ dBm signal passes through a receiver chain with noise figure
+    $F = 10$ dB. What is the best possible phase-noise floor of the signal at
+    the chain's output? Why doesn't the chain's gain appear in the answer?</p>
+    <details><summary>Solution</summary>
+      <p>$\mathcal{L}_{\text{floor}} = -177 + F_{\mathrm{dB}} - C_{\mathrm{dBm}}
+      = -177 + 10 - (-20) = -147$ dBc/Hz. Gain is absent because it amplifies
+      the carrier and the added noise alike, leaving the ratio untouched —
+      only the input-referred noise ($Fk_B T$) and the carrier power matter.
+      Compare the $+10$ dBm, $F = 6$ dB example in the text ($-181$ dBc/Hz):
+      34 dB of floor separates a strong signal in a good chain from a weak
+      signal in a mediocre one.</p>
+    </details>
+  </div>
+
+  <div class="exercise">
+    <div class="ex-label">Exercise 6.7 — what a better resonator buys</div>
+    <p>A 10 GHz oscillator is evaluated at 1 kHz offset. (a) Its loaded
+    quality factor is raised from $Q_L = 10^3$ to $10^4$ — by how much does
+    $\mathcal{L}(1\,\text{kHz})$ improve? (b) What if, instead, the
+    amplifier's noise figure were halved? (Check first that 1 kHz lies inside
+    the resonator half-bandwidth in both cases.)</p>
+    <details><summary>Solution</summary>
+      <p>The half-bandwidth $\nu_0/2Q_L$ is 5 MHz at $Q_L = 10^3$ and 500 kHz
+      at $10^4$ — both $\gg$ 1 kHz, so the offset is deep inside the $1/f^2$
+      region where $\mathcal{L} \propto F/Q_L^2$. (a) Ten times the $Q_L$
+      means $100\times$ less noise power: a <strong>20 dB</strong>
+      improvement. (b) Halving $F$ buys only 3 dB. That asymmetry is the
+      $F/Q^2$ moral: engineer the resonator first, the transistor second.</p>
+    </details>
+  </div>
+
+  <div class="exercise">
+    <div class="ex-label">Exercise 6.8 — a spur becomes jitter</div>
+    <p>A 10 GHz synthesizer shows a PM sideband pair at $\pm f_m$, each
+    sideband at $-50$ dBc. What equivalent RMS phase wobble does the pair
+    represent, and how much timing wobble is that?</p>
+    <details><summary>Solution</summary>
+      <p>$\varphi_{\mathrm{rms}} = \sqrt{2}\times 10^{-50/20}
+      = \sqrt{2}\times 3.16\times10^{-3} \approx 4.5$ mrad. In time:
+      $\varphi_{\mathrm{rms}}/2\pi\nu_0 = 4.47\times10^{-3}/(2\pi\times
+      10^{10}) = 7.1\times 10^{-14}$ s $\approx 71$ fs — from one pair of
+      lines 50 dB down. Spurs punch far above their apparent weight on a log
+      plot.</p>
+    </details>
+  </div>
+
+  <div class="exercise">
+    <div class="ex-label">Exercise 6.9 — datasheet jitter</div>
+    <p>A 100 MHz OCXO has $\mathcal{L}(f) = -160$ dBc/Hz, flat from 12 kHz to
+    20 MHz, with negligible contribution outside that band. Compute the RMS
+    phase jitter over the telecom band and the corresponding timing jitter.</p>
+    <details><summary>Solution</summary>
+      <p>$\varphi_{\mathrm{rms}}^2 = 2\!\int \mathcal{L}\,df
+      = 2\times 10^{-16} \times (2.0\times 10^{7} - 1.2\times 10^{4})
+      \approx 4.0\times 10^{-9}\ \text{rad}^2$, so
+      $\varphi_{\mathrm{rms}} = 6.3\times 10^{-5}$ rad. Timing:
+      $6.3\times10^{-5}/(2\pi\times 10^{8}) = 1.0\times10^{-13}$ s
+      $= 0.10$ ps. Note the lower band edge barely matters here — a flat
+      spectrum is dominated by its upper edge. Move the same $-160$ dBc/Hz
+      into a $1/f$ region and the edges would rule instead, which is why the
+      band must always be quoted.</p>
+    </details>
+  </div>
+
+  <nav class="pager">
+    <a class="prev" href="05-noise-colors.html"><span class="dir">Previous · Chapter 5</span>
+      The colors of noise</a>
+    <a class="next" href="07-allan.html"><span class="dir">Next · Chapter 7</span>
+      Allan deviation and clock stability</a>
+  </nav>
+</main>
+
+<script src="../js/lib/fft.js"></script>
+<script src="../js/lib/noise.js"></script>
+<script src="../js/lib/plot.js"></script>
+<script src="../js/lib/ui.js"></script>
+<script>
+'use strict';
+
+/* Decimate a Float64Array for display. */
+function decimate(x, step) {
+  const n = Math.floor(x.length / step);
+  const y = new Float64Array(n);
+  for (let i = 0; i < n; i++) y[i] = x[i * step];
+  return y;
+}
+
+/* Dashed power-law slope guide anchored to the data value near anchorF. */
+function slopeGuide(plot, fEst, pEst, slope, anchorF, fLo, fHi, label) {
+  let s = 0, c = 0;
+  for (let i = 0; i < fEst.length; i++) {
+    if (fEst[i] >= anchorF / 1.4 && fEst[i] <= anchorF * 1.4 && pEst[i] > 0) {
+      s += Math.log(pEst[i]); c++;
+    }
+  }
+  if (!c) return;
+  const A = Math.exp(s / c) * 4;   // float the guide a bit above the data
+  const n = 40;
+  const f = new Float64Array(n), y = new Float64Array(n);
+  for (let i = 0; i < n; i++) {
+    f[i] = fLo * Math.pow(fHi / fLo, i / (n - 1));
+    y[i] = A * Math.pow(f[i] / anchorF, slope);
+  }
+  plot.line(f, y, { color: '#898781', width: 1, dash: [5, 4], label: label });
+}
+
+/* ---------- demo 1: one noise, two spectra ---------- */
+(function () {
+  const fs = 256, N = 1 << 15;           // 32768 samples = 128 s
+  const pPhi = new Plot('#plot-onetwo-phi', {
+    xlabel: 'time (s)', ylabel: 'φ(t) (rad)', height: 240, xunit: 's', yunit: 'rad'
+  });
+  const pDnu = new Plot('#plot-onetwo-dnu', {
+    xlabel: 'time (s)', ylabel: 'δν(t) (Hz)', height: 240, xunit: 's', yunit: 'Hz'
+  });
+  const pSphi = new Plot('#plot-onetwo-sphi', {
+    xlabel: 'offset frequency f (Hz)', ylabel: 'S_φ(f)  (rad²/Hz)', height: 280,
+    xlog: true, ylog: true, xunit: 'Hz'
+  });
+  const pSdnu = new Plot('#plot-onetwo-sdnu', {
+    xlabel: 'offset frequency f (Hz)', ylabel: 'S_δν(f)  (Hz²/Hz)', height: 280,
+    xlog: true, ylog: true, xunit: 'Hz'
+  });
+  const ctl = '#ctl-onetwo';
+  let seed = 61;
+  const type = UI.select(ctl, {
+    label: 'noise type',
+    options: [
+      { value: 'wfm', label: 'white FM  (S_δν flat → S_φ ∝ 1/f²)' },
+      { value: 'wpm', label: 'white PM  (S_φ flat → S_δν ∝ f²)' },
+      { value: 'ffm', label: 'flicker FM  (S_δν ∝ 1/f → S_φ ∝ 1/f³)' }
+    ],
+    value: 'wfm', onChange: draw
+  });
+  const level = UI.slider(ctl, { label: 'noise level', min: 0.2, max: 5,
+    log: true, value: 1, fmt: v => v.toFixed(2), onInput: draw });
+  UI.button(ctl, { label: 'new sample ↻', onClick: () => { seed++; draw(); } });
+  const phiRms = UI.readout(ctl, { label: 'φ RMS over record' });
+
+  const GUIDES = {   // [slope of S_φ, label, slope of S_δν, label]
+    wpm: [0, 'f⁰', 2, 'f²'],
+    wfm: [-2, '1/f²', 0, 'f⁰'],
+    ffm: [-3, '1/f³', -1, '1/f']
+  };
+  const LIMS = {};   // per-type fixed axis limits (see draw)
+
+  function draw() {
+    const rand = Noise.rng(seed);
+    const s = 0.2 * level.value;         // scale of the driving noise
+    const phi = new Float64Array(N);
+    if (type.value === 'wpm') {
+      for (let i = 0; i < N; i++) phi[i] = s * Noise.randn(rand);
+    } else if (type.value === 'wfm') {
+      let p = 0;
+      for (let i = 0; i < N; i++) {
+        p += 2 * Math.PI * s * Noise.randn(rand) / fs;
+        phi[i] = p;
+      }
+    } else {
+      const pink = Noise.powerLaw(N, 1, rand);   // unit-RMS 1/f noise as δν
+      let p = 0;
+      for (let i = 0; i < N; i++) {
+        p += 2 * Math.PI * s * pink[i] / fs;
+        phi[i] = p;
+      }
+    }
+    // numerical frequency noise: forward difference of the phase
+    const dnu = new Float64Array(N - 1);
+    for (let i = 0; i < N - 1; i++) {
+      dnu[i] = (phi[i + 1] - phi[i]) * fs / (2 * Math.PI);
+    }
+
+    // spectra (75% overlap: more segment averaging, less bin-to-bin scatter)
+    const sp = FFT.welch(phi, fs, { nseg: 4096, overlap: 0.75 });
+    const sd = FFT.welch(dnu, fs, { nseg: 4096, overlap: 0.75 });
+    const g = GUIDES[type.value];
+
+    // the first two bins of each Welch estimate carry the worst finite-record
+    // leakage for steep spectra; start the display at bin 3.
+    const k0 = 3;
+
+    // Axis policy, all deterministic. The log PSD panels get FIXED per-type
+    // limits sized once to cover the slider's whole range (level² is a 625×
+    // spread — log axes absorb it). The LINEAR time panels cannot absorb a
+    // 25× spread without the trace looking lost, so their limits scale
+    // smoothly WITH the level (∝ s): dragging the slider moves the labels
+    // deterministically, and switching noise type always shows a trace that
+    // fills the panel. Limits are cached per type in unit-noise units.
+    if (!LIMS[type.value]) {
+      const pk = (arr) => {
+        let m = 0;
+        for (let i = 0; i < arr.length; i++) {
+          const a = Math.abs(arr[i]);
+          if (a > m) m = a;
+        }
+        return m;
+      };
+      let sLo = Infinity, sHi = 0, dLo = Infinity, dHi = 0;
+      for (let k = k0; k < sp.psd.length; k++) {
+        if (sp.psd[k] > sHi) sHi = sp.psd[k];
+        if (sp.psd[k] < sLo) sLo = sp.psd[k];
+      }
+      for (let k = k0; k < sd.psd.length; k++) {
+        if (sd.psd[k] > dHi) dHi = sd.psd[k];
+        if (sd.psd[k] < dLo) dLo = sd.psd[k];
+      }
+      // s ranges over 0.04–1 (level 0.2–5), PSDs over s²: 1.6e-3–1 of the
+      // unit-noise value, with a 2× margin either side.
+      LIMS[type.value] = {
+        phi: pk(phi) / s * 1.5,      // extra headroom: walks vary seed-to-seed
+        dnu: pk(dnu) / s * 1.25,
+        sphi: [sLo / (s * s) * 8e-4, sHi / (s * s) * 2],
+        sdnu: [dLo / (s * s) * 8e-4, dHi / (s * s) * 2]
+      };
+    }
+    const lim = LIMS[type.value];
+    pPhi.o.ylim = [-lim.phi * s, lim.phi * s];
+    pDnu.o.ylim = [-lim.dnu * s, lim.dnu * s];
+    pSphi.o.ylim = lim.sphi;
+    pSdnu.o.ylim = lim.sdnu;
+
+    // Only NOW render — every panel must be drawn after the limits above,
+    // or a noise-type switch shows the new data on the old type's axes.
+    const step = 16;
+    const phiD = decimate(phi, step), dnuD = decimate(dnu, step);
+    const t = new Float64Array(phiD.length);
+    for (let i = 0; i < t.length; i++) t[i] = i * step / fs;
+    pPhi.clear();
+    pPhi.line(t, phiD, {});
+    pPhi.draw();
+    pDnu.clear();
+    pDnu.line(t.subarray(0, dnuD.length), dnuD, {});
+    pDnu.draw();
+
+    pSphi.clear();
+    pSphi.line(sp.f.subarray(k0), sp.psd.subarray(k0), { label: 'Welch of φ(t)' });
+    slopeGuide(pSphi, sp.f, sp.psd, g[0], 1, 0.25, 40, 'slope ' + g[1]);
+    pSphi.draw();
+
+    // f² · S_φ, computed from the measured S_φ of the left panel
+    const f2sp = new Float64Array(sp.psd.length);
+    for (let k = 0; k < sp.psd.length; k++) f2sp[k] = sp.f[k] * sp.f[k] * sp.psd[k];
+
+    pSdnu.clear();
+    pSdnu.line(sd.f.subarray(k0), sd.psd.subarray(k0), { label: 'Welch of δν(t)' });
+    pSdnu.line(sp.f.subarray(k0), f2sp.subarray(k0),
+      { label: 'f²·S_φ from left panel', dash: [6, 4], color: '#eda100' });
+    slopeGuide(pSdnu, sd.f, sd.psd, g[2], 1, 0.25, 40, 'slope ' + g[3]);
+    pSdnu.draw();
+
+    phiRms.set(Noise.std(phi).toPrecision(2) + ' rad');
+  }
+  draw();
+})();
+
+/* ---------- demo: the noise phasor splits into AM and PM ---------- */
+(function () {
+  const canvas = document.getElementById('npz-canvas');
+  canvas.style.height = '300px';  // CSS-pin so backing-store size never feeds back
+  const pT = new Plot('#plot-npz-t', {
+    xlabel: 'time (s)', ylabel: 'projection (carrier amplitude = 1)',
+    height: 300, xlim: [0, 4], hover: false
+  });
+  const ctl = '#ctl-npz';
+  const fOff = UI.slider(ctl, { label: 'offset rate f', min: 0.25, max: 2,
+    step: 0.05, value: 0.5, unit: 'Hz', fmt: v => v.toFixed(2),
+    onInput: () => render(lastT) });
+  const amp = UI.slider(ctl, { label: 'noise amplitude b', min: 0.05, max: 0.4,
+    step: 0.01, value: 0.25, fmt: v => v.toFixed(2),
+    onInput: () => render(lastT) });
+  let lastT = 0.22;   // θ ≈ 40°: both projections clearly visible at rest
+
+  function arrow(ctx, x0, y0, x1, y1, color, w) {
+    ctx.strokeStyle = color;
+    ctx.fillStyle = color;
+    ctx.lineWidth = w;
+    ctx.beginPath();
+    ctx.moveTo(x0, y0); ctx.lineTo(x1, y1);
+    ctx.stroke();
+    const ang = Math.atan2(y1 - y0, x1 - x0);
+    const h = Math.max(7, 3.2 * w);
+    ctx.beginPath();
+    ctx.moveTo(x1, y1);
+    ctx.lineTo(x1 - h * Math.cos(ang - 0.4), y1 - h * Math.sin(ang - 0.4));
+    ctx.lineTo(x1 - h * Math.cos(ang + 0.4), y1 - h * Math.sin(ang + 0.4));
+    ctx.closePath();
+    ctx.fill();
+  }
+
+  function render(t) {
+    lastT = t;
+    const b = amp.value, f = fOff.value;
+    const th = 2 * Math.PI * f * t;
+    const nx = b * Math.cos(th), ny = b * Math.sin(th);
+
+    // ---- phasor pane ----
+    const dpr = window.devicePixelRatio || 1;
+    const W = canvas.clientWidth || 600, H = 300;
+    const bw = Math.round(W * dpr), bh = Math.round(H * dpr);
+    if (canvas.width !== bw || canvas.height !== bh) {
+      canvas.width = bw; canvas.height = bh;
+    }
+    const ctx = canvas.getContext('2d');
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    const dark = matchMedia('(prefers-color-scheme: dark)').matches;
+    const surface = dark ? '#1a1a19' : '#fcfcfb';
+    const grid  = dark ? '#2c2c2a' : '#e1e0d9';
+    const ink   = dark ? '#ffffff' : '#0b0b0b';
+    const muted = '#898781';
+    const cAM   = dark ? '#3987e5' : '#2a78d6';   // along carrier = plot series 1
+    const cPM   = dark ? '#199e70' : '#1baf7a';   // across carrier = plot series 2
+    const cNz   = dark ? '#c98500' : '#eda100';   // the noise phasor
+    ctx.fillStyle = surface;
+    ctx.fillRect(0, 0, W, H);
+
+    // fit x in [-0.15, 1.55], y in ±0.62 (b max 0.4 plus headroom)
+    const scale = Math.min((W - 24) / 1.7, (H - 24) / 1.24);
+    const cx = 12 + 0.15 * scale, cy = H / 2;
+    const X = v => cx + v * scale, Y = v => cy - v * scale;
+
+    ctx.strokeStyle = grid;
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(X(-0.12), cy); ctx.lineTo(X(1.55), cy);
+    ctx.moveTo(cx, Y(0.6)); ctx.lineTo(cx, Y(-0.6));
+    ctx.stroke();
+    ctx.fillStyle = muted;
+    ctx.font = '11px system-ui, sans-serif';
+    ctx.textAlign = 'left'; ctx.textBaseline = 'top';
+    ctx.fillText('rotating frame (carrier frozen)', 10, 8);
+
+    // tip path of the noise phasor: circle of radius b about the carrier tip
+    ctx.strokeStyle = muted;
+    ctx.setLineDash([5, 4]);
+    ctx.beginPath();
+    ctx.arc(X(1), cy, b * scale, 0, 2 * Math.PI);
+    ctx.stroke();
+    ctx.setLineDash([]);
+
+    // dotted drop lines from the noise tip onto the two projections
+    ctx.strokeStyle = muted;
+    ctx.setLineDash([2, 3]);
+    ctx.beginPath();
+    ctx.moveTo(X(1 + nx), Y(ny)); ctx.lineTo(X(1 + nx), Y(0));
+    ctx.moveTo(X(1 + nx), Y(ny)); ctx.lineTo(X(1), Y(ny));
+    ctx.stroke();
+    ctx.setLineDash([]);
+
+    // carrier, noise phasor (tip-to-tail), and its two projections
+    arrow(ctx, X(0), Y(0), X(1), Y(0), muted, 3);
+    arrow(ctx, X(1), Y(0), X(1 + nx), Y(ny), cNz, 2);
+    arrow(ctx, X(1), Y(0), X(1 + nx), Y(0), cAM, 2);
+    arrow(ctx, X(1), Y(0), X(1), Y(ny), cPM, 2);
+
+    const items = [[muted, 'carrier'], [cNz, 'noise phasor b, turning at f'],
+      [cAM, 'along the carrier → AM'], [cPM, 'across the carrier → PM'],
+      [muted, 'tip path (dashed)']];
+    let ly = H - items.length * 16 - 8;
+    for (const [col, lab] of items) {
+      ctx.strokeStyle = col;
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.moveTo(12, ly + 6); ctx.lineTo(30, ly + 6);
+      ctx.stroke();
+      ctx.fillStyle = ink;
+      ctx.textAlign = 'left'; ctx.textBaseline = 'top';
+      ctx.fillText(lab, 36, ly);
+      ly += 16;
+    }
+
+    // ---- the two projections in time ----
+    const span = 4, n = 481;
+    const tv = new Float64Array(n), aA = new Float64Array(n),
+          aP = new Float64Array(n);
+    for (let i = 0; i < n; i++) {
+      tv[i] = span * i / (n - 1);
+      const p = 2 * Math.PI * f * tv[i];
+      aA[i] = b * Math.cos(p);
+      aP[i] = b * Math.sin(p);
+    }
+    pT.o.ylim = [-1.35 * b, 1.35 * b];   // deterministic: follows the slider
+    pT.clear();
+    pT.guideY(b / Math.SQRT2, { label: 'RMS = b/√2 (half the power each)',
+      color: '#898781', dash: [6, 4] });
+    pT.guideY(-b / Math.SQRT2, { color: '#898781', dash: [6, 4] });
+    pT.line(tv, aA, { label: 'along the carrier: δA(t)' });
+    pT.line(tv, aP, { label: 'across the carrier: A·δφ(t)' });
+    pT.guideX(t % span, { color: '#eda100' });
+    pT.draw();
+  }
+
+  UI.playButton(ctl, { onFrame: t => render(t + 0.22) });
+  render(lastT);
+})();
+
+/* ---------- demo 2: RF spectrum, L(f), AM vs PM ---------- */
+(function () {
+  const fs = 512, N = 1 << 15, nu0 = 64, nseg = 8192, fB = 48;
+  const df = fs / nseg;
+  const plot = new Plot('#plot-lf', {
+    xlabel: 'frequency (Hz)', ylabel: 'PSD of V  (1/Hz)', height: 330,
+    ylog: true, xlim: [0, 128], ylim: [1e-10, 50], xunit: 'Hz'
+  });
+
+  // white noise with one-sided PSD S over 0..fB, zero above (FFT brick wall),
+  // so all sidebands stay within +-fB of the carrier and nothing folds.
+  function bandWhite(S, rand) {
+    const re = new Float64Array(N), im = new Float64Array(N);
+    const sig = Math.sqrt(S * fs / 2);
+    for (let i = 0; i < N; i++) re[i] = sig * Noise.randn(rand);
+    FFT.fft(re, im);
+    const kMax = Math.floor(fB * N / fs);
+    for (let k = 0; k <= N / 2; k++) {
+      if (k > kMax) {
+        re[k] = 0; im[k] = 0;
+        if (k !== 0 && k !== N / 2) { re[N - k] = 0; im[N - k] = 0; }
+      }
+    }
+    FFT.ifft(re, im);
+    return re;
+  }
+  const ctl = '#ctl-lf';
+  let seed = 41;
+  const sphi = UI.slider(ctl, { label: 'S_φ (rad²/Hz)', min: 1e-7, max: 1e-3,
+    log: true, value: 1e-4, fmt: v => v.toExponential(1), onInput: draw });
+  const sa = UI.slider(ctl, { label: 'S_a (1/Hz)', min: 1e-7, max: 1e-3,
+    log: true, value: 1e-5, fmt: v => v.toExponential(1), onInput: draw });
+  UI.button(ctl, { label: 'new sample ↻', onClick: () => { seed++; draw(); } });
+  const pred = UI.readout(ctl, { label: 'predicted ℒ = S_φ/2' });
+  const meas = UI.readout(ctl, { label: 'measured ℒ (PM curve)' });
+
+  function draw() {
+    const rand = Noise.rng(seed);
+    const phi = bandWhite(sphi.value, rand);   // phase, PSD = S_phi over 0..fB
+    const a = bandWhite(sa.value, rand);       // fractional amplitude, ditto
+    const Vpm = new Float64Array(N), Vam = new Float64Array(N);
+    for (let i = 0; i < N; i++) {
+      const th = 2 * Math.PI * nu0 * i / fs;
+      Vpm[i] = Math.cos(th + phi[i]);
+      Vam[i] = (1 + a[i]) * Math.cos(th);
+    }
+    const A = FFT.welch(Vpm, fs, { nseg: nseg });
+    const B = FFT.welch(Vam, fs, { nseg: nseg });
+
+    // measured carrier power: integrate the PM spectrum within ±0.5 Hz of nu0
+    let Pc = 0;
+    for (let k = 0; k < A.f.length; k++) {
+      if (Math.abs(A.f[k] - nu0) <= 0.5) Pc += A.psd[k] * df;
+    }
+    // measured pedestal: average PSD at offsets 8..40 Hz above the carrier
+    let ped = 0, c = 0;
+    for (let k = 0; k < A.f.length; k++) {
+      if (A.f[k] >= nu0 + 8 && A.f[k] <= nu0 + 40) { ped += A.psd[k]; c++; }
+    }
+    ped = c ? ped / c : 0;
+
+    plot.clear();
+    plot.line(A.f.subarray(1), A.psd.subarray(1), { label: 'PM-only oscillator' });
+    plot.line(B.f.subarray(1), B.psd.subarray(1), { label: 'AM-only oscillator' });
+    plot.guideY(sphi.value / 4, { label: 'predicted PM pedestal S_φ/4', dash: [5, 4] });
+    plot.draw();
+
+    pred.set((10 * Math.log10(sphi.value / 2)).toFixed(1) + ' dBc/Hz');
+    meas.set(Pc > 0 && ped > 0
+      ? (10 * Math.log10(ped / Pc)).toFixed(1) + ' dBc/Hz'
+      : '–');
+  }
+  draw();
+})();
+
+/* ---------- demo 3: linewidth from white FM ---------- */
+(function () {
+  const fs = 512, N = 1 << 16, nu0 = 64, nseg = 8192;
+  const Tseg = nseg / fs;                 // 16 s -> 0.0625 Hz resolution
+  const plot = new Plot('#plot-lw', {
+    xlabel: 'frequency (Hz)', ylabel: 'PSD of V  (1/Hz)', height: 330,
+    ylog: true, xlim: [nu0 - 16, nu0 + 16], xunit: 'Hz',
+    // fixed range covering the whole h0 slider (resolution-limited peak ~5
+    // at h0=0.01 down to the Lorentzian wings ~1e-5), so the line visibly
+    // grows and shrinks instead of the axes rescaling
+    ylim: [3e-6, 15]
+  });
+  const ctl = '#ctl-lw';
+  let seed = 21;
+  const h0 = UI.slider(ctl, { label: 'white FM level h₀ (Hz²/Hz)',
+    min: 0.01, max: 3, log: true, value: 0.5,
+    fmt: v => v.toPrecision(2), onInput: draw });
+  UI.button(ctl, { label: 'new sample ↻', onClick: () => { seed++; draw(); } });
+  const rPred = UI.readout(ctl, { label: 'predicted FWHM = πh₀' });
+  const rMeas = UI.readout(ctl, { label: 'measured FWHM' });
+  const rRes = UI.readout(ctl, { label: 'resolution ≈ 1/T_seg' });
+
+  function draw() {
+    const rand = Noise.rng(seed);
+    const sigma = Math.sqrt(h0.value * fs / 2);   // std of δν per sample (Hz)
+    const V = new Float64Array(N);
+    let phi = 0;
+    for (let i = 0; i < N; i++) {
+      phi += 2 * Math.PI * sigma * Noise.randn(rand) / fs;
+      V[i] = Math.cos(2 * Math.PI * nu0 * i / fs + phi);
+    }
+    const est = FFT.welch(V, fs, { nseg: nseg, overlap: 0.75 });
+    const dnuL = Math.PI * h0.value;        // predicted FWHM
+
+    // lightly smoothed copy for the FWHM readout only (window much narrower
+    // than the expected line, and none at all when resolution-limited)
+    const halfW = Math.min(12, Math.round(dnuL / (8 * fs / nseg)));
+    const sm = new Float64Array(est.psd.length);
+    for (let k = 0; k < est.psd.length; k++) {
+      let s = 0, c = 0;
+      const lo = Math.max(0, k - halfW), hi = Math.min(est.psd.length - 1, k + halfW);
+      for (let j = lo; j <= hi; j++) { s += est.psd[j]; c++; }
+      sm[k] = s / c;
+    }
+
+    // predicted Lorentzian: total power 1/2, FWHM = pi*h0
+    const M = 1200;
+    const fL = new Float64Array(M), sL = new Float64Array(M);
+    for (let i = 0; i < M; i++) {
+      const x = nu0 - 16 + 32 * i / (M - 1);
+      fL[i] = x;
+      sL[i] = 0.5 * (dnuL / (2 * Math.PI)) /
+        ((x - nu0) * (x - nu0) + (dnuL / 2) * (dnuL / 2));
+    }
+
+    // measured FWHM of the smoothed spectrum: total bandwidth above half of
+    // the peak (robust to bin-to-bin scatter, unlike a first-crossing search)
+    let kPk = 1;
+    for (let k = 1; k < est.f.length; k++) {
+      if (Math.abs(est.f[k] - nu0) <= 16 && sm[k] > sm[kPk]) kPk = k;
+    }
+    const half = sm[kPk] / 2;
+    let above = 0;
+    for (let k = 1; k < est.f.length; k++) {
+      if (Math.abs(est.f[k] - nu0) <= 16 && sm[k] >= half) above++;
+    }
+    const fwhmMeas = above * fs / nseg;
+
+    plot.clear();
+    plot.line(est.f.subarray(1), est.psd.subarray(1),
+      { label: 'Welch of simulated V(t)' });
+    plot.line(fL, sL, { label: 'Lorentzian, FWHM = πh₀', dash: [6, 4] });
+    plot.draw();
+
+    rPred.set((Math.PI * h0.value).toPrecision(2) + ' Hz');
+    rMeas.set(fwhmMeas > 0 ? fwhmMeas.toPrecision(2) + ' Hz' : '–');
+    rRes.set((1 / Tseg).toPrecision(2) + ' Hz');
+  }
+  draw();
+})();
+
+/* ---------- demo 4: Leeson model explorer ---------- */
+(function () {
+  const kT = 1.380649e-23 * 290;      // 4.00e-21 W/Hz at the RF reference 290 K
+  const BAND = [12e3, 20e6];          // telecom jitter integration band
+  const plot = new Plot('#plot-leeson', {
+    xlabel: 'offset frequency f (Hz)', ylabel: 'ℒ(f)  (dBc/Hz)', height: 360,
+    xlog: true, xlim: [1, 1e8], ylim: [-190, 0], xunit: 'Hz', yunit: 'dBc/Hz'
+  });
+  const ctl = '#ctl-leeson';
+
+  const PRESETS = {
+    ocxo: { f0: 1e8,  Q: 1e6, C: 10, F: 17, fc: 1e3 },
+    dro:  { f0: 1e10, Q: 1e4, C: 0,  F: 15, fc: 1e4 },
+    mult: { f0: 1e8,  Q: 1e6, C: 10, F: 17, fc: 1e3 }   // the OCXO, then ×100
+  };
+
+  const preset = UI.select(ctl, {
+    label: 'preset',
+    options: [
+      { value: 'ocxo', label: '100 MHz OCXO (Q_L = 10⁶)' },
+      { value: 'dro', label: '10 GHz DRO (Q_L = 10⁴)' },
+      { value: 'mult', label: '10 GHz from the OCXO ×100' },
+      { value: 'custom', label: 'custom (move any slider)' }
+    ],
+    value: 'ocxo',
+    onChange: (v) => { if (PRESETS[v]) applyPreset(PRESETS[v]); draw(); }
+  });
+  const custom = () => { preset.value = 'custom'; draw(); };
+  const sF0 = UI.slider(ctl, { label: 'carrier ν₀', min: 1e7, max: 1e10,
+    log: true, value: 1e8,
+    fmt: v => v >= 1e9 ? (v / 1e9).toPrecision(3) + ' GHz'
+                       : (v / 1e6).toPrecision(3) + ' MHz',
+    onInput: custom });
+  const sQ = UI.slider(ctl, { label: 'loaded Q_L', min: 1e2, max: 1e7,
+    log: true, value: 1e6, fmt: v => v.toExponential(1), onInput: custom });
+  const sC = UI.slider(ctl, { label: 'carrier power C', min: -10, max: 20,
+    step: 0.5, value: 10, unit: 'dBm', fmt: v => v.toFixed(1), onInput: custom });
+  const sF = UI.slider(ctl, { label: 'noise figure F', min: 3, max: 20,
+    step: 0.5, value: 17, unit: 'dB', fmt: v => v.toFixed(1), onInput: custom });
+  const sFc = UI.slider(ctl, { label: 'flicker corner f_c', min: 100, max: 1e5,
+    log: true, value: 1e3,
+    fmt: v => v >= 1e3 ? (v / 1e3).toPrecision(2) + ' kHz'
+                       : v.toPrecision(2) + ' Hz',
+    onInput: custom });
+  const r1k = UI.readout(ctl, { label: 'ℒ(1 kHz)' });
+  const r10k = UI.readout(ctl, { label: 'ℒ(10 kHz)' });
+  const rPhi = UI.readout(ctl, { label: 'φ_rms (12 kHz–20 MHz)' });
+  const rJit = UI.bigReadout(ctl, { label: 'timing jitter (12 kHz–20 MHz)',
+    min: 1e-16, max: 1e-10, log: true,
+    fmt: t => t < 1e-12 ? (t * 1e15).toPrecision(2) + ' fs'
+                        : (t * 1e12).toPrecision(2) + ' ps' });
+
+  function applyPreset(p) {
+    sF0.value = p.f0; sQ.value = p.Q; sC.value = p.C;
+    sF.value = p.F; sFc.value = p.fc;
+  }
+
+  // Leeson model in dB. p = { f0, Q, C (dBm), F (dB), fc }.
+  function modelDb(f, p) {
+    const L0 = Math.pow(10, p.F / 10) * kT /
+               (2 * Math.pow(10, p.C / 10) * 1e-3);   // FkT/2C, C in watts
+    const fh = p.f0 / (2 * p.Q);
+    return 10 * Math.log10(L0 * (1 + (fh / f) * (fh / f)) * (1 + p.fc / f));
+  }
+
+  // RMS phase jitter over BAND: sqrt( 2 * int 10^(LdB/10) df ), trapezoid
+  // rule on a log-spaced grid (the integrand is linear in f, so a plain
+  // trapezoid in f with 400 log-spaced points is plenty).
+  function phiRms(p, extraDb) {
+    const n = 400;
+    let sum = 0, pf = 0, ps = 0;
+    for (let i = 0; i <= n; i++) {
+      const f = BAND[0] * Math.pow(BAND[1] / BAND[0], i / n);
+      const s = 2 * Math.pow(10, (modelDb(f, p) + extraDb) / 10);
+      if (i > 0) sum += 0.5 * (s + ps) * (f - pf);
+      pf = f; ps = s;
+    }
+    return Math.sqrt(sum);
+  }
+
+  // Short dashed slope-reference segment floated 10 dB above the model curve
+  // (straight lines in log-x, dB-y need only their two endpoints).
+  function slopeSeg(p, extraDb, fA, fB, dBperDec, label) {
+    fA = Math.max(fA, 1.3); fB = Math.min(fB, 8e7);
+    if (!(fB > 3 * fA)) return;
+    const fm = Math.sqrt(fA * fB);
+    const y0 = modelDb(fm, p) + extraDb + 10;
+    plot.line(new Float64Array([fA, fB]),
+      new Float64Array([y0 + dBperDec * Math.log10(fA / fm),
+                        y0 + dBperDec * Math.log10(fB / fm)]),
+      { color: '#898781', width: 1, dash: [5, 4], label: label });
+  }
+
+  function draw() {
+    const p = { f0: sF0.value, Q: sQ.value, C: sC.value,
+                F: sF.value, fc: sFc.value };
+    const mult = preset.value === 'mult';
+    const extra = mult ? 40 : 0;               // ×100 in frequency = +40 dB
+    const nu0out = mult ? 100 * p.f0 : p.f0;   // output carrier frequency
+
+    const n = 481;
+    const f = new Float64Array(n), yM = new Float64Array(n);
+    const yB = mult ? new Float64Array(n) : null;
+    for (let i = 0; i < n; i++) {
+      f[i] = Math.pow(10, 8 * i / (n - 1));    // 1 Hz .. 100 MHz
+      const d = modelDb(f[i], p);
+      yM[i] = d + extra;
+      if (mult) yB[i] = d;
+    }
+    const fh = p.f0 / (2 * p.Q);
+    const floorDb = 10 * Math.log10(Math.pow(10, p.F / 10) * kT /
+                    (2 * Math.pow(10, p.C / 10) * 1e-3)) + extra;
+
+    plot.clear();
+    if (mult) plot.line(f, yB, { color: '#898781',
+      label: '100 MHz OCXO before ×100' });
+    plot.line(f, yM, { label: mult ? 'OCXO ×100 → 10 GHz (+40 dB)'
+                                   : 'Leeson model ℒ(f)' });
+    // slope guides for the regions below/between the two breakpoints
+    const b1 = Math.min(fh, p.fc), b2 = Math.max(fh, p.fc);
+    slopeSeg(p, extra, 1.3, b1 / 2, -30, '1/f³');
+    slopeSeg(p, extra, b1 * 2, b2 / 2, p.fc < fh ? -20 : -10,
+             p.fc < fh ? '1/f²' : '1/f');
+    plot.guideX(p.fc, { label: 'f_c', dash: [5, 4] });
+    plot.guideX(fh, { label: 'ν₀/2Q_L', dash: [5, 4] });
+    plot.guideY(floorDb, { dash: [5, 4],
+      label: mult ? 'floor FkT/2C + 40 dB' : 'floor FkT/2C' });
+    plot.draw();
+
+    r1k.set((modelDb(1e3, p) + extra).toFixed(1) + ' dBc/Hz');
+    r10k.set((modelDb(1e4, p) + extra).toFixed(1) + ' dBc/Hz');
+    const phi = phiRms(p, extra);
+    rPhi.set(phi < 1e-3 ? (phi * 1e6).toPrecision(2) + ' µrad'
+           : phi < 1 ? (phi * 1e3).toPrecision(2) + ' mrad'
+           : phi.toPrecision(2) + ' rad');
+    rJit.set(phi / (2 * Math.PI * nu0out));
+  }
+  draw();
+})();
+</script>
+</body>
+</html>

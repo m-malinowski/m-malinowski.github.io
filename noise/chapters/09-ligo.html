@@ -1,0 +1,859 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>9 · Case study: LIGO and noise budgets — Making Sense of Noise</title>
+<link rel="stylesheet" href="../css/style.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"
+  onload="renderMathInElement(document.body, {delimiters:[
+    {left:'$$', right:'$$', display:true},
+    {left:'$', right:'$', display:false}]});"></script>
+</head>
+<body>
+
+<nav class="site-nav">
+  <div class="nav-inner">
+    <a class="home" href="../index.html">Making Sense of Noise</a>
+    <div class="chapters">
+      <a href="01-pure-tone.html" title="The pure tone">1</a>
+      <a href="02-modulation.html" title="Modulation">2</a>
+      <a href="03-random-processes.html" title="Random processes">3</a>
+      <a href="04-psd.html" title="Power spectral density">4</a>
+      <a href="05-noise-colors.html" title="Colors of noise">5</a>
+      <a href="06-oscillator-noise.html" title="Amplitude, phase & frequency noise">6</a>
+      <a href="07-allan.html" title="Allan deviation">7</a>
+      <a href="08-sensitivity.html" title="Sensitivity">8</a>
+      <a href="09-ligo.html" class="current" title="LIGO case study">9</a>
+      <a href="10-pll.html" title="Phase-locked loops">10</a>
+    </div>
+  </div>
+</nav>
+
+<main>
+  <p class="chapter-kicker">Chapter 9</p>
+  <h1>Case study: LIGO and noise budgets</h1>
+  <p class="lede">
+    Everything from chapters 4–8 — PSDs, noise colors, sensitivity in
+    $\mathrm{Hz}^{-1/2}$, in-loop caveats — assembles into the way a flagship
+    experiment actually presents its noise: one sensitivity curve, and behind
+    it a <em>noise budget</em>. We build a schematic Advanced-LIGO-like budget
+    you can turn the knobs on, and end with the single integral that unifies
+    gravitational-wave detectors, locked lasers, atomic clocks and qubits.
+  </p>
+
+  <div class="callout warn">
+    <div class="callout-title">Schematic numbers ahead</div>
+    Every curve in this chapter is a simple power-law <em>model</em> chosen to
+    have representative Advanced-LIGO-like magnitudes and slopes. They are
+    illustrative, not the real (carefully computed and measured) aLIGO curves.
+    The <em>mathematics</em> — how the curves combine, trade off and get read —
+    is exact.
+  </div>
+
+  <h2>The most famous ASD in physics</h2>
+  <p>
+    LIGO measures <strong>strain</strong>: the fractional stretch
+    $h(t) = \Delta L / L$ of its $L = 4\,$km arms. Strain is a dimensionless
+    time series like any voltage record in chapter 4, so its noise is quoted
+    the same way: as an amplitude spectral density
+    $\sqrt{S_h(f)}$ with units $1/\sqrt{\mathrm{Hz}}$. For Advanced LIGO the
+    floor of that curve sits at a few$\,\times 10^{-24}\,/\sqrt{\mathrm{Hz}}$
+    in the "bucket" around 100–300&nbsp;Hz.
+  </p>
+  <p>
+    You read this curve <em>exactly</em> like every ASD since chapter 4: the
+    RMS noise in a band is the square root of the area under the PSD,
+  </p>
+  <p>
+    $$ h_{\mathrm{rms}}[f_1, f_2] \;=\;
+       \sqrt{\int_{f_1}^{f_2} S_h(f)\, df\,}. $$
+  </p>
+  <p>
+    On a roughly flat floor this is just (floor level)$\,\times\sqrt{\text{bandwidth}}$.
+    GW150914 — the first detected black-hole merger — reached a strain
+    <em>amplitude</em> of about $10^{-21}$ near 100–250&nbsp;Hz, comfortably
+    above a floor whose in-band RMS is around $10^{-22}$. And note how the
+    comparison is drawn: the signal too is plotted <em>per root hertz</em>
+    (for a sweeping chirp one plots a "characteristic strain",
+    essentially $|\tilde h(f)|\sqrt{f}$, which accounts for how long the chirp
+    spends near each frequency). Only then are signal and noise apples to
+    apples on the same axes.
+  </p>
+
+  <figure class="demo">
+    <figcaption>Reading LIGO's sensitivity curve like any other ASD</figcaption>
+    <p class="demo-note">A schematic aLIGO-like total noise ASD with a
+      GW150914-like chirp sketched per $\sqrt{\mathrm{Hz}}$. Drag the band
+      edges and watch the in-band RMS strain — and what displacement of the
+      4&nbsp;km arms it corresponds to.</p>
+    <div class="controls" id="ctl-band"></div>
+    <div class="plots"><div id="plot-band"></div></div>
+  </figure>
+
+  <p>
+    The readout above is worth staring at: an RMS strain of
+    $\sim 10^{-22}$ over 4&nbsp;km is a length noise of a few
+    $\times 10^{-19}\,$m — a few ten-thousandths of a proton radius. Nothing
+    about the mathematics changes at that scale; the PSD bookkeeping of
+    chapter 4 simply keeps working.
+  </p>
+
+  <h2>Noise budgets: variances add</h2>
+  <p>
+    Where does the curve come from? A LIGO-class instrument has dozens of
+    noise sources: the ground shakes, the mirror coatings jiggle thermally,
+    the laser delivers photons at random times. The sources are (to a good
+    approximation) statistically independent, and independent noises add
+    <strong>in power</strong> — variances add, so PSDs add:
+  </p>
+  <p>
+    $$ S_{\mathrm{total}}(f) = \sum_i S_i(f),
+       \qquad
+       \sqrt{S_{\mathrm{total}}} = \sqrt{\textstyle\sum_i \big(\sqrt{S_i}\big)^2}. $$
+  </p>
+  <p>
+    ASDs add in <em>quadrature</em>, never linearly. This single fact is why
+    every big experiment publishes a "noise budget": a plot of many labeled
+    component curves whose quadrature sum — the thick "total" — should hug the
+    measured sensitivity. Wherever it doesn't, there is unexplained noise and
+    a graduate student is dispatched. The whole idea fits in a few lines of
+    code:
+  </p>
+<pre><code>// the entire "noise budget" idea: PSDs add, so ASDs add in quadrature
+const total = fGrid.map(f => {
+  const components = [seismic(f), suspension(f), coating(f),
+                      shot(f), radiationPressure(f)];   // ASDs, 1/√Hz
+  let sumOfPSDs = 0;
+  for (const a of components) sumOfPSDs += a * a;       // variances add
+  return Math.sqrt(sumOfPSDs);
+});</code></pre>
+
+  <p>
+    Here is a schematic aLIGO-like budget with the classic cast of characters,
+    each a power law with a representative slope and magnitude:
+  </p>
+  <ul>
+    <li><strong>Seismic wall</strong>: ground motion, filtered by stacked
+      isolation stages, rises extremely steeply below $\sim$15&nbsp;Hz
+      (modeled $\propto f^{-10}$). Below the wall there is simply no data.</li>
+    <li><strong>Suspension thermal</strong>: Brownian motion of the fused-silica
+      fibers the mirrors hang from ($\propto f^{-2.5}$ here), important in the
+      10–40&nbsp;Hz decade. Thermal ASDs scale as $\sqrt{T}$.</li>
+    <li><strong>Coating Brownian thermal</strong>: thermal jitter of the mirror
+      coatings ($\propto f^{-1/2}$), the floor of the bucket.</li>
+    <li><strong>Quantum shot noise</strong>: photon counting noise — flat in
+      <em>phase</em>, so in strain it is flat below the arm-cavity pole
+      ($\sim$400&nbsp;Hz) and rises $\propto f$ above it:
+      $A_{\mathrm{shot}}\sqrt{1 + (f/400\,\mathrm{Hz})^2}$ with
+      $A_{\mathrm{shot}} \propto 1/\sqrt{P}$. More laser power, more photons
+      averaged, less shot noise.</li>
+    <li><strong>Quantum radiation pressure</strong>: the same photon-number
+      fluctuations physically <em>push</em> the mirrors,
+      $\propto \sqrt{P}/f^2$. More power, more push.</li>
+  </ul>
+
+  <figure class="demo">
+    <figcaption>An interactive schematic aLIGO-like noise budget</figcaption>
+    <p class="demo-note">Each thin curve is one noise source; the thick curve
+      is their quadrature sum. Drag the laser power and watch the two quantum
+      curves pivot in opposite directions — the standard quantum limit. Cool
+      the mirrors and the thermal curves sink as $\sqrt{T}$; improve the
+      seismic isolation and the wall slides left.</p>
+    <div class="controls" id="ctl-budget"></div>
+    <div class="plots"><div id="plot-budget"></div></div>
+  </figure>
+
+  <div class="callout">
+    <div class="callout-title">The standard quantum limit, discovered by slider</div>
+    Shot noise $\propto 1/\sqrt{P}$ and radiation pressure $\propto \sqrt{P}$:
+    their <em>product</em> is independent of laser power. At any one frequency
+    you can tune $P$ until the two contributions are equal — that is the
+    optimum, and the resulting envelope is the <strong>standard quantum
+    limit</strong>. Raising the power buys sensitivity in the bucket and above
+    while spending it below $\sim$40&nbsp;Hz; the bucket minimum slides down
+    and toward higher frequency. Beating the SQL takes non-classical tricks
+    (aLIGO now injects squeezed vacuum), not more watts.
+  </div>
+
+  <h2>Signal-to-noise of a known waveform</h2>
+  <p>
+    LIGO does not just stare at the noise floor waiting for a bump — for
+    binary inspirals the waveform shape is known from general relativity, and
+    the optimal strategy is <strong>matched filtering</strong>: correlate the
+    data with the expected template, weighting each frequency by how quiet the
+    detector is there. The achievable signal-to-noise ratio is
+  </p>
+  <p>
+    $$ \mathrm{SNR}^2 \;=\; 4 \int_0^{\infty}
+       \frac{|\tilde h(f)|^2}{S_h(f)}\, df . $$
+  </p>
+  <p>
+    Read it as a competition held frequency by frequency: the signal only
+    scores where it has power, and each frequency's contribution is divided by
+    the noise PSD there. The sensitivity curve is a <em>weighting
+    function</em>. An inspiral chirp has $|\tilde h(f)| \propto f^{-7/6}$ up
+    to roughly the last stable orbit,
+    $f_{\mathrm{isco}} \approx 4.4\,\mathrm{kHz}/(M/M_\odot)$ for total mass
+    $M$ — so heavy binaries live at low frequency, exactly where the seismic
+    wall looms.
+  </p>
+
+  <figure class="demo">
+    <figcaption>A chirp against the budget: where the SNR integral lives</figcaption>
+    <p class="demo-note">The chirp $|\tilde h(f)|\sqrt{f} \propto f^{-2/3}$
+      (schematic amplitude, fixed distance) over the default budget total.
+      Drag the total mass: heavier binaries are intrinsically louder but cut
+      off at lower $f_{\mathrm{isco}}$ — push past a few hundred solar masses
+      and the signal slides behind the seismic wall.</p>
+    <div class="controls" id="ctl-snr"></div>
+    <div class="plots"><div id="plot-snr"></div></div>
+  </figure>
+
+  <h2>Control loops shape noise: why there are bumps</h2>
+  <p>
+    One more ingredient before you can read a real noise budget: almost every
+    curve on it has passed through a <strong>feedback loop</strong>. The
+    mirrors must be held on the interferometer's operating point, the laser on
+    the cavity resonance — so error signals are measured and fed back.
+    Describe the loop by its <strong>open-loop gain</strong> $G(f)$: a
+    complex number per frequency saying by how much, and with what phase
+    delay, a wiggle at $f$ comes back around the loop (chapter&nbsp;2's
+    phasors, now applied to a feedback path — magnitude is gain, angle is
+    accumulated delay). With open-loop gain $G(f)$, a disturbance $d$
+    entering the loop appears at the output suppressed to
+  </p>
+  <p>
+    $$ \frac{d}{1 + G(f)}, $$
+  </p>
+  <p>
+    while the <em>sensor's own noise</em> $n$ is injected as
+    $-\tfrac{G}{1+G}\, n$: inside the bandwidth, where $|G| \gg 1$, the loop
+    faithfully <em>writes the sensor noise onto the mirror</em>. And
+    $|1/(1+G)|$ is less than one inside the bandwidth but typically
+    <em>exceeds</em> one near the unity-gain frequency, where $G \approx -1$
+    is nearly reached: that is the notorious <strong>servo bump</strong>.
+    How close $G$ gets to exactly $-1$ is measured by the <strong>phase
+    margin</strong> — how many degrees the loop's phase at unity gain stands
+    clear of $180°$ of inversion. The smaller the margin (extra delay eats
+    it), the bigger the bump.
+  </p>
+
+  <figure class="demo">
+    <figcaption>A one-pole loop: suppression, injection, and the servo bump</figcaption>
+    <p class="demo-note">An integrator loop $G(f) = f_{\mathrm{ug}}/(if)$ with
+      an extra delay $e^{-i 2\pi f T_d}$. Left: the suppression
+      $|1/(1+G)|^2$ — below 1 inside the bandwidth, peaking near
+      $f_{\mathrm{ug}}$. Right: closed-loop output PSD for a $1/f^2$
+      disturbance plus white sensor noise. Increase the delay and watch the
+      bump grow; crank $f_{\mathrm{ug}}$ and watch the output floor stop
+      improving once it hits the sensor noise. Bottom row: the same story in
+      time — the slow wander of the free-running motion (gray) is gone from
+      the closed loop (left), replaced by a small fast fuzz; zoom in
+      (right) and that fuzz is the written-on sensor noise, ringing near
+      $f_{\mathrm{ug}}$ when the margin is small.</p>
+    <svg viewBox="0 0 560 190" style="max-width:560px;display:block;margin:2px auto 6px;">
+      <defs>
+        <marker id="sv-arr" markerWidth="8" markerHeight="8" refX="5.5"
+          refY="3" orient="auto"><path d="M0 0 L6 3 L0 6 Z"
+          fill="var(--axis)"/></marker>
+      </defs>
+      <g fill="none" stroke="var(--axis)" stroke-width="1.6">
+        <path d="M110 30 V58" marker-end="url(#sv-arr)"/>
+        <circle cx="110" cy="74" r="12"/>
+        <path d="M104 74 H116 M110 68 V80"/>
+        <path d="M122 74 H500" marker-end="url(#sv-arr)"/>
+        <path d="M430 74 V120 H434" marker-end="url(#sv-arr)"/>
+        <rect x="330" y="104" width="104" height="42"/>
+        <path d="M330 125 H294" marker-end="url(#sv-arr)"/>
+        <rect x="178" y="104" width="112" height="42"/>
+        <path d="M178 125 H110 V90" marker-end="url(#sv-arr)"/>
+        <path d="M382 176 V150" marker-end="url(#sv-arr)"/>
+      </g>
+      <circle cx="430" cy="74" r="3" fill="var(--axis)"/>
+      <g font-family="system-ui, sans-serif" font-size="12" fill="var(--ink-2)">
+        <text x="118" y="22">disturbance d (seismic, radiation pressure)</text>
+        <text x="276" y="64" text-anchor="middle">mirror motion x — what you
+          record</text>
+        <text x="382" y="122" text-anchor="middle">sensor</text>
+        <text x="382" y="138" text-anchor="middle" font-size="11">sees x + n</text>
+        <text x="234" y="122" text-anchor="middle">controller</text>
+        <text x="234" y="138" text-anchor="middle" font-size="11">−G(f), pushes back</text>
+        <text x="390" y="188" font-size="11">sensor noise n</text>
+        <text x="60" y="122" text-anchor="middle" font-size="11">feedback</text>
+        <text x="60" y="135" text-anchor="middle" font-size="11">force</text>
+      </g>
+    </svg>
+    <div class="controls" id="ctl-servo"></div>
+    <div class="plots two-col">
+      <div id="plot-servo-a"></div>
+      <div id="plot-servo-b"></div>
+    </div>
+    <div class="plots two-col">
+      <div id="plot-servo-t1"></div>
+      <div id="plot-servo-t2"></div>
+    </div>
+  </figure>
+
+  <div class="callout warn">
+    <div class="callout-title">A loop does not remove noise — it reshapes it</div>
+    Inside the bandwidth the loop swaps the disturbance for the sensor's
+    noise; near unity gain it <em>amplifies</em>; outside it does nothing.
+    Total variance is moved around, not destroyed. This is chapter 8's in-loop
+    caveat with teeth: a locked laser's linewidth is set by the error signal's
+    sensor noise, and the in-loop error signal will happily report a linewidth
+    far better than what an independent out-of-loop witness sees. When a
+    mysterious bump appears on a beat note, you are usually looking at
+    somebody's unity-gain frequency.
+  </div>
+
+  <h2>Filter functions beyond LIGO</h2>
+  <p>
+    Step back: this chapter has computed the same object three times, and
+    chapter&nbsp;7 makes a fourth. In every case the answer was
+  </p>
+  <p>
+    $$ \text{(variance your protocol accumulates)} \;=\;
+       \int_0^\infty S(f)\, |W(f)|^2 \, df, $$
+  </p>
+  <p>
+    where $S(f)$ is set by <em>what the noise is</em> and the
+    <strong>filter function</strong> $|W(f)|^2$ entirely by <em>how you
+    measure</em>. Every measurement protocol is a spectral weighting applied
+    to the noise PSD:
+  </p>
+
+  <table>
+    <thead>
+      <tr><th>measurement</th><th>weight $|W(f)|^2$</th><th>character</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>band RMS (this chapter)</td>
+        <td>$\mathbf{1}_{[f_1,f_2]}$ — a boxcar</td>
+        <td>keep the band, drop the rest</td></tr>
+      <tr><td>matched-filter SNR</td>
+        <td>$|\tilde h(f)|^2 / S_h^2$ (the PSD weights the <em>signal</em>)</td>
+        <td>score where the detector is quiet</td></tr>
+      <tr><td>Allan variance, gate $\tau$ (ch.&nbsp;7)</td>
+        <td>$2\sin^4(\pi f\tau)/(\pi f\tau)^2$</td>
+        <td>bandpass near $1/2\tau$</td></tr>
+      <tr><td>Ramsey, duration $T$</td>
+        <td>$\mathrm{sinc}^2(\pi f T)$</td>
+        <td>low-pass: keeps $f \to 0$</td></tr>
+      <tr><td>spin echo ($\pi$-pulse at $T/2$)</td>
+        <td>$\mathrm{sinc}^2(\pi f T/2)\,\sin^2(\pi f T/2)$</td>
+        <td>bandpass: vanishes as $f^2$ at low $f$</td></tr>
+    </tbody>
+  </table>
+
+  <p>
+    The last two rows are the qubit/clock workhorses, and comparing them is
+    the payoff: the echo's $\pi$-pulse flips the accumulated phase halfway
+    through, which moves the weight <em>off</em> $f = 0$. That is exactly
+    why echoes extend coherence in a $1/f$ environment — the weight is
+    removed from where that noise lives. Watch the two weights work on the
+    same noise:
+  </p>
+
+  <figure class="demo">
+    <figcaption>Ramsey vs spin echo as spectral weights on 1/f noise</figcaption>
+    <p class="demo-note">Left: the two filter functions (normalized to the
+      Ramsey DC value). Right: the integrand $S(f)|W(f)|^2$ for
+      $1/f$ frequency noise — Ramsey keeps piling up weight toward
+      $f \to 0$, the echo kills it. Drag $T$ to slide the filters in
+      frequency.</p>
+    <div class="controls" id="ctl-filter"></div>
+    <div class="plots two-col">
+      <div id="plot-filter-a"></div>
+      <div id="plot-filter-b"></div>
+    </div>
+  </figure>
+
+  <div class="callout">
+    <div class="callout-title">The punchline of the whole course</div>
+    LIGO's band RMS, a matched filter's SNR, a clock's Allan variance, a
+    qubit's Ramsey decay, a servo's residual: every one of them is
+    $$ \int S(f)\, |W(f)|^2\, df $$
+    — a noise PSD multiplied by a protocol's filter function and integrated.
+    Characterize the noise once (that is the PSD), know your protocol's
+    weighting (that is the filter function), and that single integral is all
+    anyone, in any lab, ever computes.
+  </div>
+
+  <p>
+    One thread is left hanging. This chapter treated feedback loops as
+    something noise passes <em>through</em> on its way to a noise budget. But
+    a loop can also be the whole instrument: take two oscillators, a
+    discriminator and an integrator, close the ring, and you have built a
+    synthesizer, a laser lock, or an atomic clock. That construction — the
+    phase-locked loop, and the block diagrams every lab drawing of one is
+    made of — is the final chapter.
+  </p>
+
+  <h2>Exercises</h2>
+
+  <div class="exercise">
+    <div class="ex-label">Exercise 9.1 — reading the floor</div>
+    <p>A detector has an approximately flat strain noise floor of
+    $4\times10^{-24}\,/\sqrt{\mathrm{Hz}}$ from 50 to 500&nbsp;Hz. What is the
+    RMS strain noise in that band? What arm-length noise is that for
+    $L = 4\,$km arms?</p>
+    <details><summary>Solution</summary>
+      <p>For a flat floor,
+      $h_{\mathrm{rms}} = \sqrt{S_h \cdot \Delta f}
+      = 4\times10^{-24} \times \sqrt{450\,\mathrm{Hz}}
+      \approx 4\times10^{-24}\times 21.2 \approx 8.5\times10^{-23}$.
+      In length: $\Delta L_{\mathrm{rms}} = h_{\mathrm{rms}} L
+      \approx 8.5\times10^{-23}\times 4000\,\mathrm{m}
+      \approx 3.4\times10^{-19}\,\mathrm{m}$ — a few ten-thousandths of a proton
+      radius, integrated across the whole detection band.</p>
+    </details>
+  </div>
+
+  <div class="exercise">
+    <div class="ex-label">Exercise 9.2 — the standard quantum limit</div>
+    <p>At your target frequency the two quantum PSDs are
+    $S_{\mathrm{shot}} = a/P$ and $S_{\mathrm{rp}} = bP$ for laser power $P$.
+    Show that the power minimizing their sum makes the two contributions
+    equal, and find the minimum total.</p>
+    <details><summary>Solution</summary>
+      <p>Minimize $S(P) = a/P + bP$:
+      $dS/dP = -a/P^2 + b = 0$ gives $P_{\mathrm{opt}} = \sqrt{a/b}$, at which
+      $S_{\mathrm{shot}} = a/P_{\mathrm{opt}} = \sqrt{ab}$ and
+      $S_{\mathrm{rp}} = bP_{\mathrm{opt}} = \sqrt{ab}$ — equal, as claimed.
+      The minimum total is $S_{\mathrm{SQL}} = 2\sqrt{ab}$, independent of
+      $P$: no choice of classical laser power beats it. Since
+      $P_{\mathrm{opt}}$ depends on frequency (through $a(f)$ and $b(f)$), one
+      power is only optimal at one frequency — you saw the bucket pivot around
+      exactly this trade-off in the budget demo.</p>
+    </details>
+  </div>
+
+  <div class="exercise">
+    <div class="ex-label">Exercise 9.3 — diagnosing a servo bump</div>
+    <p>You lock a laser to a cavity and then beat it against an independent
+    reference. The beat-note spectrum shows a clear bump at 10&nbsp;kHz that
+    was not there unlocked. What two things does this tell you about your
+    loop, and what would you try first to shrink the bump?</p>
+    <details><summary>Solution</summary>
+      <p>(1) The loop's unity-gain frequency is at (or very near)
+      10&nbsp;kHz — the bump lives where $|G| \approx 1$ and the loop
+      amplifies instead of suppressing. (2) The phase margin there is small:
+      the bump height is roughly $1/|1+G|_{\min}$, which blows up as
+      $G \to -1$. To shrink it, recover phase near 10&nbsp;kHz — reduce delay,
+      remove a low-pass filter or a resonance eating phase, or lower the gain
+      so unity gain moves to a frequency with more margin. Simply adding more
+      gain makes it worse.</p>
+    </details>
+  </div>
+
+  <div class="exercise">
+    <div class="ex-label">Exercise 9.4 — why echoes beat 1/f but not white noise</div>
+    <p>Using the filter-function picture, explain why a spin echo dramatically
+    extends coherence against $1/f$ frequency noise but does essentially
+    nothing against white frequency noise (at fixed total time $T$).</p>
+    <details><summary>Solution</summary>
+      <p>The accumulated phase variance is $\int S(f)\,|W(f)|^2 df$. The echo
+      filter $|W_E|^2 \propto f^2$ as $f\to 0$, while Ramsey's
+      $|W_R|^2$ is maximal there — so for $S \propto 1/f$, whose weight is
+      concentrated at low $f$, the echo removes exactly the frequencies that
+      dominate the integral, and coherence improves dramatically. For
+      <em>white</em> noise, $S(f) = S_0$ factors out:
+      the variance is $S_0 \int |W|^2 df$, and by Parseval
+      $\int |W|^2 df = \int w(t)^2 dt = T$ for any $\pm1$ modulation of the
+      same total duration. The echo only <em>reshapes</em> the weight in
+      frequency; it cannot change its total. White noise contributes equally
+      at all frequencies, so reshaping buys nothing: same integral, same
+      decay.</p>
+    </details>
+  </div>
+
+  <nav class="pager">
+    <a class="prev" href="08-sensitivity.html"><span class="dir">Prev · Chapter 8</span>
+      Sensitivity: what Hz/√Hz means</a>
+    <a class="next" href="10-pll.html"><span class="dir">Next · Chapter 10</span>
+      Case study: phase-locked loops</a>
+  </nav>
+</main>
+
+<script src="../js/lib/fft.js"></script>
+<script src="../js/lib/noise.js"></script>
+<script src="../js/lib/plot.js"></script>
+<script src="../js/lib/ui.js"></script>
+<script>
+'use strict';
+
+/* ---------- shared schematic aLIGO-like budget model ----------
+ * All components are strain ASDs in 1/sqrt(Hz). Power laws chosen for
+ * representative magnitudes and slopes; see the "schematic" warning above.
+ *   P    laser power relative to nominal
+ *   iso  seismic isolation improvement factor (divides the seismic ASD)
+ *   T    mirror temperature in kelvin (thermal ASDs scale as sqrt(T/293))
+ */
+const Budget = (function () {
+  function components(f, P, iso, T) {
+    const th = Math.sqrt(T / 293);
+    return {
+      seismic: 1e-22 * Math.pow(12 / f, 10) / iso,
+      susp:    1e-23 * Math.pow(20 / f, 2.5) * th,
+      coating: 4e-24 * Math.sqrt(100 / f) * th,
+      shot:    (4e-24 / Math.sqrt(P)) * Math.sqrt(1 + (f / 400) * (f / 400)),
+      radpr:   2.5e-23 * Math.sqrt(P) * Math.pow(10 / f, 2)
+    };
+  }
+  function total(f, P, iso, T) {
+    const c = components(f, P, iso, T);
+    let s = 0;
+    for (const k in c) s += c[k] * c[k];
+    return Math.sqrt(s);
+  }
+  function logspace(a, b, n) {
+    const out = new Float64Array(n);
+    const la = Math.log10(a), lb = Math.log10(b);
+    for (let i = 0; i < n; i++) out[i] = Math.pow(10, la + (lb - la) * i / (n - 1));
+    return out;
+  }
+  return { components, total, logspace };
+})();
+
+/* ---------- demo 1: reading the ASD, band RMS ---------- */
+(function () {
+  const plot = new Plot('#plot-band', {
+    xlabel: 'frequency (Hz)', ylabel: 'strain ASD (1/√Hz)', height: 320,
+    xlog: true, ylog: true, xlim: [10, 5000], ylim: [1e-24, 1e-20],
+    xunit: 'Hz'
+  });
+  const ctl = '#ctl-band';
+  const band = UI.range(ctl, { label: 'band f₁ – f₂', min: 10, max: 5000,
+    log: true, value: [50, 500], unit: 'Hz', fmt: v => v.toFixed(0),
+    onInput: draw });
+  const rmsOut = UI.bigReadout(ctl, { label: 'RMS strain in band',
+    min: 1e-23, max: 1e-20, log: true, fmt: v => Plot.fmtNum(v, 2) });
+  const dLOut = UI.bigReadout(ctl, { label: 'equivalent ΔL (L = 4 km)',
+    unit: 'm', min: 4e-20, max: 4e-17, log: true,
+    fmt: v => Plot.fmtNum(v, 2) });
+
+  const fGrid = Budget.logspace(10, 5000, 500);
+  const asd = fGrid.map(f => Budget.total(f, 1, 1, 293));
+
+  // GW150914-like chirp, per root-hertz (schematic): f^(-2/3), 30..250 Hz
+  const fSig = Budget.logspace(30, 250, 120);
+  const sig = fSig.map(f => 1e-22 * Math.pow(f / 100, -2 / 3));
+
+  function bandRms(a, b) {
+    let v = 0;
+    for (let i = 0; i + 1 < fGrid.length; i++) {
+      const fa = fGrid[i], fb = fGrid[i + 1];
+      if (fb < a || fa > b) continue;
+      const Sa = asd[i] * asd[i], Sb = asd[i + 1] * asd[i + 1];
+      v += 0.5 * (Sa + Sb) * (Math.min(fb, b) - Math.max(fa, a));
+    }
+    return Math.sqrt(v);
+  }
+
+  function draw() {
+    const a = band.lo, b = band.hi;
+    plot.clear();
+    plot.guideX(a, { label: 'f₁' });
+    plot.guideX(b, { label: 'f₂' });
+    plot.line(fGrid, asd, { label: 'total noise ASD (schematic)', width: 2.5 });
+    plot.line(fSig, sig, { label: 'GW150914-like chirp (schematic)' });
+    plot.draw();
+    const h = bandRms(a, b);
+    rmsOut.set(h);
+    dLOut.set(h * 4000);
+  }
+  draw();
+})();
+
+/* ---------- demo 2 (headline): interactive noise budget ---------- */
+(function () {
+  const plot = new Plot('#plot-budget', {
+    xlabel: 'frequency (Hz)', ylabel: 'strain ASD (1/√Hz)', height: 420,
+    xlog: true, ylog: true, xlim: [10, 5000], ylim: [1e-24, 1e-19],
+    xunit: 'Hz'
+  });
+  const ctl = '#ctl-budget';
+  const P = UI.slider(ctl, { label: 'laser power', min: 0.1, max: 10,
+    log: true, value: 1, unit: '× nominal', fmt: v => v.toPrecision(2),
+    onInput: draw });
+  const iso = UI.slider(ctl, { label: 'seismic isolation', min: 0.1, max: 10,
+    log: true, value: 1, unit: '× nominal', fmt: v => v.toPrecision(2),
+    onInput: draw });
+  const temp = UI.slider(ctl, { label: 'mirror temperature', min: 20, max: 600,
+    log: true, value: 293, unit: 'K', fmt: v => v.toFixed(0), onInput: draw });
+  const best = UI.readout(ctl, { label: 'best strain ASD' });
+  const bestF = UI.readout(ctl, { label: '… at frequency' });
+
+  const fGrid = Budget.logspace(10, 5000, 500);
+
+  function draw() {
+    const n = fGrid.length;
+    const seis = new Float64Array(n), susp = new Float64Array(n),
+          coat = new Float64Array(n), shot = new Float64Array(n),
+          rp = new Float64Array(n), tot = new Float64Array(n);
+    let minV = Infinity, minF = 0;
+    for (let i = 0; i < n; i++) {
+      const c = Budget.components(fGrid[i], P.value, iso.value, temp.value);
+      seis[i] = c.seismic; susp[i] = c.susp; coat[i] = c.coating;
+      shot[i] = c.shot; rp[i] = c.radpr;
+      tot[i] = Math.sqrt(c.seismic * c.seismic + c.susp * c.susp +
+        c.coating * c.coating + c.shot * c.shot + c.radpr * c.radpr);
+      if (tot[i] < minV) { minV = tot[i]; minF = fGrid[i]; }
+    }
+    plot.clear();
+    plot.line(fGrid, seis, { label: 'seismic', width: 1.5 });
+    plot.line(fGrid, susp, { label: 'suspension thermal', width: 1.5 });
+    plot.line(fGrid, coat, { label: 'coating thermal', width: 1.5 });
+    plot.line(fGrid, shot, { label: 'quantum: shot', width: 1.5 });
+    plot.line(fGrid, rp, { label: 'quantum: radiation pressure', width: 1.5 });
+    plot.line(fGrid, tot, { label: 'total (quadrature sum)', width: 3.5 });
+    plot.draw();
+    best.set(Plot.fmtNum(minV, 2) + ' /√Hz');
+    bestF.set(minF.toFixed(0) + ' Hz');
+  }
+  draw();
+})();
+
+/* ---------- demo 3: matched-filter SNR of an inspiral ---------- */
+(function () {
+  const plot = new Plot('#plot-snr', {
+    xlabel: 'frequency (Hz)', ylabel: 'strain ASD (1/√Hz)', height: 320,
+    xlog: true, ylog: true, xlim: [10, 5000], ylim: [1e-24, 3e-21],
+    xunit: 'Hz'
+  });
+  const ctl = '#ctl-snr';
+  const mass = UI.slider(ctl, { label: 'total mass M', min: 5, max: 1000,
+    log: true, value: 65, unit: 'M☉', fmt: v => v.toFixed(0), onInput: draw });
+  const fiscoOut = UI.readout(ctl, { label: 'f_isco ≈ 4.4 kHz / (M/M☉)' });
+  const snrOut = UI.readout(ctl, { label: 'SNR (arb. units)' });
+
+  const fGrid = Budget.logspace(10, 5000, 500);
+  const asd = fGrid.map(f => Budget.total(f, 1, 1, 293));
+
+  // |h~(f)| ∝ M^(5/6) f^(-7/6) up to f_isco (fixed distance, schematic).
+  function snr2(M) {
+    const fCut = 4400 / M;
+    const A2 = Math.pow(M / 65, 5 / 3);      // amplitude², M^(5/6) squared
+    let s = 0;
+    for (let i = 0; i + 1 < fGrid.length; i++) {
+      const fa = fGrid[i], fb = Math.min(fGrid[i + 1], fCut);
+      if (fb <= fa) break;
+      const ga = A2 * Math.pow(fa, -7 / 3) / (asd[i] * asd[i]);
+      const gb = A2 * Math.pow(fb, -7 / 3) / (asd[i + 1] * asd[i + 1]);
+      s += 0.5 * (ga + gb) * (fb - fa);
+    }
+    return s;
+  }
+  const snrRef = Math.sqrt(snr2(65));        // normalize: M = 65 → SNR 100
+
+  function draw() {
+    const M = mass.value;
+    const fCut = 4400 / M;
+    plot.clear();
+    plot.line(fGrid, asd, { label: 'budget total (defaults)', width: 2.5 });
+    if (fCut > 10) {
+      const fSig = Budget.logspace(10, Math.min(fCut, 5000), 200);
+      const amp = Math.pow(M / 65, 5 / 6);
+      const sig = fSig.map(f => 1e-22 * amp * Math.pow(f / 100, -2 / 3));
+      plot.line(fSig, sig, { label: 'chirp |h̃(f)|·√f (schematic)' });
+      plot.guideX(fCut, { label: 'f_isco', dash: [4, 4] });
+    }
+    plot.draw();
+    fiscoOut.set(fCut < 10 ? fCut.toFixed(1) + ' Hz — below the seismic wall!'
+                           : fCut.toFixed(0) + ' Hz');
+    snrOut.set((100 * Math.sqrt(snr2(M)) / snrRef).toFixed(1));
+  }
+  draw();
+})();
+
+/* ---------- demo 4: control loop, suppression and servo bump ---------- */
+(function () {
+  const pA = new Plot('#plot-servo-a', {
+    xlabel: 'frequency (Hz)', ylabel: '|1/(1+G)|²', height: 300,
+    xlog: true, ylog: true, xlim: [100, 1e6], ylim: [1e-7, 1e3],
+    xunit: 'Hz'
+  });
+  const pB = new Plot('#plot-servo-b', {
+    xlabel: 'frequency (Hz)', ylabel: 'output PSD (arb.²/Hz)', height: 300,
+    xlog: true, ylog: true, xlim: [100, 1e6], ylim: [1e-7, 1e3],
+    xunit: 'Hz'
+  });
+  const pT1 = new Plot('#plot-servo-t1', {
+    xlabel: 'time (ms)', ylabel: 'x(t), free-running scale', height: 240,
+    xlim: [0, 2], hover: false
+  });
+  const pT2 = new Plot('#plot-servo-t2', {
+    xlabel: 'time (ms)', ylabel: 'closed loop, zoomed', height: 240,
+    xlim: [0, 2], hover: false
+  });
+  const ctl = '#ctl-servo';
+  const fug = UI.slider(ctl, { label: 'unity-gain freq f_ug', min: 1e3,
+    max: 1e5, log: true, value: 1e4, unit: 'Hz', fmt: v => v.toPrecision(2),
+    onInput: draw });
+  const delay = UI.slider(ctl, { label: 'extra loop delay T_d', min: 0,
+    max: 20, step: 0.25, value: 4, unit: 'µs', fmt: v => v.toFixed(2),
+    onInput: draw });
+  const margin = UI.readout(ctl, { label: 'phase margin at f_ug' });
+
+  const fGrid = Budget.logspace(100, 1e6, 600);
+  const Sdist = fGrid.map(f => 1e6 / (f * f));   // 1/f² disturbance
+  const Snoise = 1e-3;                           // white sensor noise
+
+  function draw() {
+    const n = fGrid.length;
+    const supp = new Float64Array(n), out = new Float64Array(n);
+    for (let i = 0; i < n; i++) {
+      const f = fGrid[i];
+      // G = (f_ug/f) · e^{-i(π/2 + 2π f T_d)}   (integrator + delay)
+      const mag = fug.value / f;
+      const ph = -Math.PI / 2 - 2 * Math.PI * f * delay.value * 1e-6;
+      const gRe = mag * Math.cos(ph), gIm = mag * Math.sin(ph);
+      const den = (1 + gRe) * (1 + gRe) + gIm * gIm;   // |1+G|²
+      supp[i] = 1 / den;                               // |1/(1+G)|²
+      const inj = (gRe * gRe + gIm * gIm) / den;       // |G/(1+G)|²
+      out[i] = Sdist[i] * supp[i] + Snoise * inj;
+    }
+    pA.clear();
+    pA.guideY(1, { label: 'no effect', dash: [4, 4] });
+    pA.guideX(fug.value, { label: 'f_ug', dash: [4, 4] });
+    pA.line(fGrid, supp, { label: 'suppression |1/(1+G)|²', width: 2.5 });
+    pA.draw();
+
+    pB.clear();
+    pB.line(fGrid, Sdist, { label: 'free-running disturbance (1/f²)',
+      color: '#898781', dash: [6, 4], width: 1.5 });
+    pB.guideY(Snoise, { label: 'sensor noise', dash: [4, 4] });
+    pB.line(fGrid, out, { label: 'closed-loop output', width: 2.5 });
+    pB.draw();
+
+    // time-domain view: shape one fixed set of random phases by 1/(1+G)
+    // and G/(1+G) in the FFT domain, so the traces morph smoothly under
+    // the sliders instead of resampling
+    const NT = 4096, fsT = 2e6, dfT = fsT / NT;
+    const dRe = new Float64Array(NT), dIm = new Float64Array(NT);
+    const cRe = new Float64Array(NT), cIm = new Float64Array(NT);
+    const rand = Noise.rng(29);
+    let vD = 0, vC = 0;                     // deterministic band variances
+    for (let k = 1; k < NT / 2; k++) {
+      const f = k * dfT;
+      const aD = NT * Math.sqrt((1e6 / (f * f)) * dfT / 2);
+      const aN = NT * Math.sqrt(Snoise * dfT / 2);
+      const phD = 2 * Math.PI * rand(), phN = 2 * Math.PI * rand();
+      const mag = fug.value / f;
+      const ph = -Math.PI / 2 - 2 * Math.PI * f * delay.value * 1e-6;
+      const gRe = mag * Math.cos(ph), gIm = mag * Math.sin(ph);
+      const oRe = 1 + gRe, oIm = gIm, den = oRe * oRe + oIm * oIm;
+      const sRe = oRe / den, sIm = -oIm / den;             // 1/(1+G)
+      const tRe = (gRe * oRe + gIm * oIm) / den,           // G/(1+G)
+            tIm = (gIm * oRe - gRe * oIm) / den;
+      const xdR = aD * Math.cos(phD), xdI = aD * Math.sin(phD);
+      const xnR = aN * Math.cos(phN), xnI = aN * Math.sin(phN);
+      dRe[k] = xdR; dIm[k] = xdI;
+      cRe[k] = sRe * xdR - sIm * xdI + tRe * xnR - tIm * xnI;
+      cIm[k] = sRe * xdI + sIm * xdR + tRe * xnI + tIm * xnR;
+      dRe[NT - k] = dRe[k]; dIm[NT - k] = -dIm[k];
+      cRe[NT - k] = cRe[k]; cIm[NT - k] = -cIm[k];
+      vD += (1e6 / (f * f)) * dfT;
+      vC += ((1e6 / (f * f)) * (sRe * sRe + sIm * sIm) +
+             Snoise * (tRe * tRe + tIm * tIm)) * dfT;
+    }
+    FFT.ifft(dRe, dIm);
+    FFT.ifft(cRe, cIm);
+    const tms = new Float64Array(NT);
+    for (let i = 0; i < NT; i++) tms[i] = i / fsT * 1e3;
+    pT1.o.ylim = [-4 * Math.sqrt(vD), 4 * Math.sqrt(vD)];   // fixed: Sdist fixed
+    pT1.clear();
+    pT1.line(tms, dRe, { label: 'free-running x(t)', color: '#898781',
+      width: 1 });
+    pT1.line(tms, cRe, { label: 'closed loop (same scale)' });
+    pT1.draw();
+    pT2.o.ylim = [-4.5 * Math.sqrt(vC), 4.5 * Math.sqrt(vC)]; // ∝ sliders
+    pT2.clear();
+    pT2.line(tms, cRe, { label: 'closed loop, own scale' });
+    pT2.draw();
+
+    const m = 90 - 360 * fug.value * delay.value * 1e-6;
+    margin.set(m.toFixed(0) + '°' + (m <= 0 ? ' — unstable in real life!' : ''));
+  }
+  draw();
+})();
+
+/* ---------- demo 5: Ramsey vs echo filter functions ---------- */
+(function () {
+  const pA = new Plot('#plot-filter-a', {
+    xlabel: 'frequency (Hz)', ylabel: '|W(f)|² (normalized)', height: 300,
+    xlog: true, ylog: true, xlim: [0.1, 1e4], ylim: [1e-8, 3],
+    xunit: 'Hz'
+  });
+  const pB = new Plot('#plot-filter-b', {
+    xlabel: 'frequency (Hz)', ylabel: 'integrand S(f)·|W(f)|² (arb.)',
+    height: 300, xlog: true, ylog: true, xlim: [0.1, 1e4], ylim: [1e-9, 30],
+    xunit: 'Hz'
+  });
+  const ctl = '#ctl-filter';
+  const Tf = UI.slider(ctl, { label: 'free-evolution time T', min: 1e-3,
+    max: 1, log: true, value: 0.1, unit: 's', fmt: v => v.toPrecision(2),
+    onInput: draw });
+  const ratio = UI.readout(ctl, { label: 'echo/Ramsey variance (1/f noise)' });
+
+  const fGrid = Budget.logspace(0.1, 1e4, 600);
+  const sinc = x => x === 0 ? 1 : Math.sin(x) / x;
+
+  function draw() {
+    const T = Tf.value;
+    const n = fGrid.length;
+    const wR = new Float64Array(n), wE = new Float64Array(n);
+    const iR = new Float64Array(n), iE = new Float64Array(n);
+    let vR = 0, vE = 0;
+    // Ramsey: sinc²(πfT); echo: sinc²(πfT/2)·sin²(πfT/2).
+    // The log grid cannot resolve the fast lobes at f >> 1/T, so take the
+    // max over sub-samples of each bin: exact where resolved, the true
+    // upper envelope where not (no aliasing artifacts).
+    const wRat = f => { const s = sinc(Math.PI * f * T); return s * s; };
+    const wEat = f => {
+      const s = sinc(Math.PI * f * T / 2), sn = Math.sin(Math.PI * f * T / 2);
+      return s * s * sn * sn;
+    };
+    for (let i = 0; i < n; i++) {
+      const f = fGrid[i];
+      const fNext = fGrid[Math.min(i + 1, n - 1)];
+      let mR = wRat(f), mE = wEat(f);
+      for (let k = 1; k < 8; k++) {
+        const fk = f + (fNext - f) * k / 8;
+        mR = Math.max(mR, wRat(fk));
+        mE = Math.max(mE, wEat(fk));
+      }
+      wR[i] = mR;
+      wE[i] = mE;
+      const S = 1 / f;                       // 1/f noise, arb. units
+      iR[i] = S * wR[i];
+      iE[i] = S * wE[i];
+      if (i > 0) {
+        const df = fGrid[i] - fGrid[i - 1];
+        vR += 0.5 * (iR[i] + iR[i - 1]) * df;
+        vE += 0.5 * (iE[i] + iE[i - 1]) * df;
+      }
+    }
+    pA.clear();
+    pA.guideX(1 / T, { label: '1/T', dash: [4, 4] });
+    pA.line(fGrid, wR, { label: 'Ramsey |W_R|²', width: 2 });
+    pA.line(fGrid, wE, { label: 'echo |W_E|²', width: 2 });
+    pA.draw();
+
+    pB.clear();
+    pB.line(fGrid, fGrid.map(f => 0.01 / f), { label: '1/f noise PSD (arb.)',
+      color: '#898781', dash: [6, 4], width: 1.5 });
+    pB.line(fGrid, iR, { label: 'Ramsey integrand', width: 2 });
+    pB.line(fGrid, iE, { label: 'echo integrand', width: 2 });
+    pB.draw();
+
+    ratio.set((100 * vE / vR).toFixed(1) + ' %');
+  }
+  draw();
+})();
+</script>
+</body>
+</html>
