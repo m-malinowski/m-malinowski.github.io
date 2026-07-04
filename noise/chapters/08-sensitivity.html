@@ -112,61 +112,63 @@
   <h2>Noise figure: how RF engineers quote the same thing</h2>
   <p>
     RF engineers have been quoting input-referred noise since the 1940s,
-    under a different name and in decibels (the dBm and the dB arithmetic
-    here are the ones built in chapters&nbsp;4 and 5 — dBm is power relative
-    to 1&nbsp;mW; adding decibels multiplies powers). Their reference point
-    is the universal thermal floor of
-    <a href="05-noise-colors.html">chapter&nbsp;5</a>:
-    a matched source at temperature $T$ delivers an available noise power
-    density of $k_B T$ per hertz, which at the standard
-    $T_0 = 290\ \mathrm{K}$ is $4.0\times10^{-21}\ \mathrm{W/Hz} =
-    -174\ \mathrm{dBm/Hz}$. Now drive any network — amplifier, cable,
-    mixer — from a source at $T_0$. Its output noise density has two parts:
-    the amplified source noise, and whatever the network adds of its own.
-    The <strong>noise factor</strong> $F$ is the ratio of the total to the
-    source part alone; dividing top and bottom by the gain, it is equally
-    the factor by which the network degrades signal-to-noise:
+    under a different name and in decibels. Their ruler is the thermal
+    floor of <a href="05-noise-colors.html">chapter&nbsp;5</a>: a matched
+    source at the standard temperature $T_0 = 290\ \mathrm{K}$ delivers
+    $k_B T_0 = 4.0\times10^{-21}\ \mathrm{W/Hz} = -174\ \mathrm{dBm/Hz}$
+    of noise power density.
   </p>
   <p>
-    $$ F \;=\; \frac{\text{total output noise density}}
-                    {\text{part due to the source alone}}
-       \;=\; \frac{\mathrm{SNR_{in}}}{\mathrm{SNR_{out}}}, $$
+    Now drive any network — amplifier, cable, mixer — from a source at
+    $T_0$ and look at the noise coming out. It has two parts: the source's
+    noise, amplified, plus whatever the network added of its own. The
+    <strong>noise factor</strong> $F$ compares the two:
   </p>
   <p>
-    both taken at a single ("spot") frequency, with matched impedances, and
-    with the source pinned by convention at 290&nbsp;K. In decibels this is
-    the <strong>noise figure</strong>,
-    $\mathrm{NF} = 10\log_{10} F$. A noiseless
-    amplifier has $F = 1$ ($\mathrm{NF} = 0$&nbsp;dB): it amplifies signal
-    and source noise alike and the SNR is untouched. A passive attenuator
-    with power loss $L$ has $F = L$: the signal comes out $L$ times weaker,
-    but the attenuator's own resistors are at 290&nbsp;K too, so a full
-    $k_B T_0$ still comes out the back — the SNR drops by exactly $L$.
-    Three decibels of cable loss <em>is</em> three decibels of noise figure.
-    Radio astronomers carry the same content as a temperature: referred to
-    the input, the network's own noise is worth an extra source temperature
-    $T_N = 290\,(F - 1)$&nbsp;K, so a 0.5-dB-NF receiver is
-    "a 35&nbsp;K receiver".
+    $$ F \;=\; \frac{\text{total output noise}}
+                    {\text{amplified source noise alone}}. $$
   </p>
   <p>
-    Here is why this section belongs in this chapter. An amplifier chain
-    with noise factor $F$ sitting on the thermal floor has an equivalent
-    input noise density of $F \cdot k_B T_0$ W/Hz — in decibels,
-    $-174 + \mathrm{NF}$ dBm/Hz. That is precisely the
-    <strong>referred-to-input noise density of section&nbsp;1</strong>, for
-    the special case where the input quantity is RF power: noise figure is
-    the input-referred (squared) ASD, quoted in dB relative to the thermal
-    floor. A "sensitivity of $5\ \mathrm{pT}/\sqrt{\mathrm{Hz}}$" and a
-    "noise figure of 6&nbsp;dB" are the same kind of statement in two
-    dialects — one absolute, one relative to what a warm resistor would do.
-    (If you noticed that chapter&nbsp;6's additive <em>phase-noise</em> floor
-    read $-177 + F_{\mathrm{dB}} - C_{\mathrm{dBm}}$ rather than $-174$:
-    the extra 3&nbsp;dB is not a disagreement — it is the half of the added
-    noise that reads as amplitude rather than phase. Same $F k_B T$, two
-    bookkeepings.)
+    A noiseless network adds nothing, so $F = 1$; everything real has
+    $F &gt; 1$. And since the network multiplies signal and source noise by
+    the same gain, $F$ is also the factor by which it degrades the
+    signal-to-noise ratio: $F = \mathrm{SNR_{in}}/\mathrm{SNR_{out}}$. In
+    decibels this is the <strong>noise figure</strong>,
+    $\mathrm{NF} = 10\log_{10} F$. (Fine print: spot frequency, matched
+    impedances, source at 290&nbsp;K by convention.)
   </p>
   <p>
-    The dialect earns its keep when instruments are chained. For stages with
+    One special case is worth internalizing. A passive attenuator with
+    power loss $L$ has $F = L$: the signal comes out $L$ times weaker, but
+    the attenuator's own resistors are at 290&nbsp;K too, so the same
+    $k_B T_0$ of noise still comes out the back. The SNR drops by exactly
+    $L$ — three decibels of cable loss <em>is</em> three decibels of noise
+    figure. Radio astronomers write the same content as a temperature:
+    referred to the input, the network's own noise is worth an extra
+    source temperature $T_N = 290\,(F - 1)$&nbsp;K, so a 0.5-dB-NF
+    receiver is "a 35&nbsp;K receiver".
+  </p>
+  <p>
+    This is the concept the chapter opened with, in different clothes. An
+    amplifier with noise factor $F$, driven from the thermal floor, has an
+    equivalent input noise density of $F\,k_B T_0$ W/Hz — in decibels,
+    $-174 + \mathrm{NF}$ dBm/Hz. That is a referred-to-input noise
+    density, exactly as in section&nbsp;1, for the case where the input
+    quantity is RF power. "A sensitivity of
+    $5\ \mathrm{pT}/\sqrt{\mathrm{Hz}}$" and "a noise figure of
+    6&nbsp;dB" are the same kind of statement in two dialects: the first
+    is absolute, the second is relative to what a warm resistor would
+    deliver.
+  </p>
+  <p>
+    (One loose end from chapter&nbsp;6: its additive phase-noise floor
+    read $-177 + F_{\mathrm{dB}} - C_{\mathrm{dBm}}$, not $-174$. No
+    contradiction — the added noise $F k_B T_0$ splits half into amplitude
+    and half into phase, and a phase-noise plot shows only the phase half.
+    Half the power is 3&nbsp;dB.)
+  </p>
+  <p>
+    The reason to learn this dialect is chained instruments. For stages with
     noise factors $F_1, F_2, F_3$ and available gains $G_1, G_2$ (linear,
     not dB), referring every stage's added noise back to the chain input
     divides it by all the gain in front of it — the <strong>Friis
@@ -198,7 +200,12 @@
       trace of the same signal at each point in the chain, referred to the
       input (divided by the gain in front, so the sine stays put and only
       the noise grows). With the LNA first, the later stages leave almost no
-      visible mark; put the cable first and the damage is immediate.</p>
+      visible mark; put the cable first and the damage is immediate. Tick
+      <em>show true levels</em> to undo the input-referring: each trace is
+      then drawn at its real size on one common scale, with the cumulative
+      gain up to that point in the legend — the source shrinks to near
+      invisibility next to the amplified output, which is exactly why
+      engineers refer everything back to the input in the first place.</p>
     <svg viewBox="0 0 560 158" style="max-width:560px;display:block;margin:2px auto 6px;">
       <defs>
         <marker id="fr-arr" markerWidth="8" markerHeight="8" refX="5.5"
@@ -309,7 +316,10 @@
       noise of the chosen sensitivity around the true field $B_0$), with the
       predicted $\pm\sqrt{S_u}/\sqrt{2t}$ envelope as dashed curves. Right:
       100 independent $T$-second averages. Drag $T$ and compare the measured
-      scatter with the prediction; press ↻ for a fresh realization.</p>
+      scatter with the prediction; press ↻ for a fresh realization. The
+      axes are pinned — at the noisiest settings and short $T$ some
+      averages fall outside the frame, and lengthening $T$ pulls them
+      back in.</p>
     <div class="controls" id="ctl-avg"></div>
     <div class="plots two-col">
       <div id="plot-avg-run"></div>
@@ -744,6 +754,8 @@ function shapedNoise(N, fs, Sfun, rand) {
   UI.button(ctl, { label: 'preset: LNA first', onClick: () => preset('lna') });
   UI.button(ctl, { label: 'preset: cable first', onClick: () => preset('cable') });
   UI.button(ctl, { label: 'new sample ↻', onClick: () => { seed++; draw(); } });
+  const cTrue = UI.checkbox(ctl, { label: 'show true levels',
+    checked: false, onChange: draw });
   const roNF = UI.bigReadout(ctl, { label: 'total noise figure', unit: 'dB',
     min: 0, max: 16, fmt: v => v.toFixed(2) });
   const roG  = UI.readout(ctl, { label: 'total gain' });
@@ -819,17 +831,36 @@ function shapedNoise(N, fs, Sfun, rand) {
       for (let i = 0; i < Nt; i++) cum[i] += sd * Noise.randn(rand);
       traces.push(snap());
     }
+    // cumulative amplitude gain up to each chain point (source = 1);
+    // the true trace at point s is the referred trace times aCum[s]
+    const aCum = [1];
+    let g = 1;
+    const cumDb = [0];
+    for (let s = 0; s < 3; s++) {
+      g *= lin(gains[s].value);
+      aCum.push(Math.sqrt(g));
+      cumDb.push(cumDb[s] + gains[s].value);
+    }
+    const aMax = Math.max.apply(null, aCum);
+
     // spacing follows the sliders deterministically (worst-case fuzz)
     const sp = Math.max(14, 2.2 * (A + 2.5 * Math.sqrt(Ftot)));
     pT.o.ylim = [-2.1 * sp, 2.1 * sp];
+    pT.o.ylabel = cTrue.value ? 'true signal, common scale (offset)'
+                              : 'input-referred signal (offset)';
     pT.clear();
-    const names = ['source', 'after stage 1', 'after stage 2',
-      'after stage 3'];
     for (let s = 0; s < 4; s++) {
+      // true mode: real relative sizes, normalized so the largest trace
+      // draws at the same size as in referred mode
+      const sc = cTrue.value ? aCum[s] / aMax : 1;
+      const name = !cTrue.value
+        ? ['source', 'after stage 1', 'after stage 2', 'after stage 3'][s]
+        : s === 0 ? 'source'
+        : (cumDb[s] >= 0 ? '+' : '') + cumDb[s].toFixed(1) + ' dB';
       const off = (1.5 - s) * sp;
       const y = new Float64Array(Nt);
-      for (let i = 0; i < Nt; i++) y[i] = traces[s][i] + off;
-      pT.line(tt, y, { label: names[s] });
+      for (let i = 0; i < Nt; i++) y[i] = sc * traces[s][i] + off;
+      pT.line(tt, y, { label: name });
     }
     pT.draw();
 
@@ -842,17 +873,23 @@ function shapedNoise(N, fs, Sfun, rand) {
 
 /* ---------- demo 1: the sqrt(2T) funnel ---------- */
 (function () {
+  // One fixed y-range for both panels, sized once for the slider extremes:
+  // axes never move, the DATA does. At the noisiest settings the early
+  // scatter spills off the panel and averaging pulls it back in.
+  const YLIM = [-15, 75];
   const pRun = new Plot('#plot-avg-run', {
     xlabel: 'integration time t (s)', ylabel: 'running average (pT)',
-    height: 300, xlog: true, xlim: [0.25, 64], xunit: 's', yunit: 'pT'
+    height: 300, xlog: true, xlim: [0.25, 64], ylim: YLIM,
+    xunit: 's', yunit: 'pT'
   });
   const pReps = new Plot('#plot-avg-reps', {
-    xlabel: 'trial #', ylabel: 'T-average (pT)', height: 300, yunit: 'pT'
+    xlabel: 'trial #', ylabel: 'T-average (pT)', height: 300, ylim: YLIM,
+    yunit: 'pT'
   });
   const ctl = '#ctl-avg';
-  const B0  = UI.slider(ctl, { label: 'true field B₀', min: -50, max: 50,
+  const B0  = UI.slider(ctl, { label: 'true field B₀', min: 0, max: 40,
     step: 1, value: 20, unit: 'pT', fmt: v => v.toFixed(0), onInput: rescale });
-  const ASD = UI.slider(ctl, { label: 'noise ASD √Sᵤ', min: 1, max: 100,
+  const ASD = UI.slider(ctl, { label: 'noise ASD √Sᵤ', min: 2, max: 20,
     log: true, value: 10, unit: 'pT/√Hz', fmt: v => v.toPrecision(2),
     onInput: rescale });
   const Tint = UI.slider(ctl, { label: 'integration time T', min: 0.25,
@@ -900,7 +937,6 @@ function shapedNoise(N, fs, Sfun, rand) {
       up[j] = b0 + w; dn[j] = b0 - w;
     }
     pRun.clear();
-    pRun.o.ylim = [b0 - 5 * asd, b0 + 5 * asd];
     pRun.guideY(b0, { label: 'true B₀' });
     pRun.guideX(T, { label: 'T' });
     pRun.line(t, up, { label: 'B₀ ± ASD/√(2t)', color: '#898781',
@@ -922,11 +958,6 @@ function shapedNoise(N, fs, Sfun, rand) {
     for (let r = 0; r < REPS; r++) v += (est[r] - mu) * (est[r] - mu);
     const std = Math.sqrt(v / (REPS - 1));
     pReps.clear();
-    // Pin the axis to the WORST case (the slider's minimum T) so dragging T
-    // visibly collapses the scatter toward B₀ — if the axis tracked σ(T),
-    // the cloud would always fill the panel and nothing would appear to move.
-    const sigT0 = asd / Math.sqrt(2 * 0.25);
-    pReps.o.ylim = [b0 - 4 * sigT0, b0 + 4 * sigT0];
     pReps.guideY(b0, {});   // unlabeled: collides with the ± label at large T
     pReps.guideY(b0 + sigT, { label: '±ASD/√(2T)', color: '#898781',
       dash: [6, 4] });
@@ -1024,7 +1055,11 @@ function shapedNoise(N, fs, Sfun, rand) {
   let seed = 3, dirty = true;
   UI.button(ctl, { label: 'new sample ↻', onClick: () => { seed++; dirty = true; draw(); } });
   const roAsd = UI.readout(ctl, { label: 'ASD at f_mod' });
-  const roSnr = UI.readout(ctl, { label: 'SNR of a 1 µV signal after T' });
+  const roSig = UI.readout(ctl, { label: 'σ after T' });
+  // gauge spans the demo's reachable SNR range (log), so both sliders
+  // visibly push the bar
+  const roSnr = UI.bigReadout(ctl, { label: 'SNR of a 1 µV signal after T',
+    min: 1e-3, max: 30, log: true, fmt: v => v.toPrecision(2) });
 
   const fs = 4096, N = 1 << 16;
   const Sfun = f => ASDW * ASDW * (1 + fc.value / f);
@@ -1064,8 +1099,8 @@ function shapedNoise(N, fs, Sfun, rand) {
     plot.draw();
     const sigma = asdAt / Math.sqrt(2 * Tint.value);
     roAsd.set(asdAt.toPrecision(2) + ' µV/√Hz');
-    roSnr.set((aSig / sigma).toPrecision(2) +
-      '  (σ = ' + sigma.toPrecision(2) + ' µV)');
+    roSig.set(sigma.toPrecision(2) + ' µV');
+    roSnr.set(aSig / sigma);
   }
   draw();
 })();

@@ -238,7 +238,7 @@
   </figure>
 
   <p>
-    The punchline of the demo deserves italics: <em>with equal $S_a$ and
+    The punchline of the demo: <em>with equal $S_a$ and
     $S_\varphi$ the pedestals are identical</em>. Both AM and PM noise
     produce symmetric sidebands of the same power; the difference is only in
     the sidebands' <em>phase relationship</em> to the carrier (chapter 2: AM
@@ -488,8 +488,8 @@
   <p>
     Everything so far <em>describes</em> oscillator noise; nothing yet
     <em>predicts</em> it. The classic predictive model (D.&nbsp;B. Leeson,
-    1966) is disarmingly simple and earns its keep in every RF design
-    review. An oscillator is just two parts in a ring: an
+    1966) is simple, and it is still the standard first estimate in RF
+    design. An oscillator is just two parts in a ring: an
     <strong>amplifier</strong> (noise figure $F$, carrier power $C$) whose
     output is filtered by a <strong>resonator</strong> and fed back to its
     own input —
@@ -545,6 +545,98 @@
     responds within $\nu_0/2Q_L$ of resonance.
   </p>
   <p>
+    Before trusting this ring to predict anything, it is fair to demand
+    proof that it <em>oscillates</em> at all — nothing in the diagram
+    visibly moves. The argument is one line (the <strong>Barkhausen
+    criterion</strong>): a circulating component at $\nu_0$ returns after
+    one lap multiplied by the small-signal loop gain $G$, because the
+    resonator passes it untouched; every other frequency comes back
+    attenuated. If $G &gt; 1$ that component doubles and redoubles —
+    exponential growth at the one frequency the resonator prefers, seeded by
+    nothing more than the amplifier's own noise. The growth cannot continue
+    forever: every real amplifier runs out of output swing, its effective
+    gain sags as the swing grows, and the amplitude locks itself to exactly
+    the level where the <em>compressed</em> round-trip gain equals one. If
+    $G &lt; 1$ the same argument runs backwards and everything decays to a
+    whisper of filtered noise. Gain, frequency selection, saturation — that
+    is the whole recipe, and you can watch all three at work:
+  </p>
+
+  <figure class="demo">
+    <figcaption>Signals flowing around the ring, in slow motion</figcaption>
+    <p class="demo-note">The block diagram, animated. Every loop has some
+      propagation delay; here the wire is stretched so one lap takes
+      seconds, and the signal is drawn riding on the wire itself. Press
+      <em>circulate</em>. At first the wire carries only amplifier noise;
+      each pass through the resonator strips every component except the one
+      that both fits the ring and sits at the resonator frequency — eight
+      wavelengths per lap here — and each pass through the amplifier
+      re-grows what survives. A sine assembles itself, grows, and stops
+      growing as the amplifier compresses: the <em>round-trip gain</em>
+      readout ticks down and settles at ×1.00. Press <em>advance one full
+      lap</em> and the pattern lands back on itself — the Barkhausen
+      condition, visibly. The scope compares what enters the resonator
+      (amplified, noisy, flattened by saturation) with what leaves it (a
+      pure sine): the amplifier restores the energy, the resonator restores
+      the shape.</p>
+    <div class="controls" id="ctl-flow"></div>
+    <div class="plots">
+      <canvas id="flow-canvas" height="380"></canvas>
+      <div id="plot-flow-scope"></div>
+    </div>
+  </figure>
+
+  <p>
+    The slow-motion ring is the mechanism. Now run the same loop at full
+    speed and watch it the way you would in the lab — oscilloscope,
+    spectrum analyzer, envelope recorder — and check the quantitative
+    predictions: the startup is exponential, the settled amplitude is
+    calculable from the saturation curve, and the spectral line sits where
+    the resonator says.
+  </p>
+
+  <figure class="demo">
+    <figcaption>The Leeson ring really is an oscillator: watch it start from noise</figcaption>
+    <p class="demo-note">A direct time-domain simulation of the block
+      diagram above: a saturating amplifier (gain $G$ at small signal),
+      a resonator at $\nu_0$ with quality factor $Q_L$, and a wire feeding
+      the output back to the input. Press <em>run</em>. The loop contains
+      nothing but amplifier noise; a sine at the resonator frequency picks
+      itself out, grows exponentially (a straight climb on the log
+      envelope), and flattens onto the predicted limit-cycle amplitude
+      (dashed). Then break it: drop $G$ below 1 and the oscillation
+      collapses back into noise — ease $G$ up toward 1 and the noise floor
+      swells (regeneration); drag $\nu_0$ and the spectral line follows the
+      resonator; <em>zap</em> the stored field to zero and it self-starts;
+      untick the noise once it is running and it rings on unaided — but zap
+      it with the noise off and it can never restart.</p>
+    <div class="controls" id="ctl-ring"></div>
+    <div class="plots two-col">
+      <div id="plot-ring-wave"></div>
+      <div id="plot-ring-spec"></div>
+    </div>
+    <div class="plots">
+      <div id="plot-ring-env"></div>
+    </div>
+  </figure>
+
+  <p>
+    One observation in the demo matters for everything that follows.
+    Saturation regulates the <em>amplitude</em>: zap the field to zero and
+    it climbs straight back to the dashed line, and any kick toward larger
+    or smaller amplitude decays within the ring-down time. Nothing
+    regulates the <em>phase</em>: a sine delayed by ten degrees satisfies
+    the loop exactly as well as the original, so the loop has no restoring
+    force along the phase direction. Of the amplifier's noise kicks, the
+    radial (AM) component in the phasor picture is therefore healed, while
+    the tangential (PM) component is kept, re-amplified, and added to by
+    the next kick. Amplitude errors decay; phase errors accumulate as a
+    random walk. This is why an oscillator's output carries little
+    amplitude noise but plenty of phase noise — the loop itself scrubs the
+    AM and leaves the PM — and it is exactly the mechanism behind the
+    $1/f^2$ region derived next.
+  </p>
+  <p>
     Now feed the amplifier's additive phase noise — the flat floor
     $Fk_B T/2C$ of the previous section — into this ring, and ask what comes
     out. Three regions, from far away moving in toward the carrier:
@@ -561,11 +653,21 @@
       FM means $S_\varphi \propto 1/f^2$: the noise rises 20 dB per decade
       toward the carrier.</li>
     <li><strong>Below the flicker corner</strong> ($f &lt; f_c$): the
-      transistor's own $1/f$ flicker noise phase-modulates the carrier
-      directly, multiplying whatever is there by a further $1/f$.</li>
+      amplifier is built around an active device — a transistor — and like
+      every semiconductor device it has $1/f$ flicker noise of its own
+      (chapter&nbsp;5). That flicker phase-modulates the carrier directly,
+      multiplying whatever is there by a further $1/f$. The corner
+      frequency $f_c$ where flicker takes over from the flat floor is a
+      property of the device: roughly kHz for silicon bipolar transistors,
+      much worse (up to MHz) for GaAs.</li>
   </ul>
   <p>
-    Stack the three effects and you have Leeson's formula:
+    Stack the three effects and you have Leeson's formula. It predicts
+    $\mathcal{L}(f)$ — the oscillator's single-sideband phase noise from
+    earlier in the chapter, $S_\varphi/2$, quoted in dBc/Hz at offset $f$
+    from the carrier — from five hardware numbers: the amplifier's noise
+    figure $F$, flicker corner $f_c$ and carrier power $C$, and the
+    resonator's $\nu_0$ and $Q_L$:
   </p>
   <p>
     $$ \mathcal{L}(f) \;=\; \frac{F\,k_B T}{2C}\,
@@ -581,23 +683,32 @@
     between them instead; the demo shows it.
   </p>
   <p>
-    Two morals. <strong>First</strong>, inside the resonator
-    bandwidth $\mathcal{L} \propto F/Q_L^2$: the figure of merit is $F/Q^2$,
-    so doubling $Q_L$ buys 6 dB where halving $F$ buys only 3 — a factor of
-    two in $Q$ is worth four times more than a factor of two in noise figure.
-    That is why the quietest sources are built around resonators of extreme
-    quality factor — quartz crystals ($Q_L \sim 10^4$–$10^6$), then microwave
-    cavities, and ultimately atomic resonances. <strong>Second</strong>, at
-    fixed $F$, $Q_L$ and $C$ the model scales as $(\nu_0/f)^2$, so
-    $\mathcal{L} \propto \nu_0^2$. But an ideal frequency multiplier
-    $\times N$ multiplies phase — hence $S_\varphi$ and $\mathcal{L}$ — by
-    exactly $N^2$, a cost of $+20\log_{10}N$ dB. The two scalings cancel:
-    <em>frequency multiplication is noise-neutral in this model</em>. A
-    100 MHz oscillator multiplied $\times 100$ to 10 GHz lands on the same
-    curve as a hypothetical 10 GHz oscillator with the same $Q_L$, $F$, $C$.
-    The real reason to build low and multiply is that the best resonators are
-    low-frequency objects: crystals with $Q_L \sim 10^6$ exist at
-    5–120 MHz and nowhere else. Chapter&nbsp;10 leans on this constantly.
+    Two design lessons follow. <strong>First</strong>: inside the resonator
+    bandwidth, $\mathcal{L} \propto F/Q_L^2$ — the quality factor enters
+    <em>squared</em>, the noise figure only linearly. Doubling $Q_L$ buys
+    6 dB; halving $F$ buys 3. The resonator, not the amplifier, is where
+    the performance lives, and the quietest sources are built around the
+    highest-$Q$ resonators available: quartz crystals
+    ($Q_L \sim 10^4$–$10^6$), then microwave cavities, and ultimately
+    atomic resonances.
+  </p>
+  <p>
+    <strong>Second</strong>: compare two oscillators built from identical
+    parts — same $F$, $C$, $Q_L$ — one at 100 MHz and one at 10 GHz. The
+    carrier frequency enters the formula only through $\nu_0/2Q_Lf$, so at
+    any given offset $f$ the 10 GHz oscillator is $100^2$ times, i.e.
+    40 dB, noisier. Now take the 100 MHz oscillator instead and run its
+    output through a $\times 100$ frequency multiplier. Multiplying the
+    frequency by 100 multiplies the phase excursion $\varphi(t)$ by 100
+    (frequency is the rate of change of phase, so scaling one scales the
+    other), and a PSD goes as the square: $S_\varphi$, and with it
+    $\mathcal{L}$, rises by the same 40 dB. The two routes to 10 GHz land
+    on exactly the same curve — <em>frequency multiplication is
+    noise-neutral in this model</em>. So build the oscillator wherever the
+    best resonator exists and multiply up from there; the best resonators
+    happen to be low-frequency objects — crystals with $Q_L \sim 10^6$
+    exist at 5–120 MHz and nowhere else. Chapter&nbsp;10 leans on this
+    constantly.
   </p>
 
   <figure class="demo">
@@ -630,8 +741,7 @@
   <h2>The bookkeeping map</h2>
   <p>
     Four equivalent descriptions of the same phase wandering, and the
-    conversion factors between their PSDs — this half-page is worth pinning
-    above your desk:
+    conversion factors between their PSDs:
   </p>
 
   <table>
@@ -649,19 +759,6 @@
           <td>$S_x(f) = \dfrac{S_\varphi(f)}{(2\pi\nu_0)^2}$</td><td>timekeeping &amp; navigation</td></tr>
     </tbody>
   </table>
-
-  <p>
-    Two sanity checks on the factors. First, $y = \dot x$ (fractional
-    frequency is the slope of the time error), so the derivative theorem
-    demands $S_y = (2\pi f)^2 S_x$ — and indeed
-    $(2\pi f)^2 \cdot S_\varphi/(2\pi\nu_0)^2 = (f^2/\nu_0^2) S_\varphi$.
-    Second, dividing by $\nu_0$ or $2\pi\nu_0$ never changes the <em>shape</em>
-    in $f$; only the $\varphi \leftrightarrow \delta\nu$ hop, a time
-    derivative, tilts the spectrum by $f^2$. In chapter 7, the whole function
-    $S_y(f)$ gets compressed into a single curve, the Allan deviation
-    $\sigma_y(\tau)$ — the natural language for "how good is this clock at
-    averaging time $\tau$".
-  </p>
 
   <h2>The same thing in code</h2>
   <p>
@@ -1310,6 +1407,438 @@ function slopeGuide(plot, fEst, pEst, slope, anchorF, fLo, fHi, label) {
     rMeas.set(fwhmMeas > 0 ? fwhmMeas.toPrecision(2) + ' Hz' : '–');
     rRes.set((1 / Tseg).toPrecision(2) + ' Hz');
   }
+  draw();
+})();
+
+/* ---------- demo: signals flowing around the ring ---------- */
+(function () {
+  const NLOOP = 256;        // samples per lap around the ring
+  const MODE = 8;           // resonator sits on 8 carrier cycles per lap
+  const SEG = 24;           // amp output -> resonator input wire, in samples
+  const DELAY = NLOOP - SEG;// resonator output -> ... -> amp input wire
+  const SIGMA = 0.06;       // amplifier additive noise, rms per sample
+  const VS = 24;            // ribbon scale: pixels per unit of signal
+  const H = 380;            // canvas CSS height
+
+  const canvas = document.getElementById('flow-canvas');
+  canvas.style.height = H + 'px';  // CSS-pin so dpr never feeds back (ch1)
+  const scope = new Plot('#plot-flow-scope', {
+    xlabel: 'time (laps)', ylabel: 'signal at the resonator', height: 220,
+    xlim: [-2, 0], ylim: [-1.4, 1.4], xunit: 'laps'
+  });
+  const ctl = '#ctl-flow';
+
+  const rand = Noise.rng(19);
+  const wire = new Float64Array(DELAY);   // the long feedback wire
+  const seg = new Float64Array(SEG);      // the short amp->resonator wire
+  const histA = new Float64Array(2 * NLOOP);  // entering the resonator
+  const histY = new Float64Array(2 * NLOOP);  // leaving the resonator
+  let wi = 0, si = 0, z1 = 0, z2 = 0;
+  let nTot = 0, aPrev = 0, lapGain = null;
+  let b0, a1, a2;
+
+  function coeffs() {
+    const w = 2 * Math.PI * MODE / NLOOP;
+    const al = Math.sin(w) / (2 * sQ.value);
+    const n = 1 / (1 + al);
+    b0 = al * n; a1 = -2 * Math.cos(w) * n; a2 = (1 - al) * n;
+  }
+
+  function loopAmp() {
+    let ss = 0;
+    for (let i = 0; i < DELAY; i++) ss += wire[i] * wire[i];
+    return Math.sqrt(2 * ss / DELAY);
+  }
+
+  function step(n) {
+    const G = sG.value, sig = cN.value ? SIGMA : 0;
+    const n2 = 2 * NLOOP;
+    for (let k = 0; k < n; k++) {
+      const xin = wire[wi];                          // arrives at the amp
+      const xa = Math.tanh(G * xin) +
+                 (sig ? sig * Noise.randn(rand) : 0); // amplified + noise
+      const xr = seg[si];                            // arrives at resonator
+      seg[si] = xa; si = (si + 1) % SEG;
+      const y = b0 * xr + z1;                        // filtered
+      z1 = z2 - a1 * y;
+      z2 = -b0 * xr - a2 * y;
+      wire[wi] = y; wi = (wi + 1) % DELAY;           // back onto the wire
+      histA[nTot % n2] = xr; histY[nTot % n2] = y;
+      nTot++;
+      if (nTot % NLOOP === 0) {                      // once per lap
+        const a = loopAmp();
+        lapGain = aPrev > 5e-3 ? a / aPrev : null;
+        aPrev = a;
+      }
+    }
+  }
+
+  // value written into a circular buffer `age` samples ago (0 = newest)
+  function bufAt(buf, head, len, age) {
+    const f = head - 1 - age;
+    let i0 = Math.floor(f);
+    const fr = f - i0;
+    i0 = ((i0 % len) + len) % len;
+    return buf[i0] * (1 - fr) + buf[(i0 + 1) % len] * fr;
+  }
+
+  // sample a polyline every ~2 px; normals rotated -90° from travel
+  // direction, i.e. always to the outside of the racetrack
+  function walkPath(corners) {
+    const xs = [], ys = [];
+    for (let c = 0; c < corners.length - 1; c++) {
+      const x0 = corners[c][0], y0 = corners[c][1];
+      const x1 = corners[c + 1][0], y1 = corners[c + 1][1];
+      const m = Math.max(1, Math.round(Math.hypot(x1 - x0, y1 - y0) / 2));
+      for (let j = (c === 0 ? 0 : 1); j <= m; j++) {
+        xs.push(x0 + (x1 - x0) * j / m);
+        ys.push(y0 + (y1 - y0) * j / m);
+      }
+    }
+    const n = xs.length;
+    const nx = new Float64Array(n), ny = new Float64Array(n);
+    let len = 0;
+    for (let i = 0; i < n; i++) {
+      const i0 = Math.max(0, i - 1), i1 = Math.min(n - 1, i + 1);
+      const dx = xs[i1] - xs[i0], dy = ys[i1] - ys[i0];
+      const L = Math.hypot(dx, dy) || 1;
+      nx[i] = dy / L; ny[i] = -dx / L;
+      if (i) len += Math.hypot(xs[i] - xs[i - 1], ys[i] - ys[i - 1]);
+    }
+    return { x: xs, y: ys, nx: nx, ny: ny, n: n, len: len };
+  }
+
+  function ribbon(ctx, path, valueAt, color) {
+    ctx.strokeStyle = color;
+    ctx.lineWidth = 1.8;
+    ctx.lineJoin = 'round';
+    ctx.beginPath();
+    for (let i = 0; i < path.n; i++) {
+      const v = Math.max(-1.3, Math.min(1.3, valueAt(i / (path.n - 1))));
+      const px = path.x[i] + path.nx[i] * v * VS;
+      const py = path.y[i] + path.ny[i] * v * VS;
+      if (i) ctx.lineTo(px, py); else ctx.moveTo(px, py);
+    }
+    ctx.stroke();
+  }
+
+  function draw() {
+    const dpr = window.devicePixelRatio || 1;
+    const W = canvas.clientWidth || 700;
+    const bw = Math.round(W * dpr), bh = Math.round(H * dpr);
+    if (canvas.width !== bw || canvas.height !== bh) {
+      canvas.width = bw; canvas.height = bh;
+    }
+    const ctx = canvas.getContext('2d');
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    const dark = matchMedia('(prefers-color-scheme: dark)').matches;
+    const surface = dark ? '#1a1a19' : '#fcfcfb';
+    const sec = dark ? '#c3c2b7' : '#52514e';
+    const grid = dark ? '#2c2c2a' : '#e1e0d9';
+    const axis = dark ? '#4a4a46' : '#b5b4ab';
+    const cIn = dark ? '#3987e5' : '#2a78d6';   // scope series 1 color
+    const cOut = dark ? '#199e70' : '#1baf7a';  // scope series 2 color
+    ctx.fillStyle = surface;
+    ctx.fillRect(0, 0, W, H);
+
+    // ---- geometry
+    const mL = 46, topY = 88, botY = H - 52;
+    const span = W - mL - 16;
+    const ax = mL + span * 0.22, AW = 30, AH = 26;    // amplifier triangle
+    const rx = mL + span * 0.50, RW = 40, RH = 26;    // resonator box
+    const tapX = mL + span * 0.76;                    // output tap
+    const wirePath = walkPath([[rx + RW, topY], [tapX, topY],
+      [tapX, botY], [mL, botY], [mL, topY], [ax - AW, topY]]);
+    const segPath = walkPath([[ax + AW, topY], [rx - RW, topY]]);
+    const outPath = walkPath([[tapX, topY], [W - 8, topY]]);
+
+    // ---- base wires, components, labels
+    ctx.strokeStyle = grid;
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(rx + RW, topY); ctx.lineTo(tapX, topY);
+    ctx.lineTo(tapX, botY); ctx.lineTo(mL, botY);
+    ctx.lineTo(mL, topY); ctx.lineTo(ax - AW, topY);
+    ctx.moveTo(ax + AW, topY); ctx.lineTo(rx - RW, topY);
+    ctx.moveTo(tapX, topY); ctx.lineTo(W - 8, topY);
+    ctx.stroke();
+
+    ctx.strokeStyle = axis;
+    ctx.lineWidth = 1.6;
+    ctx.fillStyle = surface;
+    ctx.beginPath();                                   // amplifier
+    ctx.moveTo(ax - AW, topY - AH); ctx.lineTo(ax - AW, topY + AH);
+    ctx.lineTo(ax + AW, topY); ctx.closePath();
+    ctx.fill(); ctx.stroke();
+    ctx.beginPath();                                   // resonator
+    ctx.rect(rx - RW, topY - RH, 2 * RW, 2 * RH);
+    ctx.fill(); ctx.stroke();
+    ctx.lineWidth = 1.2;
+    ctx.beginPath();                                   // its resonance curve
+    ctx.moveTo(rx - RW + 8, topY + 15);
+    ctx.bezierCurveTo(rx - 10, topY + 15, rx - 9, topY - 14, rx, topY - 14);
+    ctx.bezierCurveTo(rx + 9, topY - 14, rx + 10, topY + 15, rx + RW - 8, topY + 15);
+    ctx.stroke();
+    ctx.fillStyle = axis;                              // output tap
+    ctx.beginPath();
+    ctx.arc(tapX, topY, 3.5, 0, 2 * Math.PI);
+    ctx.fill();
+
+    const arrow = (x, y, dx, dy) => {
+      const a = Math.atan2(dy, dx);
+      ctx.beginPath();
+      ctx.moveTo(x + 6 * Math.cos(a), y + 6 * Math.sin(a));
+      ctx.lineTo(x + 6 * Math.cos(a + 2.5), y + 6 * Math.sin(a + 2.5));
+      ctx.lineTo(x + 6 * Math.cos(a - 2.5), y + 6 * Math.sin(a - 2.5));
+      ctx.closePath();
+      ctx.fill();
+    };
+    arrow(tapX, (topY + botY) / 2, 0, 1);
+    arrow((mL + tapX) / 2, botY, -1, 0);
+    arrow(mL, (topY + botY) / 2, 0, -1);
+    arrow((mL + ax - AW) / 2, topY, 1, 0);
+    arrow(W - 24, topY, 1, 0);
+
+    ctx.fillStyle = sec;
+    ctx.font = '11px system-ui, -apple-system, "Segoe UI", sans-serif';
+    ctx.textAlign = 'center'; ctx.textBaseline = 'top';
+    ctx.fillText('amplifier  ×' + sG.value.toFixed(2), ax - 4, topY + AH + 10);
+    ctx.fillText('resonator — ' + MODE + ' cycles per lap', rx, topY + RH + 10);
+    ctx.fillText('feedback', (mL + tapX) / 2, botY + 10);
+    ctx.textAlign = 'right'; ctx.textBaseline = 'bottom';
+    ctx.fillText('output', W - 10, topY - 32);   // above the ribbon's reach
+
+    // ---- the signal riding on the wires
+    // (colors match the scope: blue entering the resonator, green leaving)
+    const ppx = wirePath.len / (DELAY - 1);            // px per sample
+    const ageTap = (tapX - rx - RW) / ppx;             // wire age at the tap
+    ribbon(ctx, wirePath,
+      u => bufAt(wire, wi, DELAY, u * (DELAY - 1)), cOut);
+    ribbon(ctx, segPath,
+      u => bufAt(seg, si, SEG, u * (SEG - 1)), cIn);
+    ribbon(ctx, outPath,
+      u => bufAt(wire, wi, DELAY, ageTap + u * outPath.len / ppx), cOut);
+
+    // ---- scope + readouts
+    const n2 = 2 * NLOOP;
+    const tx = new Float64Array(n2), ya = new Float64Array(n2),
+          yy = new Float64Array(n2);
+    for (let i = 0; i < n2; i++) {
+      const idx = (nTot + i) % n2;                     // oldest first
+      tx[i] = (i - n2 + 1) / NLOOP;
+      ya[i] = histA[idx]; yy[i] = histY[idx];
+    }
+    scope.clear();
+    scope.line(tx, ya, { label: 'entering the resonator (after the amp)' });
+    scope.line(tx, yy, { label: 'leaving the resonator' });
+    scope.draw();
+
+    rLap.set((nTot / NLOOP).toFixed(1));
+    rGain.set(lapGain === null ? '—' : '×' + lapGain.toFixed(2));
+    const a = loopAmp();
+    rAmp.set(a < 0.01 ? a.toExponential(1) : a.toFixed(2));
+  }
+
+  const sG = UI.slider(ctl, { label: 'small-signal gain G', min: 0.5,
+    max: 2, step: 0.05, value: 1.5, fmt: v => v.toFixed(2),
+    onInput: () => draw() });
+  const sQ = UI.slider(ctl, { label: 'loaded Q_L', min: 4, max: 40,
+    log: true, value: 12, fmt: v => v.toFixed(0),
+    onInput: () => { coeffs(); draw(); } });
+  const sV = UI.slider(ctl, { label: 'flow speed', min: 0.15, max: 3,
+    log: true, value: 0.7, unit: 'laps/s', fmt: v => v.toFixed(2) });
+  const cN = UI.checkbox(ctl, { label: 'amplifier noise', checked: true });
+  UI.button(ctl, { label: 'advance one full lap', onClick: () => {
+    step(NLOOP); draw();
+  } });
+  UI.button(ctl, { label: 'zap the stored field', onClick: () => {
+    wire.fill(0); seg.fill(0); histA.fill(0); histY.fill(0);
+    z1 = z2 = 0; aPrev = 0; lapGain = null; draw();
+  } });
+  const rLap = UI.readout(ctl, { label: 'laps elapsed' });
+  const rGain = UI.readout(ctl, { label: 'round-trip gain' });
+  const rAmp = UI.readout(ctl, { label: 'wave amplitude' });
+  UI.playButton(ctl, { label: 'circulate', onFrame: (t, dt) => {
+    step(Math.min(Math.round((dt || 0.016) * sV.value * NLOOP), 4 * NLOOP));
+    draw();
+  } });
+
+  coeffs();
+  step(2 * NLOOP);   // two laps of quiet noise so the page loads alive
+  draw();
+})();
+
+/* ---------- demo: the Leeson ring really oscillates ---------- */
+(function () {
+  const FS = 8192;         // simulation sample rate (Hz)
+  const SPEED = 2;         // simulated seconds per wall-clock second
+  const SIGMA = 2e-3;      // amplifier additive noise, rms per sample
+  const BUF = 8192;        // trailing record for scope + spectrum (1 s)
+  const ENVBLK = 256;      // one envelope point per 256 samples (32/s)
+
+  const pWave = new Plot('#plot-ring-wave', {
+    xlabel: 'time (ms, trailing window)', ylabel: 'loop signal',
+    height: 250, xlim: [0, 40], ylim: [-1.25, 1.25], xunit: 'ms'
+  });
+  const pSpec = new Plot('#plot-ring-spec', {
+    xlabel: 'frequency ν (Hz)', ylabel: 'PSD (1/Hz)', height: 250,
+    ylog: true, xlim: [0, 700], ylim: [1e-12, 1], xunit: 'Hz', yunit: '/Hz'
+  });
+  const pEnv = new Plot('#plot-ring-env', {
+    xlabel: 'time before now (s)', ylabel: 'envelope amplitude',
+    height: 240, ylog: true, xlim: [-20, 0], ylim: [1e-5, 2], xunit: 's'
+  });
+  const ctl = '#ctl-ring';
+
+  const rand = Noise.rng(66);
+  const buf = new Float64Array(BUF);       // ring buffer of loop output
+  const scratch = new Float64Array(BUF);   // ordered copy for Welch
+  let bi = 0, z1 = 0, z2 = 0, yPrev = 0;   // write index + filter state
+  let simT = 0, eAcc = 0, eN = 0;
+  let envT = [], envA = [];
+  let b0, a1, a2;                          // bandpass biquad (b1=0, b2=−b0)
+
+  // Constant-peak-gain resonator: |H| = 1 and zero phase at ν₀, so the
+  // small-signal Barkhausen condition is exactly G = 1.
+  function coeffs() {
+    const w = 2 * Math.PI * sNu.value / FS;
+    const al = Math.sin(w) / (2 * sQ.value);
+    const n = 1 / (1 + al);
+    b0 = al * n; a1 = -2 * Math.cos(w) * n; a2 = (1 - al) * n;
+  }
+
+  function step(n) {
+    const G = sG.value, sig = cN.value ? SIGMA : 0;
+    for (let i = 0; i < n; i++) {
+      // one lap: feedback -> saturating amplifier (+ noise) -> resonator
+      const v = Math.tanh(G * yPrev) + (sig ? sig * Noise.randn(rand) : 0);
+      const y = b0 * v + z1;
+      z1 = z2 - a1 * y;
+      z2 = -b0 * v - a2 * y;
+      yPrev = y;
+      buf[bi] = y; bi = (bi + 1) % BUF;
+      simT += 1 / FS;
+      eAcc += y * y;
+      if (++eN === ENVBLK) {
+        envT.push(simT); envA.push(Math.sqrt(2 * eAcc / ENVBLK));
+        eAcc = 0; eN = 0;
+      }
+    }
+    while (envT.length && envT[0] < simT - 22) { envT.shift(); envA.shift(); }
+  }
+
+  // Predicted limit-cycle amplitude: describing-function gain of tanh
+  // (fundamental-only balance N(a) = 1 — excellent here because the
+  // resonator strips the harmonics before they return to the amplifier).
+  function limitAmp(G) {
+    if (G <= 1.001) return 0;
+    const N = (a) => {
+      let s = 0;
+      const M = 64;
+      for (let k = 0; k < M; k++) {
+        const th = 2 * Math.PI * (k + 0.5) / M;
+        s += Math.tanh(G * a * Math.sin(th)) * Math.sin(th);
+      }
+      return 2 * s / (M * a);
+    };
+    let lo = 1e-4, hi = 2;
+    for (let it = 0; it < 50; it++) {
+      const mid = 0.5 * (lo + hi);
+      if (N(mid) > 1) lo = mid; else hi = mid;
+    }
+    return 0.5 * (lo + hi);
+  }
+
+  const sG = UI.slider(ctl, { label: 'small-signal gain G', min: 0.7,
+    max: 1.3, step: 0.01, value: 1.1, fmt: v => v.toFixed(2),
+    onInput: () => draw() });
+  const sNu = UI.slider(ctl, { label: 'resonator ν₀', min: 120, max: 500,
+    step: 5, value: 220, unit: 'Hz', fmt: v => v.toFixed(0),
+    onInput: () => { coeffs(); draw(); } });
+  const sQ = UI.slider(ctl, { label: 'loaded Q_L', min: 5, max: 100,
+    log: true, value: 30, fmt: v => v.toFixed(0),
+    onInput: () => { coeffs(); draw(); } });
+  const cN = UI.checkbox(ctl, { label: 'amplifier noise', checked: true });
+  UI.button(ctl, { label: 'zap the stored field', onClick: () => {
+    buf.fill(0); z1 = z2 = yPrev = 0; eAcc = 0; eN = 0; draw();
+  } });
+  const rF = UI.readout(ctl, { label: 'oscillating at' });
+  const rA = UI.bigReadout(ctl, { label: 'output amplitude', min: 1e-5,
+    max: 2, log: true, fmt: v => v < 1e-4 ? '≈ 0'
+      : v < 0.01 ? v.toExponential(1) : v.toFixed(3) });
+
+  function draw() {
+    // (a) scope trace, triggered on a rising zero crossing so the sine
+    // holds still frame to frame
+    const wlen = Math.round(0.040 * FS);
+    const per = Math.max(2, Math.round(FS / sNu.value));
+    const m = wlen + per;
+    const w = new Float64Array(m);
+    for (let i = 0; i < m; i++) w[i] = buf[(bi - m + i + BUF) % BUF];
+    let s0 = 0;
+    for (let i = 0; i < per; i++) {
+      if (w[i] <= 0 && w[i + 1] > 0) { s0 = i; break; }
+    }
+    const tw = new Float64Array(wlen), yw = new Float64Array(wlen);
+    for (let i = 0; i < wlen; i++) {
+      tw[i] = 1000 * i / FS; yw[i] = w[s0 + i];
+    }
+    pWave.clear();
+    pWave.line(tw, yw, {});
+    pWave.draw();
+
+    // (b) spectrum of the trailing second
+    for (let i = 0; i < BUF; i++) scratch[i] = buf[(bi + i) % BUF];
+    const { f, psd } = FFT.welch(scratch, FS, { nseg: 2048 });
+    pSpec.clear();
+    pSpec.guideX(sNu.value, { label: 'resonator ν₀', dash: [5, 4] });
+    pSpec.line(f.subarray(1), psd.subarray(1), {});
+    pSpec.draw();
+
+    // (c) envelope history with the describing-function prediction
+    const aPred = limitAmp(sG.value);
+    const n = envT.length;
+    const et = new Float64Array(n), ea = new Float64Array(n);
+    for (let i = 0; i < n; i++) { et[i] = envT[i] - simT; ea[i] = envA[i]; }
+    pEnv.clear();
+    if (aPred > 0) pEnv.guideY(aPred,
+      { label: 'predicted limit-cycle amplitude', dash: [5, 4] });
+    pEnv.line(et, ea, {});
+    pEnv.draw();
+
+    // readouts: amplitude of the last 1024 samples, spectral peak
+    let ss = 0;
+    for (let i = 0; i < 1024; i++) {
+      const y = buf[(bi - 1 - i + BUF) % BUF];
+      ss += y * y;
+    }
+    const amp = Math.sqrt(2 * ss / 1024);
+    rA.set(amp);
+    let ip = -1, pm = 0;
+    for (let i = 1; i < f.length; i++) {
+      if (f[i] > 60 && f[i] < 700 && psd[i] > pm) { pm = psd[i]; ip = i; }
+    }
+    if (amp > 0.05 && ip > 1 && ip < f.length - 1 &&
+        psd[ip - 1] > 0 && psd[ip + 1] > 0) {
+      const l0 = Math.log(psd[ip - 1]), l1 = Math.log(psd[ip]),
+            l2 = Math.log(psd[ip + 1]);
+      const den = l0 - 2 * l1 + l2;
+      const d = den < 0 ? 0.5 * (l0 - l2) / den : 0;
+      rF.set((f[ip] + d * (f[1] - f[0])).toFixed(1) + ' Hz');
+    } else {
+      rF.set('—');
+    }
+  }
+
+  UI.playButton(ctl, { label: 'run the loop', onFrame: (t, dt) => {
+    step(Math.round(Math.min(dt || 0.016, 0.05) * SPEED * FS));
+    draw();
+  } });
+
+  // At load, replay the first 8 s of the startup so the page already tells
+  // the story: noise floor, exponential climb, saturation on the guide.
+  coeffs();
+  step(8 * FS);
   draw();
 })();
 
