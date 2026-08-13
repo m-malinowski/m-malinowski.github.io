@@ -12,11 +12,13 @@ url: "https://m-malinowski.github.io"
 
 # staticman_url: https://blog-comment-system.herokuapp.com/v3/entry/github/m-malinowski/m-malinowski.github.io/main/comments
 
-# Disqus Comments
-disqus:
-  # Leave shortname blank to disable comments site-wide.
-  # Disable comments for any post by adding `comments: false` to that post's YAML Front Matter.
-  shortname: m-malinowski
+# Utterances comments (https://utteranc.es)
+# Comments are stored as GitHub issues in the repo below.
+# Disable comments for any post by adding `comments: false` to that post's YAML Front Matter.
+utterances:
+  repo: m-malinowski/m-malinowski.github.io
+  issue_term: pathname
+  theme: github-light
 
 
 # Minima date format

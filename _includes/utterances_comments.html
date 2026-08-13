@@ -1,0 +1,12 @@
+{%- if page.comments != false and jekyll.environment == "production" -%}
+
+<script src="https://utteranc.es/client.js"
+        repo="{{ site.utterances.repo }}"
+        issue-term="{{ site.utterances.issue_term | default: 'pathname' }}"
+        theme="{{ site.utterances.theme | default: 'github-light' }}"
+        crossorigin="anonymous"
+        async>
+</script>
+<noscript>Please enable JavaScript to view the comments powered by <a href="https://utteranc.es">utterances</a>.</noscript>
+
+{%- endif -%}
