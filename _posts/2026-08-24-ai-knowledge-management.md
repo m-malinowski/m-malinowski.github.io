@@ -4,6 +4,8 @@ published: true
 title: "Hey Claude... what are we actually building?"
 image: /assets/images/posts/ai-knowledge-management/mindroom-logo.png
 ---
+The best-known use of AI in 2026 is in execution of well-scoped tasks in the domains of software engineering, general productivity, and mathematics. Within any given company, the human still has the most context about what to build, but the agent does a lot of the building.
+
 <style>
 .post-screenshot img,
 img.post-screenshot {
@@ -11,8 +13,6 @@ img.post-screenshot {
   box-sizing: border-box;
 }
 </style>
-
-The best-known use of AI in 2026 is in execution of well-scoped tasks in the domains of software engineering, general productivity, and mathematics. Within any given company, the human still has the most context about what to build, but the agent does a lot of the building.
 
 **But building, maintaining, and managing institutional knowledge is arguably one of the biggest unsolved problems in any large-scale program or organisation**. If you've ever been part of a serious engineering program - think a new quantum computer, or a new AR headset, or a fusion reactor - you probably know all too well that keeping hundreds of engineers continuously aligned about what exactly they're supposed to build, on what timescale, and to what specs - is easily half the effort (and it's not the fun half).
 
