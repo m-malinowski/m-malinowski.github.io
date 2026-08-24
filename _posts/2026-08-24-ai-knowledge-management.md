@@ -20,6 +20,8 @@ The best-known use of AI in 2026 is in execution of well-scoped tasks in the dom
 
 This post is about how AI can bring about a revolution in knowledge management.
 
+*The views expressed in this post are my own and I am not speaking for IonQ.*
+
 # Status quo
 
 Rapid knowledge dissemination is always a challenge in R&D work. As new information streams in - simulations that refine previous simplified analyses, lab data that reveals overlooked effects, or customer feedback that reveals neglected pain points - the organisation needs to continuously adapt its goals, timelines, budgets, architecture, and subsystem specs. To that end, enterprises require processes, people, and time to collect, organise, distill, and share knowledge. This includes a wide range of activities and systems, such as:
