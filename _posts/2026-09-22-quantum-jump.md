@@ -6,6 +6,8 @@ title: "What even is a quantum jump?"
 
 As you start reading about quantum mechanics, one of the first things you learn is that there are *quantum jumps*. But what the heck does that even mean? During quantum gates, for example, the wave function evolves continuously between the two qubit states. So in what sense is anything jumping?
 
+The answer turns out to be surprisingly subtle - had I understood quantum jumps properly, I wouldn't have been so puzzled about the [mysterious qubit dynamics I raised in last week's post]({% post_url 2026-09-15-puzzle %}). In today's entry, I lay it out on the table to spare you from repeating my mistakes!
+
 # Watching a quantum jump
 
 To understand quantum jumps, let's consider a three-level system; for concreteness, I will use a simplified version of the calcium ion from the previous post. The qubit states are $\lvert 0\rangle =$ D<sub>5/2</sub> and $\lvert 1\rangle =$ S<sub>1/2</sub>. We drive the transition between them with 729 nm light, and we measure the qubit by driving the S<sub>1/2</sub> ↔ P<sub>1/2</sub> transition with 397 nm light and collecting the fluorescence.
