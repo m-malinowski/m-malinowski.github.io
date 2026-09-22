@@ -201,7 +201,7 @@ This is a fancy way of saying something familiar: for a quantum gate, we want a 
 
 ## Answering the original puzzle
 
-*Special thanks to Tyler Sutherland for helping me piece this together.*
+*Special thanks to Tyler Sutherland for helping me piece this together, and congratulations to David Nadlinger, who solved the puzzle in the comment section of [last week's post]({% post_url 2026-09-15-puzzle %}).*
 
 In the [previous post]({% post_url 2026-09-15-puzzle %}), I asked: how far do I have to detune the 729 nm beam to keep the D-state excitation probability below $10^{-5}$? For a perfectly coherent drive, the maximum population is
 
